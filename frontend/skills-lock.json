@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "mobile-developer": {
+      "source": "daffy0208/ai-dev-standards",
+      "sourceType": "github",
+      "computedHash": "d0920fc7a5d128c964827498d86a28094ff99acbf61a3f8d99ef464d6e1805da"
+    },
+    "react-native-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f75e8c7bd9ffd77a29b74eece63806ff87f8723c30744c5cb90f8baab388d18e"
+    }
+  }
+}

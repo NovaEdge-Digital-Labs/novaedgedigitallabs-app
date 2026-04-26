@@ -1,0 +1,53 @@
+{
+    "primary": "#9127FF",
+    "primaryDark": "#7B00FF",
+    "secondary": "#120025",
+    "background": "#06000F",
+    "backgroundSoft": "rgba(255, 255, 255, 0.05)",
+    "card": "rgba(255, 255, 255, 0.03)",
+    "cardHover": "rgba(255, 255, 255, 0.08)",
+    "text": "#FFFFFF",
+    "textLight": "#E0E0FF",
+    "textMuted": "#A080FF",
+    "border": "rgba(145, 39, 255, 0.2)",
+    "divider": "rgba(145, 39, 255, 0.15)",
+    "accent": "#C042FF",
+    "glow": "#9127FF",
+    "primaryGradient": "linear-gradient(135deg, #9127FF, #C042FF)",
+    "backgroundGradient": "radial-gradient(circle at top left, #2D006D, #06000F)",
+    "overlay": "rgba(6, 0, 15, 0.9)",
+    "success": "#00FF9D",
+    "error": "#FF2D55",
+    "warning": "#FFB800",
+    "info": "#00E0FF",
+    "white": "#ffffff",
+    "black": "#000000",
+    "gray": {
+        "50": "#F9FAFB",
+        "100": "#F3F4F6",
+        "200": "#E5E7EB",
+        "300": "#D1D5DB",
+        "400": "#9CA3AF",
+        "500": "#6B7280",
+        "600": "#4B5563",
+        "700": "#374151",
+        "800": "#1F2937",
+        "900": "#111827"
+    },
+    "effects": {
+        "glassOpacity": 0.03,
+        "glassBorderOpacity": 0.2,
+        "glowOpacity": 0.4,
+        "glowRadius": 10,
+        "headerOpacity": 0.8,
+        "inputOpacity": 0.05
+    },
+    "geometry": {
+        "radiusSmall": 8,
+        "radiusMedium": 14,
+        "radiusLarge": 24,
+        "spacingSmall": 10,
+        "spacingMedium": 20,
+        "spacingLarge": 30
+    }
+}

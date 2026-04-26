@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation — NovaEdge Digital Labs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #0b0e14;
+            color: #d1d5db;
+            line-height: 1.6;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 280px;
+            background: #0f1219;
+            border-right: 1px solid #1f2937;
+            padding: 40px 20px;
+            overflow-y: auto;
+        }
+        .main {
+            margin-left: 280px;
+            padding: 60px 40px;
+            max-width: 1000px;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+        }
+        .logo span { color: #6366f1; margin-right: 8px; }
+        nav ul { list-style: none; }
+        nav li { margin-bottom: 12px; }
+        nav a {
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        nav a:hover, nav a.active { color: #6366f1; }
+        .badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.1);
+            color: #818cf8;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 99px;
+            margin-bottom: 16px;
+        }
+        h1 { font-size: 2.5rem; font-weight: 800; color: #fff; margin-bottom: 16px; }
+        h2 { font-size: 1.5rem; font-weight: 700; color: #fff; margin-top: 48px; margin-bottom: 20px; }
+        p { margin-bottom: 20px; color: #9ca3af; }
+        
+        .endpoint {
+            background: #111827;
+            border: 1px solid #1f2937;
+            border-radius: 12px;
+            margin-bottom: 32px;
+            overflow: hidden;
+        }
+        .endpoint-header {
+            padding: 16px 20px;
+            background: #1c2533;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #1f2937;
+        }
+        .method {
+            font-weight: 800;
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-right: 12px;
+            text-transform: uppercase;
+        }
+        .method.post { background: #065f46; color: #34d399; }
+        .path { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; color: #e5e7eb; }
+        
+        .endpoint-body { padding: 24px 20px; }
+        .section-title { font-size: 0.8rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        
+        pre {
+            background: #030712;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        .table-container { width: 100%; overflow-x: auto; margin-bottom: 24px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; border-bottom: 1px solid #1f2937; color: #6b7280; font-size: 0.8rem; text-transform: uppercase; }
+        td { padding: 12px; border-bottom: 1px solid #1f2937; font-size: 0.9rem; vertical-align: top; }
+        .param-name { font-family: 'JetBrains Mono', monospace; color: #818cf8; font-weight: 600; }
+        .param-type { color: #6b7280; font-size: 0.75rem; margin-left: 8px; }
+        .required { color: #ef4444; font-size: 0.7rem; font-weight: 700; margin-left: 4px; }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; padding: 40px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo"><span>⚡</span> NovaEdge API</div>
+        <nav>
+            <ul>
+                <li><a href="#getting-started" class="active">Getting Started</a></li>
+                <li><a href="#authentication">Authentication</a></li>
+                <li><a href="#limits">Rate Limits</a></li>
+                <li style="margin-top: 32px; font-weight: 700; color: #fff; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px">Tools</li>
+                <li><a href="#generate-qr">QR Code Generator</a></li>
+                <li><a href="#compress-image">Image Compression</a></li>
+                <li><a href="#calculate-gst">GST Calculator</a></li>
+                <li><a href="#generate-invoice">Invoice Generator</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main">
+        <span class="badge">v1.0.0</span>
+        <h1 id="getting-started">API Documentation</h1>
+        <p>Welcome to the NovaEdge Developer Platform. Our REST API allows you to integrate our powerful digital tools directly into your own applications, websites, and internal workflows.</p>
+
+        <h2 id="authentication">Authentication</h2>
+        <p>Every request to the NovaEdge API must include your API Key in the <code>x-api-key</code> header. You can find and manage your key in the <strong>Developer API</strong> section of your Business Profile in the NovaEdge app.</p>
+        <pre>x-api-key: your_key_here</pre>
+
+        <h2 id="limits">Rate Limits & Quota</h2>
+        <p>Business plan users receive a monthly quota of <strong>5,000 API calls</strong>. This quota resets on the first of every month. If you exceed this limit, requests will return a <code>429 Too Many Requests</code> status code.</p>
+
+        <h2 id="generate-qr">QR Code Generator</h2>
+        <p>Generate high-quality QR codes for any text or URL.</p>
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <span class="path">/api/v1/tools/generate-qr</span>
+            </div>
+            <div class="endpoint-body">
+                <div class="section-title">Request Body</div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><span class="param-name">text</span><span class="required">REQUIRED</span><span class="param-type">string</span></td><td>The content to encode in the QR code.</td></tr>
+                            <tr><td><span class="param-name">size</span><span class="param-type">integer</span></td><td>Size of the image in pixels (default: 300).</td></tr>
+                            <tr><td><span class="param-name">color</span><span class="param-type">string</span></td><td>Hex code for the foreground (default: #000000).</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="section-title">Example Response</div>
+                <pre>{
+  "success": true,
+  "qrBase64": "data:image/png;base64,iVBORw0K...",
+  "size": 300
+}</pre>
+            </div>
+        </div>
+
+        <h2 id="compress-image">Image Compression</h2>
+        <p>Automatically optimize images for web and mobile use.</p>
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <span class="path">/api/v1/tools/compress-image</span>
+            </div>
+            <div class="endpoint-body">
+                <div class="section-title">Request Body (Multipart)</div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Field</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><span class="param-name">image</span><span class="required">REQUIRED</span><span class="param-type">file</span></td><td>The image file to compress (JPEG, PNG).</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="section-title">Example Response</div>
+                <pre>{
+  "success": true,
+  "originalSize": 2540120,
+  "compressedSize": 450120,
+  "url": "https://cloudinary.com/..."
+}</pre>
+            </div>
+        </div>
+
+        <h2 id="calculate-gst">GST Calculator</h2>
+        <p>Fast calculations for GST inclusive and exclusive pricing.</p>
+        <div class="endpoint">
+            <div class="endpoint-header">
+                <span class="method post">POST</span>
+                <span class="path">/api/v1/tools/calculate-gst</span>
+            </div>
+            <div class="endpoint-body">
+                <div class="section-title">Request Body</div>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Parameter</th><th>Description</th></tr></thead>
+                        <tbody>
+                            <tr><td><span class="param-name">amount</span><span class="required">REQUIRED</span><span class="param-type">number</span></td><td>The base amount.</td></tr>
+                            <tr><td><span class="param-name">gstRate</span><span class="required">REQUIRED</span><span class="param-type">integer</span></td><td>Percentage rate (e.g., 18).</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 80px; text-align: center; border-top: 1px solid #1f2937; padding-top: 40px;">
+            <p>&copy; 2026 NovaEdge Digital Labs. Built for builders.</p>
+            <p style="font-size: 0.8rem">Need help? <a href="mailto:api@novaedge.tech">Contact API Support</a></p>
+        </div>
+    </div>
+</body>
+</html>
