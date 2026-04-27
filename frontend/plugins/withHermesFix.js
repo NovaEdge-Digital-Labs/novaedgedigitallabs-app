@@ -1,26 +1,29 @@
 const { withAppBuildGradle } = require('@expo/config-plugins');
 
+/**
+ * Expo Config Plugin to fix Gradle build errors in React Native 0.81+ / Expo 55.
+ * It removes brittle manual path resolutions in the 'react {}' block that commonly
+ * fail on remote builders (EAS) or due to missing 'hermes-compiler' package.
+ */
 const withHermesFix = (config) => {
     return withAppBuildGradle(config, (config) => {
         if (config.modResults.language === 'groovy') {
             let contents = config.modResults.contents;
 
-            console.log("Applying Hermes resolution fix to app/build.gradle");
+            console.log("Applying Hermes resolution fix - Removing brittle path overrides");
 
-            // Define patterns to comment out
-            const patterns = [
-                /reactNativeDir\s+=\s+new\s+File\(/,
-                /hermesCommand\s+=\s+new\s+File\(/,
-                /codegenDir\s+=\s+new\s+File\(/,
-                /cliFile\s+=\s+new\s+File\(/
-            ];
-
-            // Process line by line to ensure correct commenting
             const lines = contents.split('\n');
             const updatedLines = lines.map(line => {
-                if (patterns.some(pattern => pattern.test(line)) && !line.trim().startsWith('//')) {
-                    console.log(`Commenting out line: ${line.trim()}`);
-                    return `    // ${line.trim()} // Removed by withHermesFix plugin`;
+                const trimmed = line.trim();
+                // Target specifically the problematic property assignments
+                if (
+                    trimmed.startsWith('reactNativeDir =') ||
+                    trimmed.startsWith('hermesCommand =') ||
+                    trimmed.startsWith('codegenDir =') ||
+                    trimmed.startsWith('cliFile =')
+                ) {
+                    console.log(`Commenting out brittle line in build.gradle: ${trimmed}`);
+                    return `    // ${trimmed} // Removed by withHermesFix`;
                 }
                 return line;
             });
