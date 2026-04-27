@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "backgroundColor": "#0a0a0f"
     },
@@ -20,7 +19,6 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0a0a0f"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -28,7 +26,8 @@
     },
     "sdkVersion": "55.0.0",
     "plugins": [
-      "expo-video"
+      "expo-video",
+      "./plugins/withHermesFix"
     ],
     "extra": {
       "eas": {
