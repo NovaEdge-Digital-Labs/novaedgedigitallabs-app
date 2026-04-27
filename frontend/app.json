@@ -29,6 +29,12 @@
     "sdkVersion": "55.0.0",
     "plugins": [
       "expo-video"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "68c86361-f438-46b3-82a3-34df4ab03cb0"
+      }
+    },
+    "owner": "amitkumarraikwar"
   }
 }
