@@ -33,7 +33,7 @@ To access the admin panel, your account must satisfy **one** of the following:
 ### Accessing the Dashboard
 1.  **URL**:
     - **Development**: [http://localhost:3000/admin/dashboard](http://localhost:3000/admin/dashboard)
-    - **Production**: Navigate to the subdomain configured for your Next.js frontend (e.g., `admin.novaedgedigital.labs`).
+    - **Production**: [https://app.novaedgedigitallabs.in/admin/dashboard](https://app.novaedgedigitallabs.in/admin/dashboard)
 2.  **Steps**:
     - Open the frontend application (Next.js).
     - Login with your Admin credentials.

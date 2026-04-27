@@ -21,6 +21,7 @@ This is a monorepo containing:
 2. Create a `.env` file based on `.env.example`.
 3. Install dependencies: `npm install`
 4. Start the server: `npm run dev`
+5. Production API: `https://app.novaedgedigitallabs.in/api`
 
 ## 🛠️ Tech Stack
 
