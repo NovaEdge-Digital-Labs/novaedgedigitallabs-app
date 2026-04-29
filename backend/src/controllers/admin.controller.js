@@ -7,6 +7,13 @@ const Analytics = require('../models/Analytics.model');
 const Product = require('../models/Product.model');
 const ApiKey = require('../models/ApiKey.model');
 const Service = require('../models/Service.model');
+const BusinessInquiry = require('../models/BusinessInquiry.model');
+const JobListing = require('../models/JobListing.model');
+const Project = require('../models/Project.model');
+const Gig = require('../models/Gig.model');
+const os = require('os');
+const fs = require('fs/promises');
+const mongoose = require('mongoose');
 
 
 /**
@@ -85,6 +92,45 @@ exports.getStats = async (req, res, next) => {
                 services: serviceCount,
                 leads: leadCount,
                 totalToolCalls
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get live system health metrics
+ * @route   GET /api/admin/system-health
+ * @access  Private/Admin
+ */
+exports.getSystemHealth = async (req, res, next) => {
+    try {
+        const dbStart = Date.now();
+        await mongoose.connection.db.admin().ping();
+        const apiLatency = Date.now() - dbStart;
+
+        const cpuCount = os.cpus().length || 1;
+        const oneMinuteLoad = os.loadavg()[0] || 0;
+        const cpuLoad = Math.min(100, Math.round((oneMinuteLoad / cpuCount) * 100));
+
+        let diskUsage = 0;
+        try {
+            const stat = await fs.statfs('/');
+            const total = Number(stat.blocks) * Number(stat.bsize);
+            const free = Number(stat.bavail) * Number(stat.bsize);
+            const usedPercent = total > 0 ? ((total - free) / total) * 100 : 0;
+            diskUsage = Math.round(usedPercent);
+        } catch (diskError) {
+            diskUsage = 0;
+        }
+
+        res.status(200).json({
+            success: true,
+            health: {
+                apiLatency,
+                cpuLoad,
+                diskUsage
             }
         });
     } catch (error) {
@@ -657,6 +703,331 @@ exports.deleteCourse = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: 'Course deleted successfully'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get all lead submissions
+ * @route   GET /api/admin/leads
+ * @access  Private/Admin
+ */
+exports.getAdminLeads = async (req, res, next) => {
+    try {
+        const leads = await Lead.find().sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: leads.length,
+            leads
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Update lead status/notes
+ * @route   PUT /api/admin/leads/:id
+ * @access  Private/Admin
+ */
+exports.updateAdminLead = async (req, res, next) => {
+    try {
+        const { status, notes, assignedTo } = req.body;
+        const payload = {};
+
+        if (status !== undefined) payload.status = status;
+        if (notes !== undefined) payload.notes = notes;
+        if (assignedTo !== undefined) payload.assignedTo = assignedTo;
+
+        const lead = await Lead.findByIdAndUpdate(
+            req.params.id,
+            payload,
+            { new: true, runValidators: true }
+        );
+
+        if (!lead) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lead not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Lead updated successfully',
+            lead
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get all business inquiry submissions
+ * @route   GET /api/admin/inquiries
+ * @access  Private/Admin
+ */
+exports.getAdminInquiries = async (req, res, next) => {
+    try {
+        const inquiries = await BusinessInquiry.find().sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: inquiries.length,
+            inquiries
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Update inquiry status (approval workflow)
+ * @route   PUT /api/admin/inquiries/:id
+ * @access  Private/Admin
+ */
+exports.updateAdminInquiry = async (req, res, next) => {
+    try {
+        const { status } = req.body;
+
+        const inquiry = await BusinessInquiry.findByIdAndUpdate(
+            req.params.id,
+            { status },
+            { new: true, runValidators: true }
+        );
+
+        if (!inquiry) {
+            return res.status(404).json({
+                success: false,
+                message: 'Inquiry not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Inquiry updated successfully',
+            inquiry
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get all job posts
+ * @route   GET /api/admin/jobs
+ * @access  Private/Admin
+ */
+exports.getAdminJobs = async (req, res, next) => {
+    try {
+        const jobs = await JobListing.find()
+            .populate('postedBy', 'firstName lastName email')
+            .populate('companyId', 'name')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: jobs.length,
+            jobs
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Update job post
+ * @route   PUT /api/admin/jobs/:id
+ * @access  Private/Admin
+ */
+exports.updateAdminJob = async (req, res, next) => {
+    try {
+        const { isActive, expiryDate, listingType } = req.body;
+        const payload = {};
+
+        if (isActive !== undefined) payload.isActive = isActive;
+        if (expiryDate !== undefined) payload.expiryDate = expiryDate;
+        if (listingType !== undefined) payload.listingType = listingType;
+
+        const job = await JobListing.findByIdAndUpdate(
+            req.params.id,
+            payload,
+            { new: true, runValidators: true }
+        );
+
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job post not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Job post updated successfully',
+            job
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Delete job post
+ * @route   DELETE /api/admin/jobs/:id
+ * @access  Private/Admin
+ */
+exports.deleteAdminJob = async (req, res, next) => {
+    try {
+        const job = await JobListing.findByIdAndDelete(req.params.id);
+
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job post not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Job post deleted successfully'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get all projects and gigs (work)
+ * @route   GET /api/admin/work
+ * @access  Private/Admin
+ */
+exports.getAdminWork = async (req, res, next) => {
+    try {
+        const [projects, gigs] = await Promise.all([
+            Project.find().populate('clientId', 'firstName lastName email').sort({ createdAt: -1 }),
+            Gig.find().populate('freelancerId', 'firstName lastName email').sort({ createdAt: -1 })
+        ]);
+
+        res.status(200).json({
+            success: true,
+            projects,
+            gigs
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Update project status
+ * @route   PUT /api/admin/work/projects/:id
+ * @access  Private/Admin
+ */
+exports.updateAdminProject = async (req, res, next) => {
+    try {
+        const { status } = req.body;
+        const project = await Project.findByIdAndUpdate(
+            req.params.id,
+            { status },
+            { new: true, runValidators: true }
+        );
+
+        if (!project) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Project updated successfully',
+            project
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Delete project
+ * @route   DELETE /api/admin/work/projects/:id
+ * @access  Private/Admin
+ */
+exports.deleteAdminProject = async (req, res, next) => {
+    try {
+        const project = await Project.findByIdAndDelete(req.params.id);
+
+        if (!project) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Project deleted successfully'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Update gig status
+ * @route   PUT /api/admin/work/gigs/:id
+ * @access  Private/Admin
+ */
+exports.updateAdminGig = async (req, res, next) => {
+    try {
+        const { isActive } = req.body;
+        const gig = await Gig.findByIdAndUpdate(
+            req.params.id,
+            { isActive },
+            { new: true, runValidators: true }
+        );
+
+        if (!gig) {
+            return res.status(404).json({
+                success: false,
+                message: 'Gig not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Gig updated successfully',
+            gig
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Delete gig
+ * @route   DELETE /api/admin/work/gigs/:id
+ * @access  Private/Admin
+ */
+exports.deleteAdminGig = async (req, res, next) => {
+    try {
+        const gig = await Gig.findByIdAndDelete(req.params.id);
+
+        if (!gig) {
+            return res.status(404).json({
+                success: false,
+                message: 'Gig not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Gig deleted successfully'
         });
     } catch (error) {
         next(error);

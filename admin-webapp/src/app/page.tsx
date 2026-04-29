@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { StatCard } from "@/components/ui/StatCard";
 import { cn } from "@/lib/utils";
-import { adminApi } from "@/lib/api";
+import { adminApi, BusinessInquirySubmission, LeadSubmission, SystemHealth } from "@/lib/api";
 import {
   Users,
   UserPlus,
@@ -23,6 +23,13 @@ import { CheckCircle, Shield, Zap } from "lucide-react";
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
+  const [recentLeads, setRecentLeads] = useState<LeadSubmission[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState<BusinessInquirySubmission[]>([]);
+  const [systemHealth, setSystemHealth] = useState<SystemHealth>({
+    apiLatency: 0,
+    cpuLoad: 0,
+    diskUsage: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
@@ -34,9 +41,12 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsRes, usersRes] = await Promise.all([
+      const [statsRes, usersRes, leadsRes, inquiriesRes, healthRes] = await Promise.all([
         adminApi.getStats(),
-        adminApi.getUsers()
+        adminApi.getUsers(),
+        adminApi.getLeads(),
+        adminApi.getInquiries(),
+        adminApi.getSystemHealth()
       ]);
 
       if (!loading) {
@@ -57,6 +67,18 @@ export default function DashboardPage() {
           .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
           .slice(0, 5);
         setRecentUsers(sortedUsers);
+      }
+
+      if (leadsRes.success) {
+        setRecentLeads((leadsRes.leads || []).slice(0, 5));
+      }
+
+      if (inquiriesRes.success) {
+        setPendingApprovals((inquiriesRes.inquiries || []).filter((inquiry: BusinessInquirySubmission) => inquiry.status === "pending"));
+      }
+
+      if (healthRes.success) {
+        setSystemHealth(healthRes.health);
       }
     } catch (error: any) {
       toast.error("Failed to load dashboard data: " + error.message);
@@ -202,32 +224,74 @@ export default function DashboardPage() {
 
           <div className="space-y-6">
             <div className="glass-panel rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold">Leads & Approvals</h2>
+                <Link href="/leads" className="text-xs text-primary hover:underline">Manage</Link>
+              </div>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Recent Leads</span>
+                  <span className="font-bold">{recentLeads.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Pending Approvals</span>
+                  <span className={cn("font-bold", pendingApprovals.length > 0 ? "text-orange-400" : "text-green-400")}>
+                    {pendingApprovals.length}
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-border/50">
+                  {recentLeads.length > 0 ? (
+                    <div className="space-y-2">
+                      {recentLeads.slice(0, 3).map((lead) => (
+                        <div key={lead._id} className="text-xs">
+                          <p className="font-medium truncate">{lead.name} - {lead.service}</p>
+                          <p className="text-muted-foreground truncate">{lead.email}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">No recent form submissions.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-panel rounded-2xl p-6">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 System Health <Activity className="w-5 h-5 text-green-500" />
               </h2>
               <div className="space-y-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">API Latency</span>
-                  <span className="font-medium text-green-500">24ms</span>
+                  <span className="font-medium text-green-500">{systemHealth.apiLatency}ms</span>
                 </div>
                 <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                  <div className="w-[85%] h-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.3)]" />
+                  <div
+                    className="h-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.3)]"
+                    style={{ width: `${Math.min(100, Math.max(2, 100 - Math.round(systemHealth.apiLatency / 3)))}%` }}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">CPU Load</span>
-                  <span className="font-medium text-orange-500">42%</span>
+                  <span className="font-medium text-orange-500">{systemHealth.cpuLoad}%</span>
                 </div>
                 <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                  <div className="w-[42%] h-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.3)]" />
+                  <div
+                    className="h-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.3)]"
+                    style={{ width: `${systemHealth.cpuLoad}%` }}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Disk Usage</span>
-                  <span className="font-medium text-blue-500">68%</span>
+                  <span className="font-medium text-blue-500">{systemHealth.diskUsage}%</span>
                 </div>
                 <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                  <div className="w-[68%] h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.3)]" />
+                  <div
+                    className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.3)]"
+                    style={{ width: `${systemHealth.diskUsage}%` }}
+                  />
                 </div>
               </div>
             </div>

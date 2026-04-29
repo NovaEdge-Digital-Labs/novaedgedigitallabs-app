@@ -16,7 +16,9 @@ import {
     Globe,
     ShoppingBag,
     Briefcase,
-    GraduationCap
+    GraduationCap,
+    ClipboardCheck,
+    FolderKanban
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -26,7 +28,10 @@ const NAV_ITEMS = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Users", href: "/users", icon: Users },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
+    { name: "Leads", href: "/leads", icon: ClipboardCheck },
     { name: "Services", href: "/services", icon: Briefcase },
+    { name: "Work", href: "/work", icon: FolderKanban },
+    { name: "Job Posts", href: "/jobs", icon: Briefcase },
     { name: "Academy", href: "/academy", icon: GraduationCap },
     { name: "Domain", href: "/domain", icon: Globe },
     { name: "Digital Store", href: "/store", icon: ShoppingBag },

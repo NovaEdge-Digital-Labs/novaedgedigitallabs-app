@@ -24,7 +24,20 @@ const {
     getAdminCourses,
     createCourse,
     updateCourse,
-    deleteCourse
+    deleteCourse,
+    getSystemHealth,
+    getAdminLeads,
+    updateAdminLead,
+    getAdminInquiries,
+    updateAdminInquiry,
+    getAdminJobs,
+    updateAdminJob,
+    deleteAdminJob,
+    getAdminWork,
+    updateAdminProject,
+    deleteAdminProject,
+    updateAdminGig,
+    deleteAdminGig
 } = require('../controllers/admin.controller');
 const { protect } = require('../middleware/auth.middleware');
 const { checkAdmin } = require('../middleware/admin.middleware');
@@ -34,6 +47,7 @@ router.use(protect);
 router.use(checkAdmin);
 
 router.get('/stats', getStats);
+router.get('/system-health', getSystemHealth);
 router.get('/users', getUsers);
 router.put('/user/:id', updateUser);
 router.delete('/user/:id', deleteUser);
@@ -65,5 +79,23 @@ router.get('/courses', getAdminCourses);
 router.post('/courses', createCourse);
 router.put('/courses/:id', updateCourse);
 router.delete('/courses/:id', deleteCourse);
+
+// Lead and submission approval management
+router.get('/leads', getAdminLeads);
+router.put('/leads/:id', updateAdminLead);
+router.get('/inquiries', getAdminInquiries);
+router.put('/inquiries/:id', updateAdminInquiry);
+
+// Jobs management
+router.get('/jobs', getAdminJobs);
+router.put('/jobs/:id', updateAdminJob);
+router.delete('/jobs/:id', deleteAdminJob);
+
+// Work management (projects and gigs)
+router.get('/work', getAdminWork);
+router.put('/work/projects/:id', updateAdminProject);
+router.delete('/work/projects/:id', deleteAdminProject);
+router.put('/work/gigs/:id', updateAdminGig);
+router.delete('/work/gigs/:id', deleteAdminGig);
 
 module.exports = router;

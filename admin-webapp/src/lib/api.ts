@@ -115,6 +115,92 @@ export interface Analytics {
     }[];
 }
 
+export interface SystemHealth {
+    apiLatency: number;
+    cpuLoad: number;
+    diskUsage: number;
+}
+
+export interface LeadSubmission {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    service: string;
+    budget?: string;
+    message: string;
+    source: string;
+    status: "new" | "contacted" | "in-progress" | "closed-won" | "closed-lost";
+    assignedTo?: string;
+    notes?: string;
+    createdAt: string;
+}
+
+export interface BusinessInquirySubmission {
+    _id: string;
+    businessName: string;
+    ownerName: string;
+    email: string;
+    phone: string;
+    category: string;
+    message?: string;
+    status: "pending" | "contacted" | "closed" | "rejected";
+    createdAt: string;
+}
+
+export interface AdminJobPost {
+    _id: string;
+    title: string;
+    location: string;
+    jobType: string;
+    listingType: "Basic" | "Featured" | "Premium";
+    isActive: boolean;
+    expiryDate: string;
+    postedBy?: {
+        _id: string;
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+    };
+    companyId?: {
+        _id: string;
+        name?: string;
+    };
+    createdAt: string;
+}
+
+export interface AdminProjectWork {
+    _id: string;
+    title: string;
+    status: "open" | "in-progress" | "completed" | "cancelled";
+    budgetRange: {
+        min: number;
+        max: number;
+    };
+    clientId?: {
+        _id: string;
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+    };
+    createdAt: string;
+}
+
+export interface AdminGigWork {
+    _id: string;
+    title: string;
+    category: string;
+    price: number;
+    isActive: boolean;
+    freelancerId?: {
+        _id: string;
+        firstName?: string;
+        lastName?: string;
+        email?: string;
+    };
+    createdAt: string;
+}
+
 export interface PlatformConfig {
     siteName: string;
     supportEmail: string;
@@ -173,6 +259,7 @@ async function request(endpoint: string, options: RequestInit = {}) {
 
 export const adminApi = {
     getStats: () => request("/admin/stats"),
+    getSystemHealth: () => request("/admin/system-health"),
     getUsers: () => request("/admin/users"),
     updateUser: (userId: string, data: { role?: string; plan?: string; isActive?: boolean }) =>
         request(`/admin/user/${userId}`, {
@@ -244,4 +331,44 @@ export const adminApi = {
         body: JSON.stringify(data)
     }),
     deleteCourse: (id: string) => request(`/admin/courses/${id}`, { method: 'DELETE' }),
+
+    // Leads and approval submissions
+    getLeads: () => request('/admin/leads'),
+    updateLead: (
+        id: string,
+        data: Partial<Pick<LeadSubmission, "status" | "notes" | "assignedTo">>
+    ) => request(`/admin/leads/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    }),
+    getInquiries: () => request('/admin/inquiries'),
+    updateInquiry: (id: string, data: Partial<Pick<BusinessInquirySubmission, "status">>) =>
+        request(`/admin/inquiries/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        }),
+
+    // Job posts management
+    getJobs: () => request('/admin/jobs'),
+    updateJob: (id: string, data: Partial<Pick<AdminJobPost, "isActive" | "listingType" | "expiryDate">>) =>
+        request(`/admin/jobs/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        }),
+    deleteJob: (id: string) => request(`/admin/jobs/${id}`, { method: 'DELETE' }),
+
+    // Work management (projects/gigs)
+    getWork: () => request('/admin/work'),
+    updateProject: (id: string, data: Partial<Pick<AdminProjectWork, "status">>) =>
+        request(`/admin/work/projects/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        }),
+    deleteProject: (id: string) => request(`/admin/work/projects/${id}`, { method: 'DELETE' }),
+    updateGig: (id: string, data: Partial<Pick<AdminGigWork, "isActive">>) =>
+        request(`/admin/work/gigs/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        }),
+    deleteGig: (id: string) => request(`/admin/work/gigs/${id}`, { method: 'DELETE' }),
 };
