@@ -47,12 +47,12 @@ exports.register = async (req, res, next) => {
         }
 
         // Create user
-        const adminEmail = process.env.ADMIN_EMAIL || 'novaedgedigitallabs@gmail.com';
+        const adminEmail = process.env.ADMIN_EMAIL;
         const user = await User.create({
             name,
             email,
             password,
-            role: email === adminEmail ? 'admin' : 'user'
+            role: adminEmail && email === adminEmail ? 'admin' : 'user'
         });
 
         const token = generateToken(user);
@@ -97,8 +97,8 @@ exports.login = async (req, res, next) => {
         console.log(`Login successful: ${email}`);
 
         // Double check admin role for the master email
-        const adminEmail = process.env.ADMIN_EMAIL || 'novaedgedigitallabs@gmail.com';
-        if (user.email === adminEmail && user.role !== 'admin') {
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (adminEmail && user.email === adminEmail && user.role !== 'admin') {
             user.role = 'admin';
             await user.save();
         }
