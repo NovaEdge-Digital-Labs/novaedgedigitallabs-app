@@ -6,8 +6,21 @@ const crypto = require('crypto');
 // Get all courses
 exports.getAllCourses = async (req, res) => {
     try {
-        const courses = await Course.find().select('-lectures.videoUrl'); // Hide video URLs until purchased
-        res.status(200).json({ success: true, data: courses });
+        const courses = await Course.find();
+        
+        // Filter lectures to only show videoUrl for free previews
+        const filteredCourses = courses.map(course => {
+            const courseObj = course.toObject();
+            courseObj.lectures = courseObj.lectures.map(lecture => {
+                if (!lecture.freePreview) {
+                    return { ...lecture, videoUrl: null };
+                }
+                return lecture;
+            });
+            return courseObj;
+        });
+
+        res.status(200).json({ success: true, data: filteredCourses });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

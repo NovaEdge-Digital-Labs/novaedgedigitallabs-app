@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { marketplaceApi } from '../api/marketplaceApi';
+import { formatCurrency } from '../utils/helpers';
 
 const { width } = Dimensions.get('window');
 
@@ -108,10 +109,10 @@ const GigDetailsScreen = ({ route, navigation }: any) => {
             <View style={styles.footer}>
                 <View>
                     <Text style={styles.footerLabel}>Starting at</Text>
-                    <Text style={styles.footerPrice}>₹{gig.price}</Text>
+                    <Text style={styles.footerPrice}>{formatCurrency(gig.price)}</Text>
                 </View>
                 <TouchableOpacity style={styles.orderButton}>
-                    <Text style={styles.orderButtonText}>Continue (₹{gig.price})</Text>
+                    <Text style={styles.orderButtonText}>Continue ({formatCurrency(gig.price)})</Text>
                 </TouchableOpacity>
             </View>
         </ThemeWrapper>

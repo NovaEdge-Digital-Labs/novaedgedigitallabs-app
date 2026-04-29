@@ -108,14 +108,6 @@ const ProfileScreen = ({ navigation }: any) => {
                         subtitle="Invite friends and get Pro free"
                         onPress={() => navigation.navigate('ReferEarn')}
                     />
-                    {user?.plan === 'business' && (
-                        <MenuItem
-                            icon="code-working-outline"
-                            title="Developer API"
-                            subtitle="Manage API keys and usage"
-                            onPress={() => navigation.navigate('ApiDashboard')}
-                        />
-                    )}
                 </View>
 
                 <View style={styles.section}>
@@ -138,6 +130,20 @@ const ProfileScreen = ({ navigation }: any) => {
                         onPress={() => navigation.navigate('About')}
                     />
                 </View>
+
+                {/* Admin Section (Fallback check, normally driven by role/email) */}
+                {(user?.email?.includes('admin') || (user as any)?.role === 'admin' || (user as any)?.isAdmin) && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Admin</Text>
+                        <MenuItem
+                            icon="shield-half-outline"
+                            title="Admin Dashboard"
+                            subtitle="Manage users, jobs, courses"
+                            onPress={() => navigation.navigate('AdminDashboard')}
+                            color={COLORS.secondary}
+                        />
+                    </View>
+                )}
 
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                     <Ionicons name="log-out-outline" size={20} color="#ef4444" style={{ marginRight: 10 }} />
@@ -203,12 +209,10 @@ const styles = StyleSheet.create({
     },
     statsContainer: {
         flexDirection: 'row',
-        backgroundColor: 'transparent',
-        borderRadius: 24,
+        ...COLORS.glass,
+        borderRadius: COLORS.geometry.radiusLarge,
         padding: 20,
         marginBottom: 35,
-        borderWidth: 1,
-        borderColor: COLORS.border,
     },
     statBox: {
         flex: 1,
@@ -244,12 +248,10 @@ const styles = StyleSheet.create({
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'transparent',
+        ...COLORS.glass,
         padding: 16,
-        borderRadius: 16,
+        borderRadius: COLORS.geometry.radiusMedium,
         marginBottom: 10,
-        borderWidth: 1,
-        borderColor: COLORS.border,
     },
     menuIconContainer: {
         width: 44,
@@ -277,7 +279,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         padding: 18,
-        borderRadius: 16,
+        borderRadius: COLORS.geometry.radiusMedium,
         marginTop: 10,
         marginBottom: 25,
         borderWidth: 1,

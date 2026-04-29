@@ -140,9 +140,9 @@ const styles = StyleSheet.create({
     badgeText: { color: '#FFD700', fontSize: 10, fontWeight: 'bold', marginLeft: 4 },
     scrollContent: { paddingHorizontal: 15, paddingBottom: 10 },
     card: {
-        width: 280, backgroundColor: COLORS.backgroundSoft,
-        borderRadius: 20, padding: 15, marginRight: 15,
-        borderWidth: 1, borderColor: COLORS.border,
+        width: 280,
+        ...COLORS.glass,
+        padding: 15, marginRight: 15,
         ...COLORS.getGlow(COLORS.primary, 10, 0.05)
     },
     cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     headerText: { marginLeft: 12, flex: 1 },
     businessName: { color: COLORS.white, fontWeight: 'bold', fontSize: 16, marginBottom: 4 },
     partnerBadge: {
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        backgroundColor: COLORS.primary + '20',
         alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4
     },
     partnerBadgeText: { color: COLORS.primary, fontSize: 10, fontWeight: 'bold' },
@@ -163,8 +163,9 @@ const styles = StyleSheet.create({
     },
     actionBtnText: { color: COLORS.white, fontSize: 12, fontWeight: 'bold', marginLeft: 6 },
     advertiseCard: {
-        width: 220, backgroundColor: 'rgba(59, 130, 246, 0.05)',
-        borderRadius: 20, padding: 20, justifyContent: 'center', alignItems: 'center',
+        width: 220,
+        ...COLORS.glass,
+        justifyContent: 'center', alignItems: 'center',
         borderStyle: 'dashed', borderWidth: 2, borderColor: COLORS.primary + '40'
     },
     advertiseIcon: {

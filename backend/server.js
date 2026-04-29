@@ -17,7 +17,7 @@ app.use(helmet({
     contentSecurityPolicy: false // Allow inline styles/scripts in static pages
 }));
 app.use(cors({
-    origin: process.env.CLIENT_URL || '*',
+    origin: true, // Allow all origins and reflect them
     credentials: true
 }));
 app.use(morgan('dev'));

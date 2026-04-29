@@ -6,6 +6,7 @@ import ThemeWrapper from '../components/ThemeWrapper';
 import { marketplaceApi } from '../api/marketplaceApi';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from '../components/PrimaryButton';
+import { formatCurrency } from '../utils/helpers';
 
 export const JobFeedScreen = ({ navigation }: any) => {
     const [jobs, setJobs] = useState<any[]>([]);
@@ -76,7 +77,7 @@ export const JobFeedScreen = ({ navigation }: any) => {
                 </View>
                 <View style={styles.detailItem}>
                     <Ionicons name="cash-outline" size={16} color={COLORS.textMuted} />
-                    <Text style={styles.detailText}>₹{item.salaryRange.min / 1000}k - ₹{item.salaryRange.max / 1000}k</Text>
+                    <Text style={styles.detailText}>{formatCurrency(item.salaryRange.min)} - {formatCurrency(item.salaryRange.max)}</Text>
                 </View>
             </View>
 

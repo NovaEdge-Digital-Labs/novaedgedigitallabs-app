@@ -13,8 +13,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../constants/colors';
+import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../constants/theme';
 import courseApi, { Course, Lecture } from '../api/courseApi';
+import { formatCurrency, getImageUrl } from '../utils/helpers';
 import PrimaryButton from '../components/PrimaryButton';
 
 
@@ -81,7 +82,8 @@ const CourseDetailScreen = () => {
         navigation.navigate('LecturePlayer', {
             courseId: course?._id,
             lectureId: lecture._id,
-            videoUrl: lecture.videoUrl || course?.previewVideoUrl
+            videoUrl: lecture.videoUrl || course?.previewVideoUrl,
+            title: lecture.title
         });
     };
 
@@ -103,7 +105,22 @@ const CourseDetailScreen = () => {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 <View style={styles.videoContainer}>
                     <Image source={{ uri: course.thumbnail }} style={styles.heroImage} />
-                    <TouchableOpacity style={styles.playPreviewBtn}>
+                    <TouchableOpacity 
+                        style={styles.playPreviewBtn}
+                        onPress={() => {
+                            if (course.lectures && course.lectures.length > 0) {
+                                handlePlayLecture(course.lectures[0]);
+                            } else if (course.previewVideoUrl) {
+                                navigation.navigate('LecturePlayer', {
+                                    courseId: course._id,
+                                    videoUrl: course.previewVideoUrl,
+                                    title: 'Course Preview'
+                                });
+                            } else {
+                                Alert.alert('Notice', 'No preview available for this course.');
+                            }
+                        }}
+                    >
                         <Ionicons name="play" size={40} color="#FFF" />
                     </TouchableOpacity>
                 </View>
@@ -126,14 +143,19 @@ const CourseDetailScreen = () => {
                     <Text style={styles.sectionTitle}>About this course</Text>
                     <Text style={styles.description}>{course.description}</Text>
 
-                    <View style={styles.instructorCard}>
-                        <Image source={{ uri: course.instructor.avatar }} style={styles.instructorAvatar} />
-                        <View style={styles.instructorInfo}>
-                            <Text style={styles.instructorLabel}>Instructor</Text>
-                            <Text style={styles.instructorName}>{course.instructor.name}</Text>
-                            <Text style={styles.instructorBio} numberOfLines={2}>{course.instructor.bio}</Text>
+                    {course.instructor && (
+                        <View style={styles.instructorCard}>
+                            <Image 
+                                source={{ uri: getImageUrl(course.instructor.avatar) || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(course.instructor.name || 'Instructor') + '&background=random&color=fff' }} 
+                                style={styles.instructorAvatar} 
+                            />
+                            <View style={styles.instructorInfo}>
+                                <Text style={styles.instructorLabel}>Instructor</Text>
+                                <Text style={styles.instructorName}>{course.instructor.name || 'Unknown'}</Text>
+                                {course.instructor.bio && <Text style={styles.instructorBio} numberOfLines={2}>{course.instructor.bio}</Text>}
+                            </View>
                         </View>
-                    </View>
+                    )}
 
                     <Text style={styles.sectionTitle}>Course Content</Text>
                     {course.lectures.map((lecture, index) => (
@@ -166,7 +188,7 @@ const CourseDetailScreen = () => {
                     <View style={styles.footerContent}>
                         <View style={styles.priceContainer}>
                             <Text style={styles.priceLabel}>Price</Text>
-                            <Text style={styles.price}>₹{course.price}</Text>
+                            <Text style={styles.price}>{formatCurrency(course.price)}</Text>
                         </View>
                         <PrimaryButton
                             title="Enroll Now"

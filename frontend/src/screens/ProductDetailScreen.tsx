@@ -6,6 +6,7 @@ import ThemeWrapper from '../components/ThemeWrapper';
 import { storeApi } from '../api/storeApi';
 import RazorpayCheckout from 'react-native-razorpay';
 import { useAuthStore } from '../store/authStore';
+import { formatCurrency } from '../utils/helpers';
 
 const { width } = Dimensions.get('window');
 
@@ -156,7 +157,7 @@ const ProductDetailScreen = ({ route, navigation }: any) => {
                             <Text style={styles.title}>{product.title}</Text>
                             <Text style={styles.category}>{product.category.toUpperCase()}</Text>
                         </View>
-                        <Text style={styles.price}>₹{product.price}</Text>
+                        <Text style={styles.price}>{formatCurrency(product.price)}</Text>
                     </View>
 
                     <View style={styles.statsRow}>
@@ -235,7 +236,7 @@ const ProductDetailScreen = ({ route, navigation }: any) => {
                             <ActivityIndicator color={COLORS.white} />
                         ) : (
                             <>
-                                <Text style={styles.btnText}>BUY NOW - ₹{product.price}</Text>
+                                <Text style={styles.btnText}>BUY NOW - {formatCurrency(product.price)}</Text>
                                 <Ionicons name="chevron-forward" size={18} color={COLORS.white} />
                             </>
                         )}

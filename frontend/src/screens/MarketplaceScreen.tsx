@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { marketplaceApi } from '../api/marketplaceApi';
+import { formatCurrency } from '../utils/helpers';
 
 const MarketplaceScreen = ({ navigation }: any) => {
     const [activeTab, setActiveTab] = useState<'gigs' | 'projects'>('gigs');
@@ -45,7 +46,7 @@ const MarketplaceScreen = ({ navigation }: any) => {
                 <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
                 <Text style={styles.freelancerName}>By {item.freelancerId?.name || 'Freelancer'}</Text>
                 <View style={styles.cardFooter}>
-                    <Text style={styles.price}>From ₹{item.price}</Text>
+                    <Text style={styles.price}>From {formatCurrency(item.price)}</Text>
                     <View style={styles.ratingContainer}>
                         <Ionicons name="star" size={14} color="#FFD700" />
                         <Text style={styles.ratingText}>4.8 (24)</Text>
@@ -76,7 +77,7 @@ const MarketplaceScreen = ({ navigation }: any) => {
                     ))}
                 </View>
                 <View style={styles.cardFooter}>
-                    <Text style={styles.budget}>₹{item.budgetRange?.min} - ₹{item.budgetRange?.max}</Text>
+                    <Text style={styles.budget}>{formatCurrency(item.budgetRange?.min)} - {formatCurrency(item.budgetRange?.max)}</Text>
                     <Text style={styles.proposals}>{item.totalProposals || 0} proposals</Text>
                 </View>
             </View>

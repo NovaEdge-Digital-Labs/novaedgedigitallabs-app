@@ -19,8 +19,7 @@ const withHermesFix = (config) => {
                 if (
                     trimmed.startsWith('reactNativeDir =') ||
                     trimmed.startsWith('hermesCommand =') ||
-                    trimmed.startsWith('codegenDir =') ||
-                    trimmed.startsWith('cliFile =')
+                    trimmed.startsWith('codegenDir =')
                 ) {
                     console.log(`Commenting out brittle line in build.gradle: ${trimmed}`);
                     return `    // ${trimmed} // Removed by withHermesFix`;

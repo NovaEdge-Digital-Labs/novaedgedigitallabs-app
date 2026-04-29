@@ -1,11 +1,11 @@
 services:
   - type: web
     name: novaedge-backend
-    env: node
+    runtime: node
     plan: free
     repo: https://github.com/USERNAME/novaedge-backend # Replace with your GitHub Repository URL
     buildCommand: npm install
-    startCommand: node src/server.js
+    startCommand: node server.js
     envVars:
       - key: PORT
         value: 10000

@@ -30,7 +30,8 @@ const productSchema = new mongoose.Schema({
     },
     zipPublicId: {
         type: String, // Cloudinary Public ID for deletion/management
-        required: true
+        required: false,
+        default: 'manual'
     },
     tags: [String],
     features: [String],

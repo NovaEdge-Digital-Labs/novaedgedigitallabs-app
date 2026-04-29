@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../constants/theme';
 import courseApi, { Course } from '../api/courseApi';
+import { formatCurrency } from '../utils/helpers';
 import PrimaryButton from '../components/PrimaryButton';
 
 const { width } = Dimensions.get('window');
@@ -60,7 +61,13 @@ const CourseFeedScreen = () => {
             <View style={styles.courseInfo}>
                 <Text style={styles.courseTitle} numberOfLines={2}>{item.title}</Text>
                 <View style={styles.instructorRow}>
-                    <Text style={styles.instructorName}>By {item.instructor.name}</Text>
+                    <View style={styles.instructorProfile}>
+                        <Image 
+                            source={{ uri: item.instructor.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.instructor.name) + '&background=random&color=fff' }} 
+                            style={styles.instructorAvatarSmall} 
+                        />
+                        <Text style={styles.instructorName}>By {item.instructor.name}</Text>
+                    </View>
                     <View style={styles.ratingRow}>
                         <Ionicons name="star" size={14} color="#FFD700" />
                         <Text style={styles.ratingText}>{item.rating}</Text>
@@ -68,9 +75,9 @@ const CourseFeedScreen = () => {
                 </View>
                 <View style={styles.footerRow}>
                     <View style={styles.priceContainer}>
-                        <Text style={styles.price}>₹{item.price}</Text>
-                        {item.originalPrice && (
-                            <Text style={styles.originalPrice}>₹{item.originalPrice}</Text>
+                        <Text style={styles.price}>{formatCurrency(item.price)}</Text>
+                        {item.originalPrice && item.originalPrice > item.price && (
+                            <Text style={styles.originalPrice}>{formatCurrency(item.originalPrice)}</Text>
                         )}
                     </View>
                     <Text style={styles.enrolledText}>{item.enrolledCount} enrolled</Text>
@@ -202,6 +209,16 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 12,
+    },
+    instructorProfile: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    instructorAvatarSmall: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        marginRight: 8,
     },
     instructorName: {
         fontSize: 14,

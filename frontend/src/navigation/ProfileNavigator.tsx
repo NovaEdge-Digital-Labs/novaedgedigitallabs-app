@@ -10,6 +10,8 @@ import ReferEarnScreen from '../screens/ReferEarnScreen';
 import PrivacySecurityScreen from '../screens/PrivacySecurityScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import ApiDashboardScreen from '../screens/ApiDashboardScreen';
+import AdminDashboardScreen from '../screens/AdminDashboardScreen';
+import AdminUsersScreen from '../screens/AdminUsersScreen';
 import { COLORS } from '../constants/colors';
 
 const Stack = createStackNavigator();
@@ -32,6 +34,8 @@ const ProfileNavigator = () => {
             <Stack.Screen name="PrivacySecurity" component={PrivacySecurityScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="ApiDashboard" component={ApiDashboardScreen} />
+            <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+            <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
         </Stack.Navigator>
     );
 };

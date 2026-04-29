@@ -5,6 +5,7 @@ import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { marketplaceApi } from '../api/marketplaceApi';
 import PrimaryButton from '../components/PrimaryButton';
+import { formatCurrency } from '../utils/helpers';
 
 const tiers = [
     {
@@ -102,7 +103,7 @@ const PostJobScreen = ({ navigation }: any) => {
                 >
                     <View style={styles.tierHeader}>
                         <Text style={styles.tierName}>{tier.id} Listing</Text>
-                        <Text style={[styles.tierPrice, { color: tier.color }]}>₹{tier.price}</Text>
+                        <Text style={[styles.tierPrice, { color: tier.color }]}>{formatCurrency(tier.price)}</Text>
                     </View>
                     <View style={styles.featuresList}>
                         {tier.features.map((f, i) => (
@@ -150,7 +151,7 @@ const PostJobScreen = ({ navigation }: any) => {
             />
 
             <PrimaryButton
-                title={`Pay ₹${selectedTier.price} & Publish`}
+                title={`Pay ${formatCurrency(selectedTier.price)} & Publish`}
                 onPress={handlePayment}
                 loading={loading}
                 style={styles.payButton}

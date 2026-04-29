@@ -1,0 +1,8 @@
+  --non-interactive is not supported, use $CI=1 instead
+Starting project at /home/amit/Development/myProject/novaedge-digital-labs-app/frontend
+› Port 8081 is running this app in another window
+  /home/amit/Development/myProject/novaedge-digital-labs-app/frontend (pid 21978)
+Input is required, but 'npx expo' is in non-interactive mode.
+Required input:
+> Use port 8082 instead?
+› Skipping dev server

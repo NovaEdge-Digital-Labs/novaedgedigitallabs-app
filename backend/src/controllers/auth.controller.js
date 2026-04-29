@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const User = require('../models/User.model');
 const ToolUsage = require('../models/ToolUsage.model');
 const Subscription = require('../models/Subscription.model');
@@ -211,6 +212,92 @@ exports.deleteAccount = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: 'Your account and all associated data have been permanently deleted.'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Forgot Password
+ * @route   POST /api/auth/forgot-password
+ * @access  Public
+ */
+exports.forgotPassword = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'No user found with that email address'
+            });
+        }
+
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+
+        // Hash and set to resetPasswordToken field
+        user.resetPasswordToken = crypto
+            .createHash('sha256')
+            .update(resetToken)
+            .digest('hex');
+
+        // Set expire
+        user.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+        await user.save({ validateBeforeSave: false });
+
+        // In a real app, send email here. In this app, we'll return the token in dev mode
+        // and just success in prod
+        const isDev = process.env.NODE_ENV === 'development';
+
+        res.status(200).json({
+            success: true,
+            message: 'Password reset link generated. Check your email.',
+            resetToken: isDev ? resetToken : undefined // Return token only in dev for testing
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Reset Password
+ * @route   POST /api/auth/reset-password/:token
+ * @access  Public
+ */
+exports.resetPassword = async (req, res, next) => {
+    try {
+        // Get hashed token
+        const resetPasswordToken = crypto
+            .createHash('sha256')
+            .update(req.params.token)
+            .digest('hex');
+
+        const user = await User.findOne({
+            resetPasswordToken,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired password reset token'
+            });
+        }
+
+        // Set new password
+        user.password = req.body.password;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Password reset successful. You can now login with your new password.'
         });
     } catch (error) {
         next(error);

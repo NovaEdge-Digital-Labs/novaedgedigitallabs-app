@@ -9,7 +9,8 @@ import {
     Platform,
     ScrollView,
     ActivityIndicator,
-    Alert
+    Alert,
+    Linking
 } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 import ThemeWrapper from '../components/ThemeWrapper';
 import PrimaryButton from '../components/PrimaryButton';
+import { CONFIG } from '../constants/config';
 
 const RegisterScreen = () => {
     const navigation = useNavigation<any>();
@@ -49,7 +51,8 @@ const RegisterScreen = () => {
         try {
             await register(name, email, password);
         } catch (error: any) {
-            Alert.alert('Registration Failed', error.message || 'Something went wrong');
+            const errorMessage = error.response?.data?.message || error.message || 'Something went wrong';
+            Alert.alert('Registration Failed', errorMessage);
         } finally {
             setLoading(false);
         }
@@ -151,9 +154,19 @@ const RegisterScreen = () => {
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>By creating an account, you agree to our</Text>
                         <View style={styles.footerLinks}>
-                            <TouchableOpacity activeOpacity={0.7}><Text style={styles.footerLink}>Terms of Service</Text></TouchableOpacity>
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => Linking.openURL(`${CONFIG.BASE_URL}/terms-and-conditions.html`)}
+                            >
+                                <Text style={styles.footerLink}>Terms of Service</Text>
+                            </TouchableOpacity>
                             <Text style={styles.footerText}> & </Text>
-                            <TouchableOpacity activeOpacity={0.7}><Text style={styles.footerLink}>Privacy Policy</Text></TouchableOpacity>
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => Linking.openURL(`${CONFIG.BASE_URL}/privacy-policy.html`)}
+                            >
+                                <Text style={styles.footerLink}>Privacy Policy</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </ScrollView>

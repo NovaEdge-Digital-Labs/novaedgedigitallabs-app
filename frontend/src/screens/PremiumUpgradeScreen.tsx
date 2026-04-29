@@ -6,6 +6,7 @@ import ThemeWrapper from '../components/ThemeWrapper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { marketplaceApi } from '../api/marketplaceApi';
 import PrimaryButton from '../components/PrimaryButton';
+import { formatCurrency } from '../utils/helpers';
 
 const PremiumUpgradeScreen = ({ navigation }: any) => {
     const [loading, setLoading] = useState(false);
@@ -66,7 +67,7 @@ const PremiumUpgradeScreen = ({ navigation }: any) => {
                 >
                     <Ionicons name="star" size={50} color="#FFF" />
                     <Text style={styles.heroTitle}>Upgrade Your Career</Text>
-                    <Text style={styles.heroPrice}>₹199 <Text style={styles.perMonth}>/ month</Text></Text>
+                    <Text style={styles.heroPrice}>{formatCurrency(199)} <Text style={styles.perMonth}>/ month</Text></Text>
                 </LinearGradient>
 
                 <View style={styles.benefitsSection}>

@@ -10,7 +10,8 @@ import {
     ScrollView,
     Image,
     ActivityIndicator,
-    Alert
+    Alert,
+    Linking
 } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 import ThemeWrapper from '../components/ThemeWrapper';
 import PrimaryButton from '../components/PrimaryButton';
+import { CONFIG } from '../constants/config';
 
 const LoginScreen = () => {
     const navigation = useNavigation<any>();
@@ -38,7 +40,8 @@ const LoginScreen = () => {
         try {
             await login(email, password);
         } catch (error: any) {
-            Alert.alert('Login Failed', error.message || 'Something went wrong');
+            const errorMessage = error.response?.data?.message || error.message || 'Something went wrong';
+            Alert.alert('Login Failed', errorMessage);
         } finally {
             setLoading(false);
         }
@@ -99,7 +102,11 @@ const LoginScreen = () => {
                             </TouchableOpacity>
                         </View>
 
-                        <TouchableOpacity style={styles.forgotPassword} activeOpacity={0.7}>
+                        <TouchableOpacity
+                            style={styles.forgotPassword}
+                            activeOpacity={0.7}
+                            onPress={() => navigation.navigate('ForgotPassword')}
+                        >
                             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                         </TouchableOpacity>
 
@@ -121,9 +128,19 @@ const LoginScreen = () => {
                     <View style={styles.footer}>
                         <Text style={styles.footerText}>By continuing, you agree to our</Text>
                         <View style={styles.footerLinks}>
-                            <TouchableOpacity activeOpacity={0.7}><Text style={styles.footerLink}>Terms of Service</Text></TouchableOpacity>
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => Linking.openURL(`${CONFIG.BASE_URL}/terms-and-conditions.html`)}
+                            >
+                                <Text style={styles.footerLink}>Terms of Service</Text>
+                            </TouchableOpacity>
                             <Text style={styles.footerText}> & </Text>
-                            <TouchableOpacity activeOpacity={0.7}><Text style={styles.footerLink}>Privacy Policy</Text></TouchableOpacity>
+                            <TouchableOpacity
+                                activeOpacity={0.7}
+                                onPress={() => Linking.openURL(`${CONFIG.BASE_URL}/privacy-policy.html`)}
+                            >
+                                <Text style={styles.footerLink}>Privacy Policy</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </ScrollView>

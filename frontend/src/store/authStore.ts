@@ -36,8 +36,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     login: async (email, password) => {
         set({ isLoading: true, error: null });
+        console.log(`[AuthStore] Attempting login for: ${email}`);
         try {
             const data = await authApi.login(email, password);
+            console.log('[AuthStore] Login successful');
             const { user, token } = data;
 
             await AsyncStorage.setItem('userToken', token);
@@ -48,9 +50,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 isLoading: false
             });
         } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || 'Login failed';
+            console.error(`[AuthStore] Login error: ${errorMessage}`, err);
             set({
                 isLoading: false,
-                error: err.response?.data?.message || 'Login failed'
+                error: errorMessage
             });
             throw err;
         }
@@ -58,8 +62,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     register: async (name, email, password) => {
         set({ isLoading: true, error: null });
+        console.log(`[AuthStore] Attempting registration for: ${email}`);
         try {
             const data = await authApi.register(name, email, password);
+            console.log('[AuthStore] Registration successful');
             const { user, token } = data;
 
             await AsyncStorage.setItem('userToken', token);
@@ -70,9 +76,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 isLoading: false
             });
         } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
+            console.error(`[AuthStore] Registration error: ${errorMessage}`, err);
             set({
                 isLoading: false,
-                error: err.response?.data?.message || 'Registration failed'
+                error: errorMessage
             });
             throw err;
         }

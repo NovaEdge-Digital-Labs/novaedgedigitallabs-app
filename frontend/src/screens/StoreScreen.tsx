@@ -5,6 +5,7 @@ import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { storeApi } from '../api/storeApi';
 import { FlashList } from '@shopify/flash-list';
+import { formatCurrency } from '../utils/helpers';
 
 const CATEGORIES = [
     { id: 'all', name: 'All', icon: 'grid-outline' },
@@ -58,7 +59,7 @@ const StoreScreen = ({ navigation }: any) => {
             <View style={styles.productInfo}>
                 <Text style={styles.productTitle} numberOfLines={1}>{item.title}</Text>
                 <View style={styles.priceRow}>
-                    <Text style={styles.price}>₹{item.price}</Text>
+                    <Text style={styles.price}>{formatCurrency(item.price)}</Text>
                     <View style={styles.ratingBox}>
                         <Ionicons name="star" size={12} color="#FFD700" />
                         <Text style={styles.ratingText}>{item.averageRating || 'N/A'}</Text>

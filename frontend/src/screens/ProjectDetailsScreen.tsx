@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { marketplaceApi } from '../api/marketplaceApi';
+import { formatCurrency } from '../utils/helpers';
 
 const ProjectDetailsScreen = ({ route, navigation }: any) => {
     const { id } = route.params;
@@ -69,7 +70,7 @@ const ProjectDetailsScreen = ({ route, navigation }: any) => {
                         <Ionicons name="wallet-outline" size={24} color={COLORS.primary} />
                         <View style={styles.budgetInfo}>
                             <Text style={styles.budgetLabel}>Budget Range</Text>
-                            <Text style={styles.budgetValue}>₹{project.budgetRange?.min} - ₹{project.budgetRange?.max}</Text>
+                            <Text style={styles.budgetValue}>{formatCurrency(project.budgetRange?.min)} - {formatCurrency(project.budgetRange?.max)}</Text>
                         </View>
                     </View>
 

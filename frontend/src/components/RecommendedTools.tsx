@@ -110,8 +110,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: '#fff',
-        fontFamily: 'Inter-Bold',
+        color: COLORS.white,
     },
     seeAllBtn: {
         flexDirection: 'row',
@@ -126,9 +125,8 @@ const styles = StyleSheet.create({
     },
     subtitle: {
         fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.6)',
+        color: COLORS.textMuted,
         marginTop: 4,
-        fontFamily: 'Inter-Regular',
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -136,10 +134,10 @@ const styles = StyleSheet.create({
     },
     cardWrapper: {
         marginRight: 15,
-        borderRadius: 20,
+        borderRadius: COLORS.geometry.radiusMedium,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderColor: COLORS.border,
     },
     card: {
         padding: 16,
@@ -150,7 +148,7 @@ const styles = StyleSheet.create({
         width: 60,
         height: 60,
         borderRadius: 30,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        backgroundColor: COLORS.backgroundSoft,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 12,
@@ -164,16 +162,14 @@ const styles = StyleSheet.create({
     toolName: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#fff',
+        color: COLORS.white,
         marginBottom: 4,
-        fontFamily: 'Inter-Bold',
     },
     toolDesc: {
         fontSize: 12,
-        color: 'rgba(255, 255, 255, 0.7)',
+        color: COLORS.textMuted,
         textAlign: 'center',
         marginBottom: 12,
-        fontFamily: 'Inter-Regular',
     },
     ratingContainer: {
         flexDirection: 'row',
@@ -182,20 +178,20 @@ const styles = StyleSheet.create({
     },
     ratingText: {
         fontSize: 12,
-        color: '#fff',
+        color: COLORS.white,
         marginLeft: 4,
         marginRight: 10,
         fontWeight: '600',
     },
     categoryBadge: {
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        backgroundColor: COLORS.backgroundSoft,
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 10,
     },
     categoryText: {
         fontSize: 10,
-        color: 'rgba(255, 255, 255, 0.8)',
+        color: COLORS.textLight,
         fontWeight: '500',
     },
     button: {
@@ -205,10 +201,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     buttonText: {
-        color: '#fff',
+        color: COLORS.white,
         fontSize: 14,
         fontWeight: 'bold',
-        fontFamily: 'Inter-Bold',
     },
 });
 

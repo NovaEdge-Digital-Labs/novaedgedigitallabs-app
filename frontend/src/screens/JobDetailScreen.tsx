@@ -6,6 +6,7 @@ import ThemeWrapper from '../components/ThemeWrapper';
 import { marketplaceApi } from '../api/marketplaceApi';
 import { LinearGradient } from 'expo-linear-gradient';
 import PrimaryButton from '../components/PrimaryButton';
+import { formatCurrency } from '../utils/helpers';
 
 export const JobDetailScreen = ({ route, navigation }: any) => {
     const { jobId } = route.params;
@@ -81,7 +82,7 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Salary Range</Text>
                     <Text style={styles.salaryText}>
-                        ₹{job.salaryRange.min.toLocaleString()} - ₹{job.salaryRange.max.toLocaleString()} / month
+                        {formatCurrency(job.salaryRange.min)} - {formatCurrency(job.salaryRange.max)} / month
                     </Text>
                 </View>
 
