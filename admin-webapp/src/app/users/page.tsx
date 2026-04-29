@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import {
@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { adminApi, User } from "@/lib/api";
 import { toast } from "sonner";
 
-export default function UsersPage() {
+function UsersPageContent() {
     const searchParams = useSearchParams();
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -493,5 +493,24 @@ export default function UsersPage() {
             </AnimatePresence>
         </AdminLayout>
 
+    );
+}
+
+export default function UsersPage() {
+    return (
+        <Suspense
+            fallback={
+                <AdminLayout>
+                    <div className="flex items-center justify-center h-[500px]">
+                        <div className="flex flex-col items-center gap-4">
+                            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                            <p className="text-muted-foreground animate-pulse">Loading user directory...</p>
+                        </div>
+                    </div>
+                </AdminLayout>
+            }
+        >
+            <UsersPageContent />
+        </Suspense>
     );
 }
