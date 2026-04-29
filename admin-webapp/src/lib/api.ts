@@ -1,4 +1,11 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const PROD_API_URL = "https://app.novaedgedigitallabs.in/api";
+const LOCAL_API_URL = "http://localhost:5000/api";
+
+const BASE_URL =
+    process.env.NEXT_PUBLIC_API_URL ||
+    (typeof window !== "undefined" && window.location.hostname === "localhost"
+        ? LOCAL_API_URL
+        : PROD_API_URL);
 
 export interface User {
     _id: string;
@@ -140,10 +147,16 @@ async function request(endpoint: string, options: RequestInit = {}) {
         ...options.headers,
     };
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
-        ...options,
-        headers,
-    });
+    let response: Response;
+    try {
+        response = await fetch(`${BASE_URL}${endpoint}`, {
+            ...options,
+            headers,
+        });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Network error";
+        throw new Error(`Unable to reach API at ${BASE_URL}. ${message}`);
+    }
 
     if (!response.ok) {
         if (response.status === 401 && typeof window !== "undefined") {
