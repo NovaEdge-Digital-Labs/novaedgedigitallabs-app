@@ -61,8 +61,40 @@ exports.getAllGigs = async (req, res) => {
         if (category && category !== 'all') query.category = category;
         if (search) query.title = { $regex: search, $options: 'i' };
 
-        const gigs = await Gig.find(query).populate('freelancerId', 'name').sort({ createdAt: -1 });
+        const gigs = await Gig.find(query).populate('freelancerId', 'name email').sort({ createdAt: -1 });
         res.status(200).json({ success: true, count: gigs.length, data: gigs });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.updateGig = async (req, res) => {
+    try {
+        const gig = await Gig.findById(req.params.id);
+        if (!gig) {
+            return res.status(404).json({ success: false, message: 'Gig not found' });
+        }
+        if (gig.freelancerId.toString() !== req.user.id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Not authorized to edit this gig' });
+        }
+        const updatedGig = await Gig.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.status(200).json({ success: true, data: updatedGig });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.deleteGig = async (req, res) => {
+    try {
+        const gig = await Gig.findById(req.params.id);
+        if (!gig) {
+            return res.status(404).json({ success: false, message: 'Gig not found' });
+        }
+        if (gig.freelancerId.toString() !== req.user.id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Not authorized to delete this gig' });
+        }
+        await Gig.findByIdAndDelete(req.params.id);
+        res.status(200).json({ success: true, message: 'Gig deleted successfully' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -95,6 +127,28 @@ exports.getAllProjects = async (req, res) => {
 
         const projects = await Project.find(query).populate('clientId', 'name').sort({ createdAt: -1 });
         res.status(200).json({ success: true, count: projects.length, data: projects });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+exports.updateProjectStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        const project = await Project.findById(req.params.id);
+
+        if (!project) {
+            return res.status(404).json({ success: false, message: 'Project not found' });
+        }
+
+        if (project.clientId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ success: false, message: 'Only project owner can update status' });
+        }
+
+        project.status = status;
+        await project.save();
+
+        res.status(200).json({ success: true, message: 'Project status updated', data: project });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

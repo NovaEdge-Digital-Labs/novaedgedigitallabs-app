@@ -12,9 +12,13 @@ import CourseNavigator from './CourseNavigator';
 import { COLORS } from '../constants/colors';
 import { useAuthStore } from '../store/authStore';
 
+import { useThemeStore } from '../store/themeStore';
+
 const Tab = createBottomTabNavigator();
 
 const TabNavigator = () => {
+    const { theme } = useThemeStore();
+
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
@@ -42,12 +46,12 @@ const TabNavigator = () => {
                     return <Ionicons name={iconName} size={size} color={color} />;
                 },
                 headerShown: false,
-                tabBarActiveTintColor: COLORS.primary,
-                tabBarInactiveTintColor: COLORS.textMuted,
+                tabBarActiveTintColor: theme.primary,
+                tabBarInactiveTintColor: theme.textMuted,
                 tabBarStyle: {
-                    backgroundColor: COLORS.background,
+                    backgroundColor: theme.background,
                     borderTopWidth: 1,
-                    borderTopColor: COLORS.border,
+                    borderTopColor: theme.border,
                     height: 60,
                     paddingBottom: 8,
                 },

@@ -1,44 +1,50 @@
 import theme from './theme.json';
+import { useThemeStore } from '../store/themeStore';
 
-// Export everything from theme.json as COLORS for backward compatibility
-export const COLORS = {
-    ...theme,
+// Dynamic Proxy so COLORS.primary, COLORS.background, etc. always return the active theme
+export const COLORS: any = new Proxy({ ...theme }, {
+    get(target: any, prop: string) {
+        try {
+            const storeTheme = useThemeStore.getState().theme;
+            if (storeTheme && (storeTheme as any)[prop] !== undefined) {
+                return (storeTheme as any)[prop];
+            }
+        } catch (e) {}
 
-    // Backward compatibility mapping for older screens
-    surface: theme.card,
-    textPrimary: theme.text,
-    textSecondary: theme.textLight,
-    textMuted: theme.textMuted,
-    textLight: theme.textLight,
-    textWhite: theme.white,
+        if (prop === 'surface') return target.card;
+        if (prop === 'textPrimary') return target.text;
+        if (prop === 'textSecondary') return target.textLight;
+        if (prop === 'textMuted') return target.textMuted;
+        if (prop === 'textLight') return target.textLight;
+        if (prop === 'textWhite') return target.white;
 
-    // Effect Helpers derived from JSON
-    glass: {
-        backgroundColor: `rgba(255, 255, 255, ${theme.effects.glassOpacity})`,
-        borderWidth: 1,
-        borderColor: `rgba(255, 255, 255, ${theme.effects.glassBorderOpacity})`,
-    },
+        if (prop === 'glass') {
+            const currentTheme = useThemeStore.getState()?.theme || target;
+            const opacity = currentTheme.effects?.glassOpacity ?? target.effects?.glassOpacity ?? 0.04;
+            const borderOpacity = currentTheme.effects?.glassBorderOpacity ?? target.effects?.glassBorderOpacity ?? 0.15;
+            return {
+                backgroundColor: `rgba(255, 255, 255, ${opacity})`,
+                borderWidth: 1,
+                borderColor: `rgba(255, 255, 255, ${borderOpacity})`,
+            };
+        }
 
-    // Utility for Linear Gradients
-    getGradient: (gradientString: string): [string, string, ...string[]] => {
-        const match = gradientString.match(/linear-gradient\([^,]+,\s*(#[a-fA-F0-9]+),\s*(#[a-fA-F0-9]+)\)/);
-        if (match) return [match[1], match[2]];
-        const radialMatch = gradientString.match(/radial-gradient\([^,]+,\s*(#[a-fA-F0-9]+),\s*(#[a-fA-F0-9]+)\)/);
-        if (radialMatch) return [radialMatch[1], radialMatch[2]];
-        return [theme.primary, theme.accent];
-    },
+        if (prop === 'getGradient') {
+            return (gradientString: string): [string, string, ...string[]] => {
+                return useThemeStore.getState().getGradient(gradientString);
+            };
+        }
 
-    // Utility for glow effects using JSON defaults
-    getGlow: (color = theme.glow, size = theme.effects.glowRadius, opacity = theme.effects.glowOpacity) => ({
-        shadowColor: color,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: opacity,
-        shadowRadius: size,
-        elevation: size,
-    })
-};
+        if (prop === 'getGlow') {
+            return (color?: string, size?: number, opacity?: number) => {
+                return useThemeStore.getState().getGlow(color, size, opacity);
+            };
+        }
 
-// Re-export common spacing and typography as well to avoid breaking changes
+        return target[prop];
+    }
+});
+
 export const SPACING = {
     xs: theme.geometry.spacingSmall / 2,
     sm: theme.geometry.spacingSmall,
@@ -81,4 +87,3 @@ export const TYPOGRAPHY = {
 };
 
 export type AppTheme = typeof theme;
-

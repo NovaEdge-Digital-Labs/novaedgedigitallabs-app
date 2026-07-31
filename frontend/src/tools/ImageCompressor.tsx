@@ -62,7 +62,7 @@ const ImageCompressor = ({ navigation }: any) => {
     const handleSave = async () => {
         if (!result?.url) return;
         try {
-            const { status } = await MediaLibrary.requestPermissionsAsync();
+            const { status } = await MediaLibrary.requestPermissionsAsync(true);
             if (status !== 'granted') {
                 Alert.alert('Permission needed', 'Please allow access to save the image');
                 return;

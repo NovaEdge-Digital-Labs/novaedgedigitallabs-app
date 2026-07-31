@@ -36,9 +36,6 @@ const ForgotPasswordScreen = () => {
             const response = await axios.post(`${CONFIG.API_URL}/auth/forgot-password`, { email });
             if (response.data.success) {
                 setIsSubmitted(true);
-                if (__DEV__ && response.data.resetToken) {
-                    console.log('Reset Token (Dev only):', response.data.resetToken);
-                }
             }
         } catch (error: any) {
             const errorMessage = error.response?.data?.message || error.message || 'Something went wrong';

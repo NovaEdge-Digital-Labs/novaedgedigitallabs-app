@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
@@ -41,12 +41,29 @@ const CreateProjectScreen = ({ navigation }: any) => {
 
             console.log('Submitting Project with payload:', payload);
 
-            const response = await marketplaceApi.createProject(payload);
-            console.log('Project creation response:', response);
-
-            Alert.alert('Success', 'Project Requirement Posted!', [
-                { text: 'OK', onPress: () => navigation.goBack() }
-            ]);
+            if (Platform.OS === 'web') {
+                if (typeof window !== 'undefined') {
+                    window.alert('🎉 Project Requirement Posted Successfully!');
+                }
+                if (navigation.canGoBack()) {
+                    navigation.goBack();
+                } else {
+                    navigation.navigate('MarketplaceMain');
+                }
+            } else {
+                Alert.alert('Success', 'Project Requirement Posted!', [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            if (navigation.canGoBack()) {
+                                navigation.goBack();
+                            } else {
+                                navigation.navigate('MarketplaceMain');
+                            }
+                        }
+                    }
+                ]);
+            }
         } catch (error: any) {
             console.error('Project creation error details:', error);
             const errorMsg = error.response?.data?.message || error.message || 'Unknown network error';

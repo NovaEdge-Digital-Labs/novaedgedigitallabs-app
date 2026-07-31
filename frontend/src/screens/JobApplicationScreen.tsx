@@ -1,23 +1,44 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { marketplaceApi } from '../api/marketplaceApi';
 import PrimaryButton from '../components/PrimaryButton';
+import { useAuthStore } from '../store/authStore';
 
 const JobApplicationScreen = ({ route, navigation }: any) => {
     const { jobId, jobTitle } = route.params;
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
+    const user = useAuthStore((state) => state.user);
+
+    const [name, setName] = useState(user?.name || '');
+    const [email, setEmail] = useState(user?.email || '');
     const [phone, setPhone] = useState('');
     const [portfolioUrl, setPortfolioUrl] = useState('');
     const [coverNote, setCoverNote] = useState('');
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        if (user) {
+            if (!name && user.name) setName(user.name);
+            if (!email && user.email) setEmail(user.email);
+        }
+    }, [user]);
+
+    const showAlert = (alertTitle: string, message: string, onConfirm?: () => void) => {
+        if (Platform.OS === 'web') {
+            window.alert(`${alertTitle}\n\n${message}`);
+            if (onConfirm) onConfirm();
+        } else {
+            Alert.alert(alertTitle, message, [
+                { text: 'OK', onPress: onConfirm }
+            ]);
+        }
+    };
+
     const handleSubmit = async () => {
-        if (!name || !email || !portfolioUrl) {
-            Alert.alert('Error', 'Please fill in required fields (Name, Email, Resume/Portfolio Link)');
+        if (!name.trim() || !email.trim() || !portfolioUrl.trim()) {
+            showAlert('Missing Required Fields', 'Please fill in Name, Email, and Resume/Portfolio Link');
             return;
         }
 
@@ -25,18 +46,18 @@ const JobApplicationScreen = ({ route, navigation }: any) => {
         try {
             await marketplaceApi.applyToJob({
                 jobId,
-                name,
-                email,
-                phone,
-                resumeUrl: portfolioUrl,
-                coverNote
+                name: name.trim(),
+                email: email.trim(),
+                phone: phone.trim(),
+                resumeUrl: portfolioUrl.trim(),
+                coverNote: coverNote.trim()
             });
 
-            Alert.alert('Success', 'Application submitted! The company will review it soon.', [
-                { text: 'Done', onPress: () => navigation.navigate('JobFeed') }
-            ]);
+            showAlert('🎉 Application Submitted!', 'Your application has been received by the employer! They will contact you soon.', () => {
+                navigation.navigate('JobFeed');
+            });
         } catch (error: any) {
-            Alert.alert('Failed', error.message);
+            showAlert('Application Error', error?.response?.data?.message || error?.message || 'Failed to submit application.');
         } finally {
             setLoading(false);
         }
@@ -45,45 +66,74 @@ const JobApplicationScreen = ({ route, navigation }: any) => {
     return (
         <ThemeWrapper>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Ionicons name="close" size={28} color={COLORS.white} />
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeBtn}>
+                    <Ionicons name="close" size={24} color={COLORS.white} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Apply Now</Text>
-                <View style={{ width: 28 }} />
+                <View style={{ width: 32 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 <View style={styles.jobBrief}>
                     <Text style={styles.applyingFor}>Applying for:</Text>
-                    <Text style={styles.jobTitle}>{jobTitle}</Text>
+                    <Text style={styles.jobTitle}>{jobTitle || 'Job Position'}</Text>
                 </View>
 
                 <View style={styles.form}>
                     <Text style={styles.label}>Full Name *</Text>
-                    <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Enter your full name" placeholderTextColor={COLORS.textMuted} />
+                    <TextInput
+                        style={styles.input}
+                        value={name}
+                        onChangeText={setName}
+                        placeholder="Enter your full name"
+                        placeholderTextColor={COLORS.textMuted}
+                    />
 
                     <Text style={styles.label}>Email Address *</Text>
-                    <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="Enter your email" placeholderTextColor={COLORS.textMuted} keyboardType="email-address" />
+                    <TextInput
+                        style={styles.input}
+                        value={email}
+                        onChangeText={setEmail}
+                        placeholder="Enter your email"
+                        placeholderTextColor={COLORS.textMuted}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                    />
 
                     <Text style={styles.label}>Phone Number</Text>
-                    <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Enter phone number" placeholderTextColor={COLORS.textMuted} keyboardType="phone-pad" />
+                    <TextInput
+                        style={styles.input}
+                        value={phone}
+                        onChangeText={setPhone}
+                        placeholder="Enter phone number"
+                        placeholderTextColor={COLORS.textMuted}
+                        keyboardType="phone-pad"
+                    />
 
                     <Text style={styles.label}>Resume / Portfolio Link *</Text>
-                    <TextInput style={styles.input} value={portfolioUrl} onChangeText={setPortfolioUrl} placeholder="Link to Google Drive, Dropbox or Website" placeholderTextColor={COLORS.textMuted} />
+                    <TextInput
+                        style={styles.input}
+                        value={portfolioUrl}
+                        onChangeText={setPortfolioUrl}
+                        placeholder="Link to Google Drive, LinkedIn, or Portfolio Website"
+                        placeholderTextColor={COLORS.textMuted}
+                        autoCapitalize="none"
+                        keyboardType="url"
+                    />
 
                     <Text style={styles.label}>Cover Note (Optional)</Text>
                     <TextInput
                         style={[styles.input, styles.textArea]}
                         value={coverNote}
                         onChangeText={setCoverNote}
-                        placeholder="Why are you a good fit?"
+                        placeholder="Why are you a good fit for this role?"
                         placeholderTextColor={COLORS.textMuted}
                         multiline
                         numberOfLines={5}
                     />
 
                     <PrimaryButton
-                        title="Submit Application"
+                        title={loading ? 'Submitting...' : 'Submit Application'}
                         onPress={handleSubmit}
                         loading={loading}
                         style={styles.submitButton}
@@ -101,28 +151,34 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 20,
-        paddingTop: 50,
-        paddingBottom: 20,
+        paddingTop: Platform.OS === 'android' ? 20 : 10,
+        paddingBottom: 15,
+    },
+    closeBtn: {
+        padding: 6,
+        borderRadius: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         color: COLORS.white,
     },
     content: {
         padding: 20,
+        paddingBottom: 40,
     },
     jobBrief: {
         backgroundColor: COLORS.card,
-        padding: 20,
+        padding: 18,
         borderRadius: 16,
-        marginBottom: 25,
+        marginBottom: 20,
         borderWidth: 1,
         borderColor: COLORS.border,
     },
     applyingFor: {
         color: COLORS.textMuted,
-        fontSize: 14,
+        fontSize: 13,
         marginBottom: 4,
     },
     jobTitle: {
@@ -138,30 +194,31 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     input: {
-        backgroundColor: COLORS.card,
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
         borderRadius: 12,
-        padding: 15,
-        color: COLORS.text,
-        marginBottom: 20,
+        padding: 14,
+        color: COLORS.white,
+        fontSize: 14,
+        marginBottom: 18,
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: 'rgba(255, 255, 255, 0.08)',
     },
     textArea: {
-        height: 120,
+        height: 110,
         textAlignVertical: 'top',
     },
     submitButton: {
         backgroundColor: COLORS.primary,
-        height: 56,
+        height: 52,
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 10,
-        marginBottom: 40,
+        marginBottom: 30,
     },
     submitButtonText: {
         color: '#FFF',
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
     }
 });

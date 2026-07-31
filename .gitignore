@@ -6,6 +6,17 @@ hs_err_pid*.log
 *.log
 npm-debug.*
 yarn-debug.*
+*.log.txt
+*_log*.txt
+*.gz
+latest_build*.json
+build_info*.json
+log_url.txt
+plain*.txt
+
+# Scratch
+scratch/
+backend/scratch/
 
 # OS
 .DS_Store

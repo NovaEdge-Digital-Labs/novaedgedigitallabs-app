@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { marketplaceApi } from '../api/marketplaceApi';
 import { formatCurrency } from '../utils/helpers';
+import { useAuthStore } from '../store/authStore';
 
 const ProjectDetailsScreen = ({ route, navigation }: any) => {
     const { id } = route.params;
+    const { user } = useAuthStore();
     const [project, setProject] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [proposals, setProposals] = useState<any[]>([]);
+    const [statusUpdating, setStatusUpdating] = useState(false);
 
     useEffect(() => {
         fetchProjectDetails();
@@ -18,12 +22,79 @@ const ProjectDetailsScreen = ({ route, navigation }: any) => {
     const fetchProjectDetails = async () => {
         try {
             const allProjects = await marketplaceApi.getProjects();
-            const foundProject = allProjects.data.find((p: any) => p._id === id);
+            const foundProject = allProjects.data?.find((p: any) => p._id === id);
             setProject(foundProject);
+
+            try {
+                const proposalRes = await marketplaceApi.getProposals(id);
+                if (proposalRes?.data) {
+                    setProposals(proposalRes.data);
+                }
+            } catch (pErr) {
+                console.log('Proposals fetch error:', pErr);
+            }
         } catch (error) {
             console.error('Fetch project details error:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleUpdateStatus = async (newStatus: string) => {
+        setStatusUpdating(true);
+        try {
+            const res = await marketplaceApi.updateProjectStatus(id, newStatus);
+            if (res?.success) {
+                setProject((prev: any) => ({ ...prev, status: newStatus }));
+                const msg = `Project status updated to ${newStatus.toUpperCase()}`;
+                if (Platform.OS === 'web') {
+                    window.alert(msg);
+                } else {
+                    Alert.alert('Status Updated', msg);
+                }
+            }
+        } catch (err: any) {
+            const errorMsg = err.response?.data?.message || 'Failed to update status';
+            if (Platform.OS === 'web') {
+                window.alert(errorMsg);
+            } else {
+                Alert.alert('Error', errorMsg);
+            }
+        } finally {
+            setStatusUpdating(false);
+        }
+    };
+
+    const handleContactFreelancer = (freelancer: any) => {
+        const email = freelancer?.email || 'support@novaedgedigitallabs.in';
+        const name = freelancer?.name || 'Freelancer';
+        const subject = encodeURIComponent(`Inquiry for Project: ${project?.title}`);
+        const body = encodeURIComponent(`Hi ${name},\n\nI reviewed your proposal on NovaEdge Digital Labs for "${project?.title}". Let's discuss further.`);
+        
+        Linking.openURL(`mailto:${email}?subject=${subject}&body=${body}`).catch(() => {
+            Alert.alert('Contact Info', `Freelancer Email: ${email}`);
+        });
+    };
+
+    const handleHireFreelancer = async (proposalId: string, freelancerName: string) => {
+        try {
+            const res = await marketplaceApi.hireFreelancer(proposalId);
+            if (res?.success) {
+                const msg = `Congratulations! Proposal from ${freelancerName} accepted!`;
+                if (Platform.OS === 'web') {
+                    window.alert(msg);
+                } else {
+                    Alert.alert('Hired!', msg);
+                }
+                fetchProjectDetails();
+            }
+        } catch (err: any) {
+            const errorMsg = err.response?.data?.message || 'Hiring process failed';
+            if (Platform.OS === 'web') {
+                window.alert(errorMsg);
+            } else {
+                Alert.alert('Error', errorMsg);
+            }
         }
     };
 
@@ -42,6 +113,9 @@ const ProjectDetailsScreen = ({ route, navigation }: any) => {
             </View>
         );
     }
+
+    const userId = user?.id || (user as any)?._id;
+    const isOwner = user && (project.clientId?._id === userId || project.clientId === userId);
 
     return (
         <ThemeWrapper>
@@ -64,7 +138,34 @@ const ProjectDetailsScreen = ({ route, navigation }: any) => {
                         </View>
                     </View>
 
-                    <Text style={styles.postedAt}>Posted 2 hours ago</Text>
+                    {/* Owner Status Management Bar */}
+                    {isOwner && (
+                        <View style={styles.ownerControlBox}>
+                            <Text style={styles.ownerControlTitle}>Project Owner Controls:</Text>
+                            <View style={styles.statusButtonGroup}>
+                                {['open', 'in-progress', 'completed', 'cancelled'].map((st) => (
+                                    <TouchableOpacity
+                                        key={st}
+                                        style={[
+                                            styles.statusBtn,
+                                            project.status === st && styles.statusBtnActive
+                                        ]}
+                                        onPress={() => handleUpdateStatus(st)}
+                                        disabled={statusUpdating}
+                                    >
+                                        <Text style={[
+                                            styles.statusBtnText,
+                                            project.status === st && styles.statusBtnTextActive
+                                        ]}>
+                                            {st.toUpperCase()}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+
+                    <Text style={styles.postedAt}>Posted recently</Text>
 
                     <View style={styles.budgetContainer}>
                         <Ionicons name="wallet-outline" size={24} color={COLORS.primary} />
@@ -96,12 +197,60 @@ const ProjectDetailsScreen = ({ route, navigation }: any) => {
                         <Text style={styles.sectionTitle}>Activity on this job</Text>
                         <View style={styles.activityItem}>
                             <Text style={styles.activityLabel}>Proposals:</Text>
-                            <Text style={styles.activityValue}>{project.totalProposals || 0}</Text>
+                            <Text style={styles.activityValue}>{proposals.length || project.totalProposals || 0}</Text>
                         </View>
-                        <View style={styles.activityItem}>
-                            <Text style={styles.activityLabel}>Last viewed:</Text>
-                            <Text style={styles.activityValue}>10 minutes ago</Text>
-                        </View>
+                    </View>
+
+                    {/* Proposals List Section */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Submitted Proposals ({proposals.length})</Text>
+                        {proposals.length === 0 ? (
+                            <View style={styles.emptyProposalCard}>
+                                <Ionicons name="document-text-outline" size={32} color={COLORS.textMuted} />
+                                <Text style={styles.emptyProposalText}>No proposals submitted yet.</Text>
+                            </View>
+                        ) : (
+                            proposals.map((item: any) => (
+                                <View key={item._id} style={styles.proposalCard}>
+                                    <View style={styles.proposalHeader}>
+                                        <View style={styles.proposerInfo}>
+                                            <View style={styles.avatar}>
+                                                <Text style={styles.avatarText}>
+                                                    {(item.freelancerId?.name || 'F')[0].toUpperCase()}
+                                                </Text>
+                                            </View>
+                                            <View>
+                                                <Text style={styles.proposerName}>{item.freelancerId?.name || 'Freelancer'}</Text>
+                                                <Text style={styles.proposalDays}>{item.deliveryDays} Days Delivery</Text>
+                                            </View>
+                                        </View>
+                                        <Text style={styles.proposalBid}>{formatCurrency(item.bidAmount)}</Text>
+                                    </View>
+
+                                    <Text style={styles.proposalCover}>{item.coverLetter}</Text>
+
+                                    {/* Action Buttons for Freelancer Contact & Hire */}
+                                    <View style={styles.proposalActions}>
+                                        <TouchableOpacity
+                                            style={styles.contactBtn}
+                                            onPress={() => handleContactFreelancer(item.freelancerId)}
+                                        >
+                                            <Ionicons name="mail-outline" size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+                                            <Text style={styles.contactBtnText}>Contact</Text>
+                                        </TouchableOpacity>
+
+                                        {isOwner && (
+                                            <TouchableOpacity
+                                                style={styles.hireBtn}
+                                                onPress={() => handleHireFreelancer(item._id, item.freelancerId?.name || 'Freelancer')}
+                                            >
+                                                <Text style={styles.hireBtnText}>Hire Freelancer</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                </View>
+                            ))
+                        )}
                     </View>
                 </View>
             </ScrollView>
@@ -287,6 +436,144 @@ const styles = StyleSheet.create({
     proposalButtonText: {
         color: '#FFF',
         fontSize: 16,
+        fontWeight: 'bold',
+    },
+    emptyProposalCard: {
+        backgroundColor: COLORS.card,
+        padding: 24,
+        borderRadius: 16,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    emptyProposalText: {
+        color: COLORS.textMuted,
+        marginTop: 10,
+        fontSize: 14,
+        textAlign: 'center',
+    },
+    proposalCard: {
+        backgroundColor: COLORS.card,
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    proposalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    proposerInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    avatar: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: COLORS.primary + '30',
+        borderWidth: 1,
+        borderColor: COLORS.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
+    },
+    avatarText: {
+        color: COLORS.primary,
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    proposerName: {
+        color: COLORS.text,
+        fontWeight: 'bold',
+        fontSize: 15,
+    },
+    proposalDays: {
+        color: COLORS.textMuted,
+        fontSize: 12,
+    },
+    proposalBid: {
+        color: COLORS.success,
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    proposalCover: {
+        color: COLORS.textLight,
+        fontSize: 14,
+        lineHeight: 20,
+    },
+    ownerControlBox: {
+        backgroundColor: COLORS.card,
+        padding: 14,
+        borderRadius: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: COLORS.primary + '40',
+    },
+    ownerControlTitle: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: COLORS.primary,
+        marginBottom: 8,
+    },
+    statusButtonGroup: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    statusBtn: {
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    statusBtnActive: {
+        backgroundColor: COLORS.primary,
+        borderColor: COLORS.primary,
+    },
+    statusBtnText: {
+        color: COLORS.textMuted,
+        fontSize: 11,
+        fontWeight: 'bold',
+    },
+    statusBtnTextActive: {
+        color: '#FFFFFF',
+    },
+    proposalActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 12,
+        gap: 10,
+    },
+    contactBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.primary + '15',
+        borderWidth: 1,
+        borderColor: COLORS.primary + '40',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+    contactBtnText: {
+        color: COLORS.primary,
+        fontSize: 13,
+        fontWeight: 'bold',
+    },
+    hireBtn: {
+        backgroundColor: COLORS.success,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+    hireBtnText: {
+        color: '#000000',
+        fontSize: 13,
         fontWeight: 'bold',
     },
 });

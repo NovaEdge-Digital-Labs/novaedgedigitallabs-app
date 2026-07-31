@@ -4,8 +4,12 @@ const jobController = require('../controllers/job.controller');
 const premiumController = require('../controllers/premiumSeeker.controller');
 const { protect } = require('../middleware/auth.middleware');
 
+const adminController = require('../controllers/admin.controller');
+
 // Public
+router.get('/pricing', adminController.getPublicPricing);
 router.get('/', jobController.getAllJobs);
+router.post('/batch', jobController.getJobsByIds);
 router.get('/:id', jobController.getJobById);
 
 // Protected

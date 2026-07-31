@@ -44,6 +44,7 @@ exports.getFeed = async (req, res, next) => {
     try {
         const posts = await Post.find()
             .populate('userId', 'name email')
+            .populate('comments.userId', 'name email')
             .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -60,29 +61,29 @@ exports.getFeed = async (req, res, next) => {
 // @access  Private
 exports.likePost = async (req, res, next) => {
     try {
-        const post = await Post.findById(req.params.id);
+        const mongoose = require('mongoose');
+        const userId = new mongoose.Types.ObjectId(req.user.id);
 
+        const post = await Post.findById(req.params.id);
         if (!post) {
             return res.status(404).json({ success: false, message: 'Post not found' });
         }
 
-        const userId = req.user.id;
-        const likeIndex = post.likes.indexOf(userId);
+        const alreadyLiked = post.likes.some(id => id.toString() === req.user.id);
 
-        if (likeIndex > -1) {
-            // Already liked, so unlike
-            post.likes.splice(likeIndex, 1);
-        } else {
-            // Not liked, so like
-            post.likes.push(userId);
-        }
-
-        await post.save();
-        const populatedPost = await post.populate('userId', 'name email');
+        const updatedPost = await Post.findByIdAndUpdate(
+            req.params.id,
+            alreadyLiked
+                ? { $pull: { likes: userId } }
+                : { $addToSet: { likes: userId } },
+            { new: true }
+        )
+            .populate('userId', 'name email')
+            .populate('comments.userId', 'name email');
 
         res.status(200).json({
             success: true,
-            data: populatedPost
+            data: updatedPost
         });
     } catch (error) {
         next(error);
@@ -119,6 +120,7 @@ exports.updatePost = async (req, res, next) => {
 
         post.content = content;
         post.link = link || null;
+        post.isEdited = true;
 
         await post.save();
         const populatedPost = await post.populate('userId', 'name email');
@@ -153,6 +155,103 @@ exports.deletePost = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: 'Post deleted successfully'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Add a comment to a post
+// @route   POST /api/posts/:id/comment
+// @access  Private
+exports.addComment = async (req, res, next) => {
+    try {
+        const { text } = req.body;
+        if (!text || !text.trim()) {
+            return res.status(400).json({ success: false, message: 'Comment text is required' });
+        }
+
+        const mongoose = require('mongoose');
+
+        // Use findByIdAndUpdate with $push to avoid full document re-validation
+        // post.save() re-validates all fields (including content maxlength) which can fail
+        const updatedPost = await Post.findByIdAndUpdate(
+            req.params.id,
+            {
+                $push: {
+                    comments: {
+                        userId: new mongoose.Types.ObjectId(req.user.id),
+                        text: text.trim(),
+                        createdAt: new Date()
+                    }
+                }
+            },
+            { new: true }
+        )
+            .populate('userId', 'name email')
+            .populate('comments.userId', 'name email');
+
+        if (!updatedPost) {
+            return res.status(404).json({ success: false, message: 'Post not found' });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: updatedPost
+        });
+    } catch (error) {
+        console.error('addComment error:', error.message);
+        next(error);
+    }
+};
+
+// @desc    Share a post
+// @route   POST /api/posts/:id/share
+// @access  Private
+exports.sharePost = async (req, res, next) => {
+    try {
+        const mongoose = require('mongoose');
+        const userId = new mongoose.Types.ObjectId(req.user.id);
+
+        const post = await Post.findById(req.params.id);
+        if (!post) {
+            return res.status(404).json({ success: false, message: 'Post not found' });
+        }
+
+        const alreadyShared = post.shares.some(id => id.toString() === req.user.id);
+
+        const updatedPost = await Post.findByIdAndUpdate(
+            req.params.id,
+            alreadyShared
+                ? { $pull: { shares: userId } }
+                : { $addToSet: { shares: userId } },
+            { new: true }
+        )
+            .populate('userId', 'name email')
+            .populate('comments.userId', 'name email');
+
+        res.status(200).json({
+            success: true,
+            data: updatedPost
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get user's own posts
+// @route   GET /api/posts/user/me
+// @access  Private
+exports.getUserPosts = async (req, res, next) => {
+    try {
+        const posts = await Post.find({ userId: req.user.id })
+            .populate('userId', 'name email')
+            .populate('comments.userId', 'name email')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            data: posts
         });
     } catch (error) {
         next(error);

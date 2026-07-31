@@ -6,7 +6,11 @@ import ThemeWrapper from '../components/ThemeWrapper';
 import { marketplaceApi } from '../api/marketplaceApi';
 import { formatCurrency } from '../utils/helpers';
 
+import { useAuthStore } from '../store/authStore';
+import { Alert, Platform } from 'react-native';
+
 const MarketplaceScreen = ({ navigation }: any) => {
+    const { user } = useAuthStore();
     const [activeTab, setActiveTab] = useState<'gigs' | 'projects'>('gigs');
     const [searchQuery, setSearchQuery] = useState('');
     const [data, setData] = useState<any[]>([]);
@@ -34,27 +38,82 @@ const MarketplaceScreen = ({ navigation }: any) => {
         }
     };
 
-    const renderGigItem = ({ item }: any) => (
-        <TouchableOpacity
-            style={styles.card}
-            onPress={() => navigation.navigate('GigDetails', { id: item._id })}
-        >
-            <View style={styles.imagePlaceholder}>
-                <Ionicons name="image-outline" size={40} color={COLORS.textMuted} />
-            </View>
-            <View style={styles.cardContent}>
-                <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-                <Text style={styles.freelancerName}>By {item.freelancerId?.name || 'Freelancer'}</Text>
-                <View style={styles.cardFooter}>
-                    <Text style={styles.price}>From {formatCurrency(item.price)}</Text>
-                    <View style={styles.ratingContainer}>
-                        <Ionicons name="star" size={14} color="#FFD700" />
-                        <Text style={styles.ratingText}>4.8 (24)</Text>
+    const handleDeleteGig = async (gigId: string, gigTitle: string) => {
+        const doDelete = async () => {
+            try {
+                const res = await marketplaceApi.deleteGig(gigId);
+                if (res?.success) {
+                    setData((prev) => prev.filter((g) => g._id !== gigId));
+                    if (Platform.OS === 'web') {
+                        window.alert('🗑️ Gig deleted successfully!');
+                    }
+                }
+            } catch (err: any) {
+                const msg = err.response?.data?.message || 'Failed to delete gig';
+                if (Platform.OS === 'web') {
+                    window.alert(msg);
+                } else {
+                    Alert.alert('Error', msg);
+                }
+            }
+        };
+
+        if (Platform.OS === 'web') {
+            if (window.confirm(`Are you sure you want to delete "${gigTitle}"?`)) {
+                doDelete();
+            }
+        } else {
+            Alert.alert('Delete Gig', `Are you sure you want to delete "${gigTitle}"?`, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: doDelete }
+            ]);
+        }
+    };
+
+    const renderGigItem = ({ item }: any) => {
+        const currentUserId = user?.id || (user as any)?._id;
+        const isOwner = user && (item.freelancerId?._id === currentUserId || item.freelancerId === currentUserId || (user as any).role === 'admin');
+        const hasCoverImage = item.images && item.images.length > 0 && item.images[0];
+
+        return (
+            <TouchableOpacity
+                style={styles.card}
+                onPress={() => navigation.navigate('GigDetails', { id: item._id })}
+            >
+                {hasCoverImage ? (
+                    <Image source={{ uri: item.images[0] }} style={styles.cardImage} resizeMode="cover" />
+                ) : (
+                    <View style={styles.imagePlaceholder}>
+                        <Ionicons name="image-outline" size={40} color={COLORS.textMuted} />
+                    </View>
+                )}
+
+                <View style={styles.cardContent}>
+                    <View style={styles.cardTitleRow}>
+                        <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+                        {isOwner && (
+                            <TouchableOpacity
+                                style={styles.deleteCardBtn}
+                                onPress={() => handleDeleteGig(item._id, item.title)}
+                            >
+                                <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
+                    <Text style={styles.freelancerName}>By {item.freelancerId?.name || 'Freelancer'}</Text>
+                    
+                    <View style={styles.cardFooter}>
+                        <Text style={styles.price}>From {formatCurrency(item.price)}</Text>
+                        <View style={styles.ratingContainer}>
+                            <Ionicons name="star" size={14} color="#FFD700" />
+                            <Text style={styles.ratingText}>4.8 (24)</Text>
+                        </View>
                     </View>
                 </View>
-            </View>
-        </TouchableOpacity>
-    );
+            </TouchableOpacity>
+        );
+    };
 
     const renderProjectItem = ({ item }: any) => (
         <TouchableOpacity
@@ -240,19 +299,33 @@ const styles = StyleSheet.create({
     },
     imagePlaceholder: {
         width: '100%',
-        height: 120,
+        height: 140,
         backgroundColor: COLORS.backgroundSoft,
         justifyContent: 'center',
         alignItems: 'center',
     },
+    cardImage: {
+        width: '100%',
+        height: 140,
+    },
     cardContent: {
         padding: 12,
     },
+    cardTitleRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 4,
+    },
     cardTitle: {
+        flex: 1,
         fontSize: 16,
         fontWeight: 'bold',
         color: COLORS.text,
-        marginBottom: 4,
+        marginRight: 8,
+    },
+    deleteCardBtn: {
+        padding: 4,
     },
     freelancerName: {
         fontSize: 14,

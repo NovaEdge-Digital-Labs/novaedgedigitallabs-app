@@ -34,6 +34,10 @@ const jobApplicationSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'reviewed', 'shortlisted', 'rejected'],
         default: 'pending'
+    },
+    isPremiumCandidate: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

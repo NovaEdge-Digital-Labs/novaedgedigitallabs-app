@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
-import { LinearGradient } from 'expo-linear-gradient';
 import { marketplaceApi } from '../api/marketplaceApi';
 import PrimaryButton from '../components/PrimaryButton';
 import { formatCurrency } from '../utils/helpers';
@@ -13,14 +12,29 @@ import { useAuthStore } from '../store/authStore';
 const PremiumUpgradeScreen = ({ navigation }: any) => {
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<any>(null);
+    const [passPrice, setPassPrice] = useState<number>(499);
+    const [passTitle, setPassTitle] = useState<string>('Premium Candidate Pass');
     const user = useAuthStore((state) => state.user);
 
     useEffect(() => {
-        const fetchStatus = async () => {
-            const res = await marketplaceApi.getPremiumStatus();
-            setStatus(res);
+        const fetchStatusAndPricing = async () => {
+            try {
+                const res = await marketplaceApi.getPremiumStatus();
+                setStatus(res);
+
+                const pricingRes = await marketplaceApi.getPublicPricing();
+                if (pricingRes?.data && Array.isArray(pricingRes.data)) {
+                    const seekerTier = pricingRes.data.find((t: any) => t.category === 'seeker_membership' || t.tierId === 'ProSeeker');
+                    if (seekerTier) {
+                        setPassPrice(seekerTier.price || 499);
+                        setPassTitle(seekerTier.name || 'Premium Candidate Pass');
+                    }
+                }
+            } catch (e) {
+                console.log('Error fetching status/pricing:', e);
+            }
         };
-        fetchStatus();
+        fetchStatusAndPricing();
     }, []);
 
     const handleUpgrade = async () => {
@@ -37,11 +51,11 @@ const PremiumUpgradeScreen = ({ navigation }: any) => {
             const order = await marketplaceApi.createPremiumSeekerOrder();
 
             const options = {
-                description: 'NovaEdge Premium Upgrade',
+                description: `${passTitle} Upgrade`,
                 image: 'https://novaedgedigitallabs.tech/logo.png',
                 currency: 'INR',
-                key: 'rzp_test_dummy', // Replace with real env key
-                amount: 199 * 100,
+                key: order?.keyId || 'rzp_test_dummy',
+                amount: passPrice * 100,
                 name: 'NovaEdge Digital Labs',
                 order_id: order.orderId,
                 prefill: {
@@ -60,7 +74,7 @@ const PremiumUpgradeScreen = ({ navigation }: any) => {
                 };
 
                 await marketplaceApi.verifyPremiumSeeker(razorpayResponse);
-                Alert.alert('Welcome to Premium!', 'Your profile now has priority placement and a verified badge.', [
+                Alert.alert('Welcome to Premium Candidate Pass! 🎉', 'Your profile now has priority placement and a verified badge.', [
                     { text: 'Awesome', onPress: () => navigation.goBack() }
                 ]);
             }).catch((error: any) => {
@@ -76,10 +90,10 @@ const PremiumUpgradeScreen = ({ navigation }: any) => {
     };
 
     const benefits = [
-        { icon: 'trending-up', title: 'Priority Placement', desc: 'Your applications appear at the top of the recruiter\'s list.' },
-        { icon: 'checkmark-seal', title: 'Verified Badge', desc: 'Get a blue checkmark on your profile to build trust.' },
-        { icon: 'notifications', title: 'Early Access', desc: 'Get notified about new jobs 2 hours before others.' },
-        { icon: 'eye', title: 'Profile Insights', desc: 'See who viewed your profile and which companies are interested.' }
+        { icon: 'trending-up', title: 'Priority Rank Placement', desc: 'Your applications appear at the very top of recruiters candidate feeds.' },
+        { icon: 'ribbon-outline', title: 'Verified Candidate Badge', desc: 'Get an exclusive glowing verified checkmark on your profile.' },
+        { icon: 'notifications-outline', title: 'Early Access Alerts', desc: 'Get notified about high-paying job openings before non-pass users.' },
+        { icon: 'eye-outline', title: 'Direct Employer Contact', desc: 'Allow recruiters to view your full profile and contact you directly.' }
     ];
 
     return (
@@ -88,25 +102,22 @@ const PremiumUpgradeScreen = ({ navigation }: any) => {
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Ionicons name="close" size={28} color={COLORS.white} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>NovaEdge Premium</Text>
+                <Text style={styles.headerTitle}>{passTitle}</Text>
                 <View style={{ width: 28 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                <LinearGradient
-                    colors={['#FFD700', '#FFA500']}
-                    style={styles.heroCard}
-                >
-                    <Ionicons name="star" size={50} color="#FFF" />
-                    <Text style={styles.heroTitle}>Upgrade Your Career</Text>
-                    <Text style={styles.heroPrice}>{formatCurrency(199)} <Text style={styles.perMonth}>/ month</Text></Text>
-                </LinearGradient>
+                <View style={styles.heroCard}>
+                    <Ionicons name="star" size={46} color="#FFD700" />
+                    <Text style={styles.heroTitle}>{passTitle}</Text>
+                    <Text style={styles.heroPrice}>{formatCurrency(passPrice)} <Text style={styles.perMonth}>/ month</Text></Text>
+                </View>
 
                 <View style={styles.benefitsSection}>
                     {benefits.map((b, i) => (
                         <View key={i} style={styles.benefitItem}>
                             <View style={styles.iconContainer}>
-                                <Ionicons name={b.icon as any} size={24} color={COLORS.primary} />
+                                <Ionicons name={b.icon as any} size={22} color={COLORS.accent || '#C042FF'} />
                             </View>
                             <View style={styles.benefitText}>
                                 <Text style={styles.btnTitle}>{b.title}</Text>
@@ -117,7 +128,7 @@ const PremiumUpgradeScreen = ({ navigation }: any) => {
                 </View>
 
                 <PrimaryButton
-                    title="Upgrade Now"
+                    title={`Get Pass for ${formatCurrency(passPrice)}`}
                     onPress={handleUpgrade}
                     loading={loading}
                     style={styles.upgradeBtn}
@@ -148,74 +159,67 @@ const styles = StyleSheet.create({
     },
     heroCard: {
         borderRadius: 24,
-        padding: 30,
+        padding: 26,
         alignItems: 'center',
-        marginBottom: 30,
+        marginBottom: 28,
+        backgroundColor: 'rgba(145, 39, 255, 0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(192, 66, 255, 0.35)',
     },
     heroTitle: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: 'bold',
-        color: '#FFF',
-        marginTop: 15,
-        marginBottom: 5,
+        color: COLORS.white,
+        marginTop: 12,
+        marginBottom: 4,
     },
     heroPrice: {
-        fontSize: 36,
+        fontSize: 34,
         fontWeight: '900',
-        color: '#FFF',
+        color: COLORS.white,
     },
     perMonth: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: 'normal',
-        opacity: 0.8,
+        color: COLORS.textMuted,
     },
     benefitsSection: {
         gap: 20,
-        marginBottom: 40,
+        marginBottom: 36,
     },
     benefitItem: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     iconContainer: {
-        width: 48,
-        height: 48,
+        width: 46,
+        height: 46,
         borderRadius: 14,
-        backgroundColor: COLORS.card,
+        backgroundColor: 'rgba(145, 39, 255, 0.15)',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 15,
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: 'rgba(192, 66, 255, 0.3)',
     },
     benefitText: {
         flex: 1,
     },
     btnTitle: {
         color: COLORS.white,
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: 'bold',
         marginBottom: 2,
     },
     btnDesc: {
         color: COLORS.textMuted,
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 13,
+        lineHeight: 19,
     },
     upgradeBtn: {
-        height: 60,
+        height: 54,
         borderRadius: 16,
         overflow: 'hidden',
-    },
-    btnGradient: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    btnText: {
-        color: '#FFF',
-        fontSize: 18,
-        fontWeight: 'bold',
     },
     cancelText: {
         textAlign: 'center',

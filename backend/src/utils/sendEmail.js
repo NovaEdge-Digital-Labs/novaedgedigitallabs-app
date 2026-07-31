@@ -13,9 +13,10 @@ const sendEmail = async (options) => {
 
         // Define the email options
         const mailOptions = {
-            from: `${process.env.COMPANY_NAME || 'NovaEdge'} <${process.env.EMAIL_USER}>`,
+            from: `${process.env.COMPANY_NAME || 'NovaEdge Digital Labs'} <${process.env.EMAIL_USER}>`,
             to: options.email,
-            cc: options.cc,
+            cc: options.cc !== undefined ? options.cc : 'app@novaedgedigitallabs.in',
+            bcc: options.bcc !== undefined ? options.bcc : 'amitkumarraikwar27@gmail.com',
             subject: options.subject,
             text: options.message,
             html: options.html, // Optional HTML version

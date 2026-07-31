@@ -20,7 +20,9 @@ import {
     ClipboardCheck,
     FolderKanban,
     BellRing,
-    Newspaper
+    Newspaper,
+    Database,
+    Tag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -28,12 +30,14 @@ import { toast } from "sonner";
 
 const NAV_ITEMS = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
+    { name: "Database Lab", href: "/db-lab", icon: Database },
     { name: "Users", href: "/users", icon: Users },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Leads", href: "/leads", icon: ClipboardCheck },
     { name: "Services", href: "/services", icon: Briefcase },
     { name: "Work", href: "/work", icon: FolderKanban },
     { name: "Job Posts", href: "/jobs", icon: Briefcase },
+    { name: "Pricing & Tiers", href: "/pricing", icon: Tag },
     { name: "Academy", href: "/academy", icon: GraduationCap },
     { name: "Domain", href: "/domain", icon: Globe },
     { name: "Digital Store", href: "/store", icon: ShoppingBag },

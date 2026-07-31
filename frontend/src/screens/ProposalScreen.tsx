@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
@@ -26,9 +26,29 @@ const ProposalScreen = ({ route, navigation }: any) => {
                 coverLetter,
                 deliveryDays: Number(estimatedDays)
             });
-            Alert.alert('Success', 'Your proposal has been submitted!', [
-                { text: 'OK', onPress: () => navigation.popToTop() }
-            ]);
+            if (Platform.OS === 'web') {
+                if (typeof window !== 'undefined') {
+                    window.alert('🎉 Your proposal has been submitted successfully!');
+                }
+                if (navigation.canGoBack()) {
+                    navigation.goBack();
+                } else {
+                    navigation.navigate('MarketplaceMain');
+                }
+            } else {
+                Alert.alert('Success', 'Your proposal has been submitted!', [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            if (navigation.canGoBack()) {
+                                navigation.goBack();
+                            } else {
+                                navigation.navigate('MarketplaceMain');
+                            }
+                        }
+                    }
+                ]);
+            }
         } catch (error: any) {
             Alert.alert('Error', error.response?.data?.message || 'Failed to submit proposal');
         } finally {

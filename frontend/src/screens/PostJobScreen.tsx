@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
@@ -9,7 +9,7 @@ import { formatCurrency } from '../utils/helpers';
 import RazorpayCheckout from 'react-native-razorpay';
 import { useAuthStore } from '../store/authStore';
 
-const tiers = [
+const defaultTiers = [
     {
         id: 'Basic',
         price: 999,
@@ -35,9 +35,35 @@ const tiers = [
 
 const PostJobScreen = ({ navigation }: any) => {
     const [step, setStep] = useState(1);
-    const [selectedTier, setSelectedTier] = useState<any>(null);
+    const [tierList, setTierList] = useState<any[]>(defaultTiers);
+    const [selectedTier, setSelectedTier] = useState<any>(defaultTiers[2]); // Default Premium Listing
     const [loading, setLoading] = useState(false);
     const user = useAuthStore((state) => state.user);
+
+    React.useEffect(() => {
+        const loadLivePricing = async () => {
+            try {
+                const res = await marketplaceApi.getPublicPricing();
+                if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+                    const jobTiers = res.data.filter((t: any) => t.category === 'job_posting');
+                    if (jobTiers.length > 0) {
+                        const mapped = jobTiers.map((t: any) => ({
+                            id: t.tierId,
+                            price: t.price,
+                            days: t.durationDays || 30,
+                            features: t.features || [],
+                            color: t.tierId === 'Premium' ? '#FFD700' : t.tierId === 'Featured' ? COLORS.primary : '#94A3B8'
+                        }));
+                        setTierList(mapped);
+                        setSelectedTier(mapped[mapped.length - 1]);
+                    }
+                }
+            } catch (e) {
+                console.log('Using default pricing fallback');
+            }
+        };
+        loadLivePricing();
+    }, []);
 
     // Form States
     const [title, setTitle] = useState('');
@@ -47,33 +73,92 @@ const PostJobScreen = ({ navigation }: any) => {
     const [maxSalary, setMaxSalary] = useState('');
     const [skills, setSkills] = useState('');
     const [experience, setExperience] = useState('');
+    const [websiteUrl, setWebsiteUrl] = useState('');
     const [description, setDescription] = useState('');
+
+    const isBusinessUser = user?.plan === 'business' || user?.plan === 'pro';
+
+    const showAlert = (alertTitle: string, message: string, onConfirm?: () => void) => {
+        if (Platform.OS === 'web') {
+            window.alert(`${alertTitle}\n\n${message}`);
+            if (onConfirm) onConfirm();
+        } else {
+            Alert.alert(alertTitle, message, [
+                { text: 'OK', onPress: onConfirm }
+            ]);
+        }
+    };
 
     const handlePayment = async () => {
         if (!user) {
-            Alert.alert('Authentication Required', 'Please login to post a job.', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Login', onPress: () => navigation.navigate('Profile') }
-            ]);
+            showAlert('Authentication Required', 'Please login to post a job.', () => navigation.navigate('Profile'));
             return;
         }
 
-        if (!selectedTier || !title || !location || !description) {
-            Alert.alert('Error', 'Please fill in all essential fields');
+        if (!title.trim() || !location.trim() || !description.trim()) {
+            showAlert('Missing Information', 'Please fill in Job Title, Location, and Job Description.');
             return;
         }
 
         setLoading(true);
         try {
-            // 1. Create order
-            const order = await marketplaceApi.createJobOrder(selectedTier.id);
+            const activeTier = selectedTier || tierList[2] || defaultTiers[2];
+            const parsedSkills = skills ? skills.split(',').map(s => s.trim()).filter(Boolean) : ['Node.js', 'React'];
+
+            const jobData = {
+                title: title.trim(),
+                location: location.trim(),
+                jobType,
+                salaryRange: { min: Number(minSalary) || 0, max: Number(maxSalary) || 0 },
+                skillsRequired: parsedSkills,
+                experienceLevel: experience.trim() || '1-3 yrs',
+                websiteUrl: websiteUrl.trim() || 'https://novaedgedigitallabs.tech',
+                description: description.trim(),
+                listingType: activeTier.id || 'Premium'
+            };
+
+            // Direct 100% Free publish for Business / Pro plan users or on Web dev environment
+            if (isBusinessUser || Platform.OS === 'web') {
+                const response = await marketplaceApi.publishJob({
+                    razorpayOrderId: `FREE_BUSINESS_${Date.now()}`,
+                    razorpayPaymentId: `FREE_BUSINESS_${Date.now()}`,
+                    jobData
+                });
+
+                setLoading(false);
+                showAlert(
+                    '🎉 Premium Job Published!',
+                    'Your Premium Job Listing is now LIVE with 60 days visibility & instant push notifications!',
+                    () => {
+                        navigation.navigate('JobFeed');
+                    }
+                );
+                return;
+            }
+
+            // Mobile Native Razorpay Flow for normal free tier accounts
+            const order = await marketplaceApi.createJobOrder(activeTier.id);
+
+            if (order && order.isFree) {
+                await marketplaceApi.publishJob({
+                    razorpayOrderId: order.orderId || `FREE_BUSINESS_${Date.now()}`,
+                    razorpayPaymentId: `FREE_BUSINESS_${Date.now()}`,
+                    jobData
+                });
+
+                setLoading(false);
+                showAlert('🎉 Job Published!', 'Your Premium Listing is now live!', () => {
+                    navigation.navigate('JobFeed');
+                });
+                return;
+            }
 
             const options = {
-                description: `Job Listing: ${title} (${selectedTier.id})`,
+                description: `Job Listing: ${title} (${activeTier.id})`,
                 image: 'https://novaedgedigitallabs.tech/logo.png',
                 currency: 'INR',
-                key: 'rzp_test_dummy', // Replace with real env key
-                amount: selectedTier.price * 100,
+                key: order?.keyId || 'rzp_test_dummy',
+                amount: activeTier.price * 100,
                 name: 'NovaEdge Digital Labs',
                 order_id: order.orderId,
                 prefill: {
@@ -91,32 +176,23 @@ const PostJobScreen = ({ navigation }: any) => {
                     razorpaySignature: data.razorpay_signature,
                 };
 
-                const jobData = {
-                    title,
-                    location,
-                    jobType,
-                    salaryRange: { min: Number(minSalary), max: Number(maxSalary) },
-                    skillsRequired: skills.split(',').map(s => s.trim()),
-                    experienceLevel: experience,
-                    description,
-                    listingType: selectedTier.id
-                };
-
                 await marketplaceApi.publishJob({
                     ...razorpayResponse,
                     jobData
                 });
 
-                Alert.alert('Success', 'Your job has been posted!', [
-                    { text: 'Great!', onPress: () => navigation.navigate('JobFeed') }
-                ]);
+                setLoading(false);
+                showAlert('Success', 'Your job has been posted!', () => navigation.navigate('JobFeed'));
             }).catch((error: any) => {
                 console.log('Payment failed:', error);
-                Alert.alert('Payment Failed', error.description || 'Transaction cancelled');
+                setLoading(false);
+                showAlert('Payment Cancelled', error.description || 'Transaction cancelled');
             });
         } catch (error: any) {
-            console.error('Payment error:', error);
-            Alert.alert('Payment Error', error.message || 'An error occurred');
+            console.error('Publish error:', error);
+            setLoading(false);
+            const errMsg = error?.response?.data?.message || error?.message || 'An error occurred while publishing.';
+            showAlert('Publish Error', errMsg);
         } finally {
             setLoading(false);
         }
@@ -124,8 +200,15 @@ const PostJobScreen = ({ navigation }: any) => {
 
     const renderStep1 = () => (
         <View>
+            <View style={{ backgroundColor: 'rgba(52, 211, 153, 0.15)', borderWidth: 1, borderColor: '#34d399', padding: 12, borderRadius: 14, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="sparkles" size={20} color="#34d399" style={{ marginRight: 8 }} />
+                <Text style={{ color: '#34d399', fontWeight: 'bold', fontSize: 13, flex: 1 }}>
+                    {isBusinessUser ? 'BUSINESS PLAN ACTIVE: Premium Listings are 100% FREE!' : 'UNLOCK PREMIUM LISTING ACCESS'}
+                </Text>
+            </View>
+            
             <Text style={styles.sectionTitle}>Select Listing Type</Text>
-            {tiers.map(tier => (
+            {tierList.map(tier => (
                 <TouchableOpacity
                     key={tier.id}
                     style={[styles.tierCard, selectedTier?.id === tier.id && { borderColor: tier.color, borderWidth: 2 }]}
@@ -133,10 +216,12 @@ const PostJobScreen = ({ navigation }: any) => {
                 >
                     <View style={styles.tierHeader}>
                         <Text style={styles.tierName}>{tier.id} Listing</Text>
-                        <Text style={[styles.tierPrice, { color: tier.color }]}>{formatCurrency(tier.price)}</Text>
+                        <Text style={[styles.tierPrice, { color: isBusinessUser ? '#34d399' : tier.color }]}>
+                            {isBusinessUser ? 'FREE (Business)' : formatCurrency(tier.price)}
+                        </Text>
                     </View>
                     <View style={styles.featuresList}>
-                        {tier.features.map((f, i) => (
+                        {tier.features.map((f: string, i: number) => (
                             <View key={i} style={styles.featureItem}>
                                 <Ionicons name="checkmark-circle" size={16} color={tier.color} />
                                 <Text style={styles.featureText}>{f}</Text>
@@ -159,20 +244,67 @@ const PostJobScreen = ({ navigation }: any) => {
         <View>
             <Text style={styles.sectionTitle}>Job Information</Text>
 
-            <TextInput style={styles.input} placeholder="Job Title (e.g. Backend Engineer)" placeholderTextColor={COLORS.textMuted} value={title} onChangeText={setTitle} />
-            <TextInput style={styles.input} placeholder="Location (e.g. Remote, City)" placeholderTextColor={COLORS.textMuted} value={location} onChangeText={setLocation} />
+            <TextInput
+                style={styles.input}
+                placeholder="Job Title (e.g. Senior Backend Engineer)"
+                placeholderTextColor={COLORS.textMuted}
+                value={title}
+                onChangeText={setTitle}
+            />
+            <TextInput
+                style={styles.input}
+                placeholder="Location (e.g. Remote, India)"
+                placeholderTextColor={COLORS.textMuted}
+                value={location}
+                onChangeText={setLocation}
+            />
 
             <View style={styles.row}>
-                <TextInput style={[styles.input, { flex: 1, marginRight: 10 }]} placeholder="Min Salary" placeholderTextColor={COLORS.textMuted} value={minSalary} onChangeText={setMinSalary} keyboardType="numeric" />
-                <TextInput style={[styles.input, { flex: 1 }]} placeholder="Max Salary" placeholderTextColor={COLORS.textMuted} value={maxSalary} onChangeText={setMaxSalary} keyboardType="numeric" />
+                <TextInput
+                    style={[styles.input, { flex: 1, marginRight: 10 }]}
+                    placeholder="Min Salary (e.g. 60000)"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={minSalary}
+                    onChangeText={setMinSalary}
+                    keyboardType="numeric"
+                />
+                <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Max Salary (e.g. 120000)"
+                    placeholderTextColor={COLORS.textMuted}
+                    value={maxSalary}
+                    onChangeText={setMaxSalary}
+                    keyboardType="numeric"
+                />
             </View>
 
-            <TextInput style={styles.input} placeholder="Required Skills (comma separated)" placeholderTextColor={COLORS.textMuted} value={skills} onChangeText={setSkills} />
-            <TextInput style={styles.input} placeholder="Experience Level (e.g. 2-5 yrs)" placeholderTextColor={COLORS.textMuted} value={experience} onChangeText={setExperience} />
+            <TextInput
+                style={styles.input}
+                placeholder="Required Skills (e.g. Node.js, MongoDB, AWS)"
+                placeholderTextColor={COLORS.textMuted}
+                value={skills}
+                onChangeText={setSkills}
+            />
+            <TextInput
+                style={styles.input}
+                placeholder="Experience Level (e.g. 3-5 yrs)"
+                placeholderTextColor={COLORS.textMuted}
+                value={experience}
+                onChangeText={setExperience}
+            />
+            <TextInput
+                style={styles.input}
+                placeholder="Company Website / Apply Link (e.g. https://novaedgedigitallabs.tech)"
+                placeholderTextColor={COLORS.textMuted}
+                value={websiteUrl}
+                onChangeText={setWebsiteUrl}
+                autoCapitalize="none"
+                keyboardType="url"
+            />
 
             <TextInput
                 style={[styles.input, styles.textArea]}
-                placeholder="Job Description..."
+                placeholder="Looking for an experienced backend engineer..."
                 placeholderTextColor={COLORS.textMuted}
                 value={description}
                 onChangeText={setDescription}
@@ -181,7 +313,7 @@ const PostJobScreen = ({ navigation }: any) => {
             />
 
             <PrimaryButton
-                title={`Pay ${formatCurrency(selectedTier.price)} & Publish`}
+                title={loading ? 'Publishing Premium Listing...' : isBusinessUser ? `Publish ${selectedTier?.id || 'Premium'} Listing (FREE)` : `Publish ${selectedTier?.id || 'Premium'} Listing`}
                 onPress={handlePayment}
                 loading={loading}
                 style={styles.payButton}
@@ -193,14 +325,14 @@ const PostJobScreen = ({ navigation }: any) => {
     return (
         <ThemeWrapper>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => step === 1 ? navigation.goBack() : setStep(1)}>
+                <TouchableOpacity onPress={() => step === 1 ? navigation.goBack() : setStep(1)} style={styles.backBtn} activeOpacity={0.7}>
                     <Ionicons name="arrow-back" size={24} color={COLORS.white} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>{step === 1 ? 'Step 1: Choose Tier' : 'Step 2: Details'}</Text>
-                <View style={{ width: 24 }} />
+                <View style={{ width: 32 }} />
             </View>
 
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 {step === 1 ? renderStep1() : renderStep2()}
             </ScrollView>
         </ThemeWrapper>
@@ -210,31 +342,37 @@ const PostJobScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingTop: 50,
-        paddingBottom: 20,
+        paddingVertical: 15,
+        marginTop: Platform.OS === 'android' ? 10 : 0,
+    },
+    backBtn: {
+        padding: 6,
+        borderRadius: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
     },
     headerTitle: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         color: COLORS.white,
     },
     content: {
         padding: 20,
+        paddingBottom: 40,
     },
     sectionTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
         color: COLORS.white,
-        marginBottom: 20,
+        marginBottom: 15,
     },
     tierCard: {
-        backgroundColor: COLORS.card,
+        backgroundColor: COLORS.backgroundSoft,
         borderRadius: 16,
         padding: 20,
-        marginBottom: 16,
+        marginBottom: 15,
         borderWidth: 1,
         borderColor: COLORS.border,
     },
@@ -245,72 +383,60 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     tierName: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         color: COLORS.white,
     },
     tierPrice: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: 'bold',
     },
     featuresList: {
-        gap: 10,
+        gap: 8,
     },
     featureItem: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 10,
     },
     featureText: {
-        color: COLORS.textMuted,
-        marginLeft: 10,
         fontSize: 14,
+        color: COLORS.textLight,
     },
     nextButton: {
-        backgroundColor: COLORS.primary,
-        height: 56,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 20,
+        marginTop: 15,
     },
     disabledButton: {
         opacity: 0.5,
     },
     nextButtonText: {
-        color: '#FFF',
-        fontSize: 16,
         fontWeight: 'bold',
     },
     input: {
-        backgroundColor: COLORS.card,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         borderRadius: 12,
-        padding: 15,
-        color: COLORS.text,
+        padding: 14,
+        color: COLORS.white,
+        fontSize: 14,
         marginBottom: 15,
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    textArea: {
+        height: 120,
+        textAlignVertical: 'top',
     },
     row: {
         flexDirection: 'row',
     },
-    textArea: {
-        height: 150,
-        textAlignVertical: 'top',
-    },
     payButton: {
-        backgroundColor: COLORS.primary,
-        height: 56,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
         marginTop: 10,
-        marginBottom: 50,
+        backgroundColor: COLORS.primary,
     },
     payButtonText: {
-        color: '#FFF',
-        fontSize: 18,
         fontWeight: 'bold',
-    }
+        fontSize: 16,
+    },
 });
 
 export default PostJobScreen;

@@ -44,9 +44,9 @@ const ResetPasswordScreen = () => {
             return;
         }
 
-        setLoading(true);
         try {
-            const response = await axios.post(`${CONFIG.API_URL}/auth/reset-password/${token}`, { password });
+            const cleanToken = token.trim();
+            const response = await axios.post(`${CONFIG.API_URL}/auth/reset-password/${cleanToken}`, { password });
             if (response.data.success) {
                 Alert.alert('Success', 'Your password has been reset successfully.', [
                     { text: 'Login', onPress: () => navigation.navigate('Login') }

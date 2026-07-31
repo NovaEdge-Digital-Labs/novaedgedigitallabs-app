@@ -13,6 +13,11 @@ import ApiDashboardScreen from '../screens/ApiDashboardScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import AdminUsersScreen from '../screens/AdminUsersScreen';
 import MyWorkspaceScreen from '../screens/MyWorkspaceScreen';
+import PremiumUpgradeScreen from '../screens/PremiumUpgradeScreen';
+import MyApplicationsScreen from '../screens/MyApplicationsScreen';
+import SavedJobsScreen from '../screens/SavedJobsScreen';
+import MyPostedJobsScreen from '../screens/MyPostedJobsScreen';
+import EmployerApplicantsScreen from '../screens/EmployerApplicantsScreen';
 import StoreNavigator from './StoreNavigator';
 import ToolsNavigator from './ToolsNavigator';
 import ServicesNavigator from './ServicesNavigator';
@@ -44,6 +49,13 @@ const ProfileNavigator = () => {
             <Stack.Screen name="ApiDashboard" component={ApiDashboardScreen} />
             <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
             <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
+
+            {/* Job & Membership Stack Screens */}
+            <Stack.Screen name="PremiumUpgrade" component={PremiumUpgradeScreen} />
+            <Stack.Screen name="MyApplications" component={MyApplicationsScreen} />
+            <Stack.Screen name="SavedJobs" component={SavedJobsScreen} />
+            <Stack.Screen name="MyPostedJobs" component={MyPostedJobsScreen} />
+            <Stack.Screen name="EmployerApplicants" component={EmployerApplicantsScreen} />
         </Stack.Navigator>
     );
 };

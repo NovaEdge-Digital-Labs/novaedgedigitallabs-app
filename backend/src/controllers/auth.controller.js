@@ -14,8 +14,13 @@ const generateToken = (user) => {
     );
 };
 
+// Generate 6-Digit OTP
+const generateOtp = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 /**
- * @desc    Register a new user
+ * @desc    Register a new user (with 6-Digit Email OTP)
  * @route   POST /api/auth/register
  * @access  Public
  */
@@ -38,13 +43,49 @@ exports.register = async (req, res, next) => {
             });
         }
 
+        const normalizedEmail = email.trim().toLowerCase();
+
         // Check for existing user
-        const userExists = await User.findOne({ email });
+        const userExists = await User.findOne({ email: normalizedEmail });
         if (userExists) {
-            return res.status(409).json({
-                success: false,
-                message: 'User with this email already exists'
-            });
+            if (userExists.isEmailVerified) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'User with this email already exists and is verified. Please log in.'
+                });
+            } else {
+                // If existing unverified user registers again, resend OTP
+                const otp = generateOtp();
+                userExists.emailOtp = otp;
+                userExists.emailOtpExpires = Date.now() + 10 * 60 * 1000;
+                if (password) userExists.password = password;
+                await userExists.save();
+
+                await sendEmail({
+                    email: userExists.email,
+                    subject: 'Verify Your Email OTP - NovaEdge Digital Labs',
+                    message: `Your Email Verification OTP is: ${otp}`,
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background-color: #06000F; color: #ffffff; border-radius: 16px; border: 1px solid rgba(145, 39, 255, 0.3);">
+                            <h2 style="color: #c042ff; text-align: center;">NovaEdge Digital Labs</h2>
+                            <h3 style="text-align: center;">Verify Your Email Address</h3>
+                            <p style="color: #94A3B8;">Hello ${userExists.name},</p>
+                            <p style="color: #94A3B8;">Please enter the following 6-digit verification OTP code to complete your registration:</p>
+                            <div style="padding: 16px; background: linear-gradient(135deg, #9127FF, #C042FF); color: #ffffff; font-size: 28px; font-weight: bold; letter-spacing: 8px; text-align: center; border-radius: 12px; margin: 24px 0;">
+                                ${otp}
+                            </div>
+                            <p style="color: #94A3B8; font-size: 12px; text-align: center;">This OTP will expire in 10 minutes.</p>
+                        </div>
+                    `
+                });
+
+                return res.status(200).json({
+                    success: true,
+                    requiresOtp: true,
+                    email: userExists.email,
+                    message: 'A 6-digit OTP verification code has been sent to your email.'
+                });
+            }
         }
 
         // Handle Referral
@@ -54,27 +95,122 @@ exports.register = async (req, res, next) => {
             const referrer = await User.findOne({ referralCode });
             if (referrer) {
                 referredBy = referrer._id;
-                initialCredits = 50; // New user gets 50 points
-                // Award points to referrer
+                initialCredits = 50;
                 referrer.novaedgeCredits += 50;
                 await referrer.save();
             }
         }
 
-        // Generate unique referral code for this new user
+        // Generate unique referral code for new user
         const newReferralCode = name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') + crypto.randomBytes(3).toString('hex').toUpperCase();
 
-        // Create user
+        const otp = generateOtp();
+        const otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+
         const adminEmail = process.env.ADMIN_EMAIL;
         const user = await User.create({
             name,
-            email,
+            email: normalizedEmail,
             password,
-            role: adminEmail && email === adminEmail ? 'admin' : 'user',
+            role: adminEmail && normalizedEmail === adminEmail.toLowerCase() ? 'admin' : 'user',
             referralCode: newReferralCode,
             referredBy,
-            novaedgeCredits: initialCredits
+            novaedgeCredits: initialCredits,
+            isEmailVerified: false,
+            emailOtp: otp,
+            emailOtpExpires: otpExpires
         });
+
+        // Send OTP Email
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Verify Your Email OTP - NovaEdge Digital Labs',
+                message: `Your Email Verification OTP is: ${otp}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background-color: #06000F; color: #ffffff; border-radius: 16px; border: 1px solid rgba(145, 39, 255, 0.3);">
+                        <h2 style="color: #c042ff; text-align: center;">NovaEdge Digital Labs</h2>
+                        <h3 style="text-align: center;">Verify Your Email Address</h3>
+                        <p style="color: #94A3B8;">Hello ${user.name},</p>
+                        <p style="color: #94A3B8;">Please enter the following 6-digit verification OTP code to complete your registration:</p>
+                        <div style="padding: 16px; background: linear-gradient(135deg, #9127FF, #C042FF); color: #ffffff; font-size: 28px; font-weight: bold; letter-spacing: 8px; text-align: center; border-radius: 12px; margin: 24px 0;">
+                            ${otp}
+                        </div>
+                        <p style="color: #94A3B8; font-size: 12px; text-align: center;">This OTP will expire in 10 minutes.</p>
+                    </div>
+                `
+            });
+        } catch (mailError) {
+            console.error('Failed to send OTP verification email:', mailError);
+        }
+
+        res.status(201).json({
+            success: true,
+            requiresOtp: true,
+            email: user.email,
+            message: 'Registration successful! Please enter the 6-digit OTP code sent to your email.'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Verify 6-Digit Email OTP
+ * @route   POST /api/auth/verify-otp
+ * @access  Public
+ */
+exports.verifyOtp = async (req, res, next) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and 6-digit OTP code are required'
+            });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        const cleanOtp = otp.toString().trim();
+
+        const user = await User.findOne({ email: normalizedEmail });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User account not found'
+            });
+        }
+
+        if (user.isEmailVerified) {
+            const token = generateToken(user);
+            return res.status(200).json({
+                success: true,
+                message: 'Email is already verified',
+                token,
+                user: user.toPublicJSON()
+            });
+        }
+
+        if (!user.emailOtp || user.emailOtp !== cleanOtp) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid OTP verification code. Please check and try again.'
+            });
+        }
+
+        if (user.emailOtpExpires && user.emailOtpExpires < Date.now()) {
+            return res.status(400).json({
+                success: false,
+                message: 'OTP verification code has expired. Please tap "Resend OTP".'
+            });
+        }
+
+        // Verify user
+        user.isEmailVerified = true;
+        user.emailOtp = undefined;
+        user.emailOtpExpires = undefined;
+        await user.save();
 
         const token = generateToken(user);
 
@@ -88,12 +224,13 @@ exports.register = async (req, res, next) => {
                     referralCode: user.referralCode
                 }
             });
-        } catch (mailError) {
-            console.error('Failed to send welcome email:', mailError);
+        } catch (mailErr) {
+            console.error('Welcome email error:', mailErr);
         }
 
-        res.status(201).json({
+        res.status(200).json({
             success: true,
+            message: 'Email address verified successfully! 🎉',
             token,
             user: user.toPublicJSON()
         });
@@ -103,7 +240,71 @@ exports.register = async (req, res, next) => {
 };
 
 /**
- * @desc    Authenticate user & get token
+ * @desc    Resend 6-Digit Email OTP
+ * @route   POST /api/auth/resend-otp
+ * @access  Public
+ */
+exports.resendOtp = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required'
+            });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        const user = await User.findOne({ email: normalizedEmail });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User account not found'
+            });
+        }
+
+        if (user.isEmailVerified) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is already verified. You can log in directly.'
+            });
+        }
+
+        const otp = generateOtp();
+        user.emailOtp = otp;
+        user.emailOtpExpires = Date.now() + 10 * 60 * 1000;
+        await user.save();
+
+        await sendEmail({
+            email: user.email,
+            subject: 'Verify Your Email OTP - NovaEdge Digital Labs',
+            message: `Your New Email Verification OTP is: ${otp}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background-color: #06000F; color: #ffffff; border-radius: 16px; border: 1px solid rgba(145, 39, 255, 0.3);">
+                    <h2 style="color: #c042ff; text-align: center;">NovaEdge Digital Labs</h2>
+                    <h3 style="text-align: center;">Resent Verification OTP</h3>
+                    <p style="color: #94A3B8;">Hello ${user.name},</p>
+                    <p style="color: #94A3B8;">Here is your new 6-digit OTP verification code:</p>
+                    <div style="padding: 16px; background: linear-gradient(135deg, #9127FF, #C042FF); color: #ffffff; font-size: 28px; font-weight: bold; letter-spacing: 8px; text-align: center; border-radius: 12px; margin: 24px 0;">
+                        ${otp}
+                    </div>
+                    <p style="color: #94A3B8; font-size: 12px; text-align: center;">This OTP will expire in 10 minutes.</p>
+                </div>
+            `
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'A new 6-digit OTP code has been sent to your email.'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Authenticate user & get token (Enforcing Email OTP Verification)
  * @route   POST /api/auth/login
  * @access  Public
  */
@@ -119,8 +320,10 @@ exports.login = async (req, res, next) => {
             });
         }
 
+        const normalizedEmail = email.trim().toLowerCase();
+
         // Check user
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: normalizedEmail });
         if (!user || !(await user.comparePassword(password))) {
             console.log(`Login failed for: ${email} - ${!user ? 'User not found' : 'Invalid password'}`);
             return res.status(401).json({
@@ -129,21 +332,57 @@ exports.login = async (req, res, next) => {
             });
         }
 
+        // Check if email is verified
+        if (!user.isEmailVerified) {
+            const otp = generateOtp();
+            user.emailOtp = otp;
+            user.emailOtpExpires = Date.now() + 10 * 60 * 1000;
+            await user.save();
+
+            try {
+                await sendEmail({
+                    email: user.email,
+                    subject: 'Verify Your Email OTP - NovaEdge Digital Labs',
+                    message: `Your Email Verification OTP is: ${otp}`,
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background-color: #06000F; color: #ffffff; border-radius: 16px; border: 1px solid rgba(145, 39, 255, 0.3);">
+                            <h2 style="color: #c042ff; text-align: center;">NovaEdge Digital Labs</h2>
+                            <h3 style="text-align: center;">Verify Your Email Address</h3>
+                            <p style="color: #94A3B8;">Hello ${user.name},</p>
+                            <p style="color: #94A3B8;">Please verify your email address to log in. Here is your 6-digit OTP code:</p>
+                            <div style="padding: 16px; background: linear-gradient(135deg, #9127FF, #C042FF); color: #ffffff; font-size: 28px; font-weight: bold; letter-spacing: 8px; text-align: center; border-radius: 12px; margin: 24px 0;">
+                                ${otp}
+                            </div>
+                            <p style="color: #94A3B8; font-size: 12px; text-align: center;">This OTP will expire in 10 minutes.</p>
+                        </div>
+                    `
+                });
+            } catch (mailErr) {
+                console.error('Failed to send login OTP email:', mailErr);
+            }
+
+            return res.status(200).json({
+                success: false,
+                requiresOtp: true,
+                email: user.email,
+                message: 'Your email address is not verified yet. A 6-digit OTP code has been sent to your email.'
+            });
+        }
+
         console.log(`Login successful: ${email}`);
 
-        // Double check admin role for the master email
+        // Double check admin role for master email
         const adminEmail = process.env.ADMIN_EMAIL;
-        if (adminEmail && user.email === adminEmail && user.role !== 'admin') {
+        if (adminEmail && user.email === adminEmail.toLowerCase() && user.role !== 'admin') {
             user.role = 'admin';
             await user.save();
         }
 
         // Gamification: Daily Login Bonus
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Start of today
+        today.setHours(0, 0, 0, 0);
 
         if (!user.lastLoginDate || user.lastLoginDate < today) {
-            // Check for streak
             const yesterday = new Date(today);
             yesterday.setDate(yesterday.getDate() - 1);
 
@@ -153,7 +392,6 @@ exports.login = async (req, res, next) => {
                 user.dailyLoginStreak = 1;
             }
 
-            // Base 10 points + 5 points for each day of streak (cap at 50 bonus)
             const bonus = Math.min(50, user.dailyLoginStreak * 5);
             user.novaedgeCredits += (10 + bonus);
             user.lastLoginDate = new Date();
@@ -179,7 +417,6 @@ exports.login = async (req, res, next) => {
  */
 exports.getMe = async (req, res, next) => {
     try {
-        // req.user is set by protect middleware
         const user = await User.findById(req.user.id);
 
         if (!user) {
@@ -241,7 +478,6 @@ exports.deleteAccount = async (req, res, next) => {
             });
         }
 
-        // Find user with password field
         const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).json({
@@ -250,7 +486,6 @@ exports.deleteAccount = async (req, res, next) => {
             });
         }
 
-        // Verify password
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             return res.status(401).json({
@@ -259,11 +494,8 @@ exports.deleteAccount = async (req, res, next) => {
             });
         }
 
-        // Delete all related data
         await ToolUsage.deleteMany({ user: user._id });
         await Subscription.deleteMany({ user: user._id });
-
-        // Delete the user
         await User.findByIdAndDelete(user._id);
 
         res.status(200).json({
@@ -283,7 +515,8 @@ exports.deleteAccount = async (req, res, next) => {
 exports.forgotPassword = async (req, res, next) => {
     try {
         const { email } = req.body;
-        const user = await User.findOne({ email });
+        const normalizedEmail = (email || '').trim().toLowerCase();
+        const user = await User.findOne({ email: normalizedEmail });
 
         if (!user) {
             return res.status(404).json({
@@ -292,35 +525,26 @@ exports.forgotPassword = async (req, res, next) => {
             });
         }
 
-        // Generate reset token
         const resetToken = crypto.randomBytes(32).toString('hex');
-
-        // Hash and set to resetPasswordToken field
         user.resetPasswordToken = crypto
             .createHash('sha256')
             .update(resetToken)
             .digest('hex');
 
-        // Set expire
-        user.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
-
+        user.resetPasswordExpires = Date.now() + 10 * 60 * 1000;
         await user.save({ validateBeforeSave: false });
 
-        // Send the email
         const frontendUrl = process.env.FRONTEND_URL || 'https://novaedgedigitallabs.in';
         const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
         
-        const message = `You requested a password reset. Please click this link to reset your password: \n\n ${resetUrl}\n\nOr if you are using the Mobile App, use this Reset Token: ${resetToken}\n\nIf you did not request this, you can ignore this email.`;
+        const message = `You requested a password reset. Reset token: ${resetToken}`;
         const htmlMessage = `
             <h2>Password Reset Request</h2>
             <p>You requested a password reset for your NovaEdge Digital Labs account.</p>
-            <p>If you are using our website, click the button below:</p>
-            <a href="${resetUrl}" target="_blank" style="display:inline-block;padding:10px 20px;background-color:#007bff;color:#fff;text-decoration:none;border-radius:5px;">Reset Password</a>
-            <p><br>If you are using the Mobile App, copy and paste this Reset Token:</p>
+            <p>Copy and paste this Reset Token in your app:</p>
             <div style="padding: 10px; background-color: #f1f1f1; word-break: break-all; border-radius: 5px;">
                 <strong>${resetToken}</strong>
             </div>
-            <p>If you didn't request this, you can safely ignore this email.</p>
         `;
         
         try {
@@ -333,8 +557,7 @@ exports.forgotPassword = async (req, res, next) => {
             
             res.status(200).json({
                 success: true,
-                message: 'Password reset link has been sent to your email.',
-                resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
+                message: 'Password reset link has been sent to your email.'
             });
         } catch (emailError) {
             console.error('Email send error:', emailError);
@@ -359,10 +582,10 @@ exports.forgotPassword = async (req, res, next) => {
  */
 exports.resetPassword = async (req, res, next) => {
     try {
-        // Get hashed token
+        const rawToken = (req.params.token || '').trim();
         const resetPasswordToken = crypto
             .createHash('sha256')
-            .update(req.params.token)
+            .update(rawToken)
             .digest('hex');
 
         const user = await User.findOne({
@@ -377,7 +600,6 @@ exports.resetPassword = async (req, res, next) => {
             });
         }
 
-        // Set new password
         user.password = req.body.password;
         user.resetPasswordToken = undefined;
         user.resetPasswordExpires = undefined;

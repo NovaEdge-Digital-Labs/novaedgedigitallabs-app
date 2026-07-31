@@ -11,10 +11,48 @@ const BusinessInquiry = require('../models/BusinessInquiry.model');
 const JobListing = require('../models/JobListing.model');
 const Project = require('../models/Project.model');
 const Gig = require('../models/Gig.model');
+const PricingTier = require('../models/PricingTier.model');
+const { seedPricingTiers } = require('../utils/pricingSeeder');
 const os = require('os');
 const fs = require('fs/promises');
 const mongoose = require('mongoose');
 
+
+/**
+ * @desc    Get public active theme config for mobile app & web
+ * @route   GET /api/theme
+ * @access  Public
+ */
+exports.getPublicTheme = async (req, res, next) => {
+    try {
+        let config = await PlatformConfig.findOne().sort({ createdAt: -1 });
+        const defaultTheme = {
+            preset: 'purple-cyber',
+            primary: '#9127FF',
+            primaryDark: '#7B00FF',
+            secondary: '#120025',
+            background: '#06000F',
+            accent: '#C042FF',
+            glow: '#9127FF',
+            primaryGradient: 'linear-gradient(135deg, #9127FF, #C042FF)',
+            backgroundGradient: 'radial-gradient(circle at top left, #2D006D, #06000F)',
+            text: '#FFFFFF',
+            textLight: '#E0E0FF',
+            textMuted: '#A080FF',
+            card: 'rgba(255, 255, 255, 0.03)',
+            border: 'rgba(145, 39, 255, 0.2)'
+        };
+
+        const theme = config && config.themeConfig ? { ...defaultTheme, ...config.themeConfig.toObject() } : defaultTheme;
+
+        res.status(200).json({
+            success: true,
+            theme
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 
 /**
  * @desc    Get platform settings
@@ -1038,6 +1076,62 @@ exports.deleteAdminGig = async (req, res, next) => {
             success: true,
             message: 'Gig deleted successfully'
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get public pricing tiers
+ * @route   GET /api/pricing
+ * @access  Public
+ */
+exports.getPublicPricing = async (req, res, next) => {
+    try {
+        await seedPricingTiers();
+        const tiers = await PricingTier.find({ isActive: true }).sort({ category: 1, price: 1 });
+        res.status(200).json({ success: true, data: tiers });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get admin pricing tiers
+ * @route   GET /api/admin/pricing
+ * @access  Private/Admin
+ */
+exports.getAdminPricingTiers = async (req, res, next) => {
+    try {
+        await seedPricingTiers();
+        const tiers = await PricingTier.find().sort({ category: 1, price: 1 });
+        res.status(200).json({ success: true, count: tiers.length, data: tiers });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Update admin pricing tier
+ * @route   PUT /api/admin/pricing/:id
+ * @access  Private/Admin
+ */
+exports.updateAdminPricingTier = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { name, price, originalPrice, badge, description, features, durationDays, isActive } = req.body;
+
+        const tier = await PricingTier.findByIdAndUpdate(
+            id,
+            { name, price: Number(price), originalPrice: Number(originalPrice), badge, description, features, durationDays, isActive },
+            { new: true, runValidators: true }
+        );
+
+        if (!tier) {
+            return res.status(404).json({ success: false, message: 'Pricing tier not found' });
+        }
+
+        res.status(200).json({ success: true, message: 'Pricing tier updated successfully', data: tier });
     } catch (error) {
         next(error);
     }

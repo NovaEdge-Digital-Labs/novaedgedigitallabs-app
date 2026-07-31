@@ -38,6 +38,10 @@ const jobListingSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Job description is required']
     },
+    websiteUrl: {
+        type: String,
+        default: 'https://novaedgedigitallabs.tech'
+    },
     listingType: {
         type: String,
         enum: ['Basic', 'Featured', 'Premium'],

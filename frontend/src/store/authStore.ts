@@ -12,6 +12,7 @@ interface User {
     novaedgeCredits?: number;
     referralCode?: string;
     dailyLoginStreak?: number;
+    isEmailVerified?: boolean;
 }
 
 interface AuthState {
@@ -19,8 +20,9 @@ interface AuthState {
     token: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
-    login: (email: string, password: string) => Promise<void>;
-    register: (name: string, email: string, password: string, referralCode?: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<any>;
+    register: (name: string, email: string, password: string, referralCode?: string) => Promise<any>;
+    setAuth: (user: User, token: string) => Promise<void>;
     logout: () => Promise<void>;
     loadUser: () => Promise<void>;
     updateUser: (userData: Partial<User>) => void;
@@ -37,21 +39,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     setError: (error) => set({ error }),
 
+    setAuth: async (user, token) => {
+        await AsyncStorage.setItem('userToken', token);
+        set({
+            user,
+            token,
+            isAuthenticated: true,
+            isLoading: false
+        });
+    },
+
     login: async (email, password) => {
         set({ isLoading: true, error: null });
         console.log(`[AuthStore] Attempting login for: ${email}`);
         try {
             const data = await authApi.login(email, password);
-            console.log('[AuthStore] Login successful');
+            if (data.requiresOtp) {
+                set({ isLoading: false });
+                return data;
+            }
             const { user, token } = data;
-
-            await AsyncStorage.setItem('userToken', token);
-            set({
-                user,
-                token,
-                isAuthenticated: true,
-                isLoading: false
-            });
+            if (token) {
+                await AsyncStorage.setItem('userToken', token);
+                set({
+                    user,
+                    token,
+                    isAuthenticated: true,
+                    isLoading: false
+                });
+            }
+            return data;
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Login failed';
             console.error(`[AuthStore] Login error: ${errorMessage}`, err);
@@ -68,16 +85,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         console.log(`[AuthStore] Attempting registration for: ${email}`);
         try {
             const data = await authApi.register(name, email, password, referralCode);
-            console.log('[AuthStore] Registration successful');
+            if (data.requiresOtp) {
+                set({ isLoading: false });
+                return data;
+            }
             const { user, token } = data;
-
-            await AsyncStorage.setItem('userToken', token);
-            set({
-                user,
-                token,
-                isAuthenticated: true,
-                isLoading: false
-            });
+            if (token) {
+                await AsyncStorage.setItem('userToken', token);
+                set({
+                    user,
+                    token,
+                    isAuthenticated: true,
+                    isLoading: false
+                });
+            }
+            return data;
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
             console.error(`[AuthStore] Registration error: ${errorMessage}`, err);
@@ -112,9 +134,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 return;
             }
 
-            // Verify session with backend
             const response = await authApi.getMe();
-            const userData = response.data; // Extract user from { success: true, data: user }
+            const userData = response.data;
             set({
                 user: userData,
                 token,

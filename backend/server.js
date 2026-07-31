@@ -54,6 +54,7 @@ const notificationRoutes = require('./src/routes/notification.routes');
 const blogRoutes = require('./src/routes/blog.routes');
 const workspaceRoutes = require('./src/routes/workspace.routes');
 const postRoutes = require('./src/routes/post.routes');
+const databaseConceptsRoutes = require('./routes/databaseConceptsRoutes');
 const { toolsRateLimit, authRateLimit } = require('./src/middleware/rateLimit.middleware');
 
 app.use('/api/auth', authRateLimit, authRoutes);
@@ -75,6 +76,10 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/workspace', workspaceRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/db-lab', databaseConceptsRoutes);
+
+// Public Theme Endpoint for Mobile App & Web
+app.get('/api/theme', require('./src/controllers/admin.controller').getPublicTheme);
 
 // Mock dynamic route mounting
 app.get('/api', (req, res) => {

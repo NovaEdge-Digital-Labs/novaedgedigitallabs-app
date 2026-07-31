@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../constants/colors';
+import { useThemeStore } from '../store/themeStore';
 
 interface ThemeWrapperProps {
     children: React.ReactNode;
@@ -10,7 +10,13 @@ interface ThemeWrapperProps {
 }
 
 const ThemeWrapper: React.FC<ThemeWrapperProps> = ({ children, useSafeArea = true }) => {
-    const backgroundGradient = COLORS.getGradient(COLORS.backgroundGradient);
+    const { theme, fetchTheme, getGradient } = useThemeStore();
+
+    useEffect(() => {
+        fetchTheme();
+    }, []);
+
+    const backgroundGradient = getGradient(theme.backgroundGradient);
 
     const Content = (
         <View style={styles.container}>
@@ -21,16 +27,16 @@ const ThemeWrapper: React.FC<ThemeWrapperProps> = ({ children, useSafeArea = tru
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             />
-            {/* Nebula Effects */}
-            <View style={[styles.nebula, { top: -100, left: -100, backgroundColor: COLORS.primary + '30' }]} />
-            <View style={[styles.nebula, { bottom: -150, right: -50, backgroundColor: COLORS.accent + '20' }]} />
+            {/* Dynamic Nebula Accent Effects */}
+            <View style={[styles.nebula, { top: -100, left: -100, backgroundColor: theme.primary + '30' }]} />
+            <View style={[styles.nebula, { bottom: -150, right: -50, backgroundColor: theme.accent + '20' }]} />
 
             {children}
         </View>
     );
 
     if (useSafeArea) {
-        return <SafeAreaView style={styles.safeArea}>{Content}</SafeAreaView>;
+        return <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>{Content}</SafeAreaView>;
     }
 
     return Content;
@@ -39,7 +45,6 @@ const ThemeWrapper: React.FC<ThemeWrapperProps> = ({ children, useSafeArea = tru
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: COLORS.background,
     },
     container: {
         flex: 1,

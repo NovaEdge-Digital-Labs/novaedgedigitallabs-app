@@ -15,7 +15,10 @@ router.post('/profile', marketplaceController.createFreelancerProfile);
 router.get('/profile', marketplaceController.getFreelancerProfile);
 
 router.post('/gigs', marketplaceController.createGig);
+router.put('/gigs/:id', marketplaceController.updateGig);
+router.delete('/gigs/:id', marketplaceController.deleteGig);
 router.post('/projects', marketplaceController.createProject);
+router.patch('/projects/:id/status', marketplaceController.updateProjectStatus);
 
 router.post('/proposals', marketplaceController.submitProposal);
 router.get('/projects/:projectId/proposals', marketplaceController.getProjectProposals);

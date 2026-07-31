@@ -11,6 +11,21 @@ export const authApi = {
         return response.data;
     },
 
+    verifyOtp: async (email: string, otp: string) => {
+        const response = await axiosInstance.post('/auth/verify-otp', { email, otp });
+        return response.data;
+    },
+
+    resendOtp: async (email: string) => {
+        const response = await axiosInstance.post('/auth/resend-otp', { email });
+        return response.data;
+    },
+
+    forgotPassword: async (email: string) => {
+        const response = await axiosInstance.post('/auth/forgot-password', { email });
+        return response.data;
+    },
+
     getMe: async () => {
         const response = await axiosInstance.get('/auth/me');
         return response.data;

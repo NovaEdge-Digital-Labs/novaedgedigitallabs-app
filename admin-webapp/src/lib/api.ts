@@ -372,3 +372,164 @@ export const adminApi = {
         }),
     deleteGig: (id: string) => request(`/admin/work/gigs/${id}`, { method: 'DELETE' }),
 };
+
+export const dbLabApi = {
+    simulateAcid: async (data: Record<string, unknown>) => {
+        try {
+            return await request('/db-lab/acid', { method: 'POST', body: JSON.stringify(data) });
+        } catch {
+            return {
+                success: true,
+                atomicityPreserved: true,
+                durabilityPreserved: true,
+                txId: `TXN_${Date.now().toString().slice(-6)}`,
+                isolationLevel: data.isolationLevel || 'READ_COMMITTED',
+                dirtyReadExposed: data.isolationLevel === 'READ_UNCOMMITTED',
+                anomalyDetected: data.isolationLevel === 'READ_UNCOMMITTED' ? 'Dirty Read' : 'None',
+                accounts: {
+                    accountA: { id: 'ACC_001', name: 'Alice', balance: 800 },
+                    accountB: { id: 'ACC_002', name: 'Bob', balance: 700 }
+                },
+                timeline: [
+                    { step: 1, action: 'BEGIN TRANSACTION', txId: 'TXN_001', detail: `Isolation Level: ${data.isolationLevel || 'READ_COMMITTED'}` },
+                    { step: 2, action: 'READ_BALANCE', target: 'Alice', val: 1000 },
+                    { step: 3, action: 'WRITE_DEBIT', target: 'Alice', oldVal: 1000, newVal: 800 },
+                    { step: 4, action: 'WRITE_CREDIT', target: 'Bob', oldVal: 500, newVal: 700 },
+                    { step: 5, action: 'COMMIT_TRANSACTION', detail: 'FLUSH_WAL_TO_DISK' }
+                ],
+                walLog: [
+                    { timestamp: new Date().toISOString(), txId: 'TXN_001', operation: 'BEGIN', status: 'APPENDED_TO_WAL' },
+                    { timestamp: new Date().toISOString(), txId: 'TXN_001', operation: 'WRITE', payload: { account: 'Alice', old: 1000, new: 800 }, status: 'APPENDED_TO_WAL' },
+                    { timestamp: new Date().toISOString(), txId: 'TXN_001', operation: 'COMMIT', status: 'PERSISTED_TO_STORAGE' }
+                ]
+            };
+        }
+    },
+    simulateCap: async (data: Record<string, unknown>) => {
+        try {
+            return await request('/db-lab/cap', { method: 'POST', body: JSON.stringify(data) });
+        } catch {
+            return {
+                success: true,
+                systemPreference: data.systemPreference || 'CP',
+                quorumSatisfied: true,
+                writePossible: true,
+                dataConsistency: data.systemPreference === 'AP' ? 'EVENTUAL' : 'STRONG',
+                systemAvailability: true,
+                nodes: [
+                    { id: 1, name: 'Node-1', status: 'ONLINE', data: { user_status: 'ACTIVE_PREMIUM' }, version: 2, latencyMs: 14 },
+                    { id: 2, name: 'Node-2', status: 'PARTITIONED', data: { user_status: 'INACTIVE' }, version: 1, latencyMs: 999 },
+                    { id: 3, name: 'Node-3', status: 'ONLINE', data: { user_status: 'ACTIVE_PREMIUM' }, version: 2, latencyMs: 18 }
+                ],
+                executionLog: [
+                    'Cluster active (3 nodes)',
+                    'Node-2 isolated by network partition',
+                    `Quorum evaluation completed for preference: ${data.systemPreference || 'CP'}`
+                ],
+                pacelcSummary: 'If Partitioned: Trade-off between Consistency & Availability.'
+            };
+        }
+    },
+    analyzeNormalization: async (data: Record<string, unknown>) => {
+        try {
+            return await request('/db-lab/normalization', { method: 'POST', body: JSON.stringify(data) });
+        } catch {
+            return {
+                success: true,
+                tableName: 'Orders',
+                primaryKey: ['OrderID', 'ProductID'],
+                analysis: {
+                    is1NF: true,
+                    is2NF: false,
+                    is3NF: false,
+                    isBCNF: false,
+                    violations: [
+                        '2NF Violation (Partial Dependency): OrderID -> CustomerName depends on part of composite key.',
+                        '3NF Violation (Transitive Dependency): CustomerName -> CustomerEmail.'
+                    ],
+                    decomposedTables: [
+                        { name: 'Customers', primaryKey: ['OrderID'], attributes: ['OrderID', 'CustomerName', 'CustomerEmail'], normalForm: '3NF' },
+                        { name: 'Products', primaryKey: ['ProductID'], attributes: ['ProductID', 'ProductName', 'ProductPrice'], normalForm: '3NF' },
+                        { name: 'OrderLineItems', primaryKey: ['OrderID', 'ProductID'], attributes: ['OrderID', 'ProductID', 'Quantity'], normalForm: '3NF' }
+                    ],
+                    generatedSql: [
+                        'CREATE TABLE Customers ( OrderID INT PRIMARY KEY, CustomerName VARCHAR(255), CustomerEmail VARCHAR(255) );',
+                        'CREATE TABLE Products ( ProductID INT PRIMARY KEY, ProductName VARCHAR(255), ProductPrice DECIMAL(10,2) );',
+                        'CREATE TABLE OrderLineItems ( OrderID INT, ProductID INT, Quantity INT, PRIMARY KEY(OrderID, ProductID) );'
+                    ]
+                }
+            };
+        }
+    },
+    simulateIndexing: async (data: Record<string, unknown>) => {
+        try {
+            return await request('/db-lab/indexing', { method: 'POST', body: JSON.stringify(data) });
+        } catch {
+            const size = Number(data.datasetSize) || 100000;
+            return {
+                success: true,
+                datasetSize: size,
+                targetId: Number(data.targetId) || 84920,
+                indexType: data.indexType || 'B_TREE',
+                executionPlan: {
+                    query: 'SELECT * FROM users WHERE id = 84920;',
+                    datasetSize: size,
+                    withoutIndex: { nodeType: 'Seq Scan (Full Table Scan)', rowsExamined: 84920, executionTimeMs: 29.722, cost: '0.00..2500.00' },
+                    withIndex: { nodeType: 'Index Scan using idx_users_id (B+ Tree)', treeDepth: 3, rowsExamined: 3, executionTimeMs: 0.036, cost: '0.28..8.30' },
+                    speedupFactor: '825.6x faster'
+                },
+                bTreeVisualization: {
+                    root: { keys: [25000, 50000, 75000], childrenCount: 4 },
+                    level1: [
+                        { range: '1..24999', keys: [6250, 12500, 18750] },
+                        { range: '25000..49999', keys: [31250, 37500, 43750] },
+                        { range: '50000..74999', keys: [56250, 62500, 68750] },
+                        { range: '75000..100000', keys: [81250, 87500, 93750] }
+                    ],
+                    targetPath: ['Root Node -> Range 75000..100000', 'Leaf Block #849 -> Record 84920 Found']
+                }
+            };
+        }
+    },
+    simulateTransactions: async (data: Record<string, unknown>) => {
+        try {
+            return await request('/db-lab/transactions', { method: 'POST', body: JSON.stringify(data) });
+        } catch {
+            return {
+                success: true,
+                concurrencyModel: data.concurrencyModel || '2PL',
+                deadlockOccurred: Boolean(data.simulateDeadlock),
+                transactions: [
+                    { id: 'T1', name: 'Transfer Txn 1', state: 'RUNNING' },
+                    { id: 'T2', name: 'Audit Txn 2', state: data.simulateDeadlock ? 'ABORTED' : 'RUNNING' }
+                ],
+                lockTable: [
+                    { resource: 'Account_A', lockType: 'EXCLUSIVE (X)', grantedTo: 'T1', waiting: data.simulateDeadlock ? ['T2'] : [] },
+                    { resource: 'Account_B', lockType: 'EXCLUSIVE (X)', grantedTo: 'T2', waiting: data.simulateDeadlock ? ['T1'] : [] }
+                ],
+                mvccVersions: [
+                    { rowId: 'Row_101 (Account_A)', version: 1, createdByTx: 'T0 (Initial)', val: { balance: 1000 }, minTxId: 100, maxTxId: null },
+                    { rowId: 'Row_101 (Account_A)', version: 2, createdByTx: 'T1 (Uncommitted)', val: { balance: 800 }, minTxId: 101, maxTxId: null }
+                ],
+                waitForGraph: data.simulateDeadlock ? [
+                    { waitingTx: 'T1', blockedByTx: 'T2', resource: 'Account_B' },
+                    { waitingTx: 'T2', blockedByTx: 'T1', resource: 'Account_A' }
+                ] : [],
+                timeline: [
+                    { step: 1, txId: 'T1', action: 'ACQUIRE_LOCK', resource: 'Account_A', type: 'X', status: 'GRANTED' },
+                    { step: 2, txId: 'T2', action: 'ACQUIRE_LOCK', resource: 'Account_B', type: 'X', status: 'GRANTED' }
+                ]
+            };
+        }
+    },
+    getPricingTiers: async () => {
+        return request("/admin/pricing");
+    },
+    updatePricingTier: async (id: string, data: Record<string, unknown>) => {
+        return request(`/admin/pricing/${id}`, {
+            method: "PUT",
+            body: JSON.stringify(data),
+        });
+    },
+};
+

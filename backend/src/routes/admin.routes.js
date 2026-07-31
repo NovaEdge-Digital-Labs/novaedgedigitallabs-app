@@ -37,7 +37,9 @@ const {
     updateAdminProject,
     deleteAdminProject,
     updateAdminGig,
-    deleteAdminGig
+    deleteAdminGig,
+    getAdminPricingTiers,
+    updateAdminPricingTier
 } = require('../controllers/admin.controller');
 const { protect } = require('../middleware/auth.middleware');
 const { checkAdmin } = require('../middleware/admin.middleware');
@@ -97,5 +99,9 @@ router.put('/work/projects/:id', updateAdminProject);
 router.delete('/work/projects/:id', deleteAdminProject);
 router.put('/work/gigs/:id', updateAdminGig);
 router.delete('/work/gigs/:id', deleteAdminGig);
+
+// Pricing & Tiers Management
+router.get('/pricing', getAdminPricingTiers);
+router.put('/pricing/:id', updateAdminPricingTier);
 
 module.exports = router;

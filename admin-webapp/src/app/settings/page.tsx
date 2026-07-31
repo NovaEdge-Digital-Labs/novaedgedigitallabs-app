@@ -579,63 +579,230 @@ export default function SettingsPage() {
                     </div>
                 );
             case "Appearance":
+                const THEME_PRESETS = [
+                    {
+                        id: 'purple-cyber',
+                        name: 'Purple Cyber (Default)',
+                        primary: '#9127FF',
+                        accent: '#C042FF',
+                        background: '#06000F',
+                        primaryGradient: 'linear-gradient(135deg, #9127FF, #C042FF)',
+                        textMuted: '#A080FF',
+                    },
+                    {
+                        id: 'electric-blue',
+                        name: 'Electric Blue',
+                        primary: '#0072FF',
+                        accent: '#00F2FE',
+                        background: '#030B1E',
+                        primaryGradient: 'linear-gradient(135deg, #0072FF, #00F2FE)',
+                        textMuted: '#80BFFF',
+                    },
+                    {
+                        id: 'emerald-cyber',
+                        name: 'Emerald Green',
+                        primary: '#00E676',
+                        accent: '#00B0FF',
+                        background: '#05130E',
+                        primaryGradient: 'linear-gradient(135deg, #00E676, #00B0FF)',
+                        textMuted: '#80FFAE',
+                    },
+                    {
+                        id: 'sunset-gold',
+                        name: 'Sunset Gold',
+                        primary: '#FF5E36',
+                        accent: '#FFAE00',
+                        background: '#120905',
+                        primaryGradient: 'linear-gradient(135deg, #FF5E36, #FFAE00)',
+                        textMuted: '#FFC880',
+                    },
+                    {
+                        id: 'crimson-neon',
+                        name: 'Crimson Red',
+                        primary: '#FF0055',
+                        accent: '#FF5500',
+                        background: '#100207',
+                        primaryGradient: 'linear-gradient(135deg, #FF0055, #FF5500)',
+                        textMuted: '#FF80AA',
+                    },
+                    {
+                        id: 'obsidian-dark',
+                        name: 'Obsidian Dark',
+                        primary: '#6366F1',
+                        accent: '#A855F7',
+                        background: '#09090B',
+                        primaryGradient: 'linear-gradient(135deg, #6366F1, #A855F7)',
+                        textMuted: '#A5B4FC',
+                    }
+                ];
+
+                const currentThemeObj: Record<string, any> = (config.themeConfig as any) || THEME_PRESETS[0];
+
+                const applyPreset = (preset: typeof THEME_PRESETS[0]) => {
+                    updateField("themeConfig", {
+                        preset: preset.id,
+                        primary: preset.primary,
+                        primaryDark: preset.primary,
+                        secondary: preset.background,
+                        background: preset.background,
+                        accent: preset.accent,
+                        glow: preset.primary,
+                        primaryGradient: preset.primaryGradient,
+                        backgroundGradient: `radial-gradient(circle at top left, ${preset.primary}40, ${preset.background})`,
+                        text: "#FFFFFF",
+                        textLight: "#E0E0FF",
+                        textMuted: preset.textMuted,
+                        card: "rgba(255, 255, 255, 0.03)",
+                        border: `${preset.primary}33`
+                    });
+                    updateField("brandPrimaryColor", preset.primary);
+                };
+
                 return (
                     <div className="space-y-6">
                         <div className="glass-panel p-6 rounded-2xl">
-                            <h2 className="text-lg font-bold mb-6">Visual Identity</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="space-y-4">
-                                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                        <Palette className="w-4 h-4" /> Brand Primary Color
-                                    </label>
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-xl bg-primary shadow-lg shadow-primary/30" style={{ backgroundColor: config.brandPrimaryColor }} />
-                                        <input
-                                            type="text"
-                                            value={config.brandPrimaryColor}
-                                            onChange={(e) => updateField("brandPrimaryColor", e.target.value)}
-                                            className="flex-1 bg-neutral-900 border border-border rounded-xl px-4 py-2 font-mono text-sm"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                        <Moon className="w-4 h-4" /> Color Scheme
-                                    </label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <button
-                                            onClick={() => updateField("colorScheme", "dark")}
+                            <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
+                                <Palette className="w-5 h-5 text-primary" /> Mobile App Remote Theme Engine
+                            </h2>
+                            <p className="text-xs text-muted-foreground mb-6">
+                                Choose a preset or customize colors below. When saved, all active users' mobile apps will update their UI theme live over-the-air!
+                            </p>
+
+                            <h3 className="text-sm font-bold text-white mb-4">Popular Theme Presets</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                                {THEME_PRESETS.map((preset) => {
+                                    const isSelected = currentThemeObj?.preset === preset.id || currentThemeObj?.primary === preset.primary;
+                                    return (
+                                        <div
+                                            key={preset.id}
+                                            onClick={() => applyPreset(preset)}
                                             className={cn(
-                                                "flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-bold",
-                                                config.colorScheme === "dark" ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-white/5"
+                                                "p-4 rounded-xl border-2 cursor-pointer transition-all hover:scale-[1.02]",
+                                                isSelected ? "border-primary bg-primary/10 shadow-lg shadow-primary/20" : "border-border bg-neutral-900/60 hover:border-primary/40"
                                             )}
                                         >
-                                            <Moon className="w-4 h-4" /> Dark
-                                        </button>
-                                        <button
-                                            onClick={() => updateField("colorScheme", "light")}
-                                            className={cn(
-                                                "flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all font-bold",
-                                                config.colorScheme === "light" ? "border-primary bg-primary/10 text-primary" : "border-border hover:bg-white/5"
-                                            )}
-                                        >
-                                            <Sun className="w-4 h-4" /> Light
-                                        </button>
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="text-xs font-bold text-white">{preset.name}</span>
+                                                {isSelected && <span className="w-2 h-2 rounded-full bg-primary animate-ping" />}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: preset.primary }} title="Primary" />
+                                                <div className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: preset.accent }} title="Accent" />
+                                                <div className="w-6 h-6 rounded-full border border-white/20" style={{ backgroundColor: preset.background }} title="Background" />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-border/60 pt-6">
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-white mb-2">Custom Colors</h3>
+                                    <div>
+                                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Primary Color</label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="color"
+                                                value={currentThemeObj?.primary || "#9127FF"}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    updateField("themeConfig", {
+                                                        ...currentThemeObj,
+                                                        primary: val,
+                                                        glow: val,
+                                                        primaryGradient: `linear-gradient(135deg, ${val}, ${currentThemeObj?.accent || '#C042FF'})`
+                                                    });
+                                                    updateField("brandPrimaryColor", val);
+                                                }}
+                                                className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={currentThemeObj?.primary || "#9127FF"}
+                                                onChange={(e) => updateField("themeConfig", { ...currentThemeObj, primary: e.target.value })}
+                                                className="flex-1 bg-neutral-900 border border-border rounded-xl px-4 py-2 font-mono text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Accent Color</label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="color"
+                                                value={currentThemeObj?.accent || "#C042FF"}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    updateField("themeConfig", {
+                                                        ...currentThemeObj,
+                                                        accent: val,
+                                                        primaryGradient: `linear-gradient(135deg, ${currentThemeObj?.primary || '#9127FF'}, ${val})`
+                                                    });
+                                                }}
+                                                className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={currentThemeObj?.accent || "#C042FF"}
+                                                onChange={(e) => updateField("themeConfig", { ...currentThemeObj, accent: e.target.value })}
+                                                className="flex-1 bg-neutral-900 border border-border rounded-xl px-4 py-2 font-mono text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-muted-foreground mb-1.5 block">App Background</label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="color"
+                                                value={currentThemeObj?.background || "#06000F"}
+                                                onChange={(e) => updateField("themeConfig", { ...currentThemeObj, background: e.target.value })}
+                                                className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={currentThemeObj?.background || "#06000F"}
+                                                onChange={(e) => updateField("themeConfig", { ...currentThemeObj, background: e.target.value })}
+                                                className="flex-1 bg-neutral-900 border border-border rounded-xl px-4 py-2 font-mono text-sm"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="space-y-4 md:col-span-2">
-                                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                        <Type className="w-4 h-4" /> Typography
-                                    </label>
-                                    <select
-                                        value={config.typography}
-                                        onChange={(e) => updateField("typography", e.target.value)}
-                                        className="w-full bg-neutral-900 border border-border rounded-xl px-4 py-2.5 focus:border-primary transition-all"
+
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-white mb-2">Live Mobile App UI Preview</h3>
+                                    <div
+                                        className="p-6 rounded-2xl border transition-all space-y-4"
+                                        style={{
+                                            backgroundColor: currentThemeObj?.background || '#06000F',
+                                            borderColor: currentThemeObj?.border || 'rgba(145, 39, 255, 0.2)'
+                                        }}
                                     >
-                                        <option>Inter (Modern Sans)</option>
-                                        <option>Outfit (Premium Round)</option>
-                                        <option>Roboto (Standard)</option>
-                                    </select>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-bold text-white">Preview Screen</span>
+                                            <span
+                                                className="text-[10px] px-2.5 py-1 rounded-full font-bold uppercase"
+                                                style={{
+                                                    color: currentThemeObj?.primary || '#9127FF',
+                                                    backgroundColor: `${currentThemeObj?.primary || '#9127FF'}20`
+                                                }}
+                                            >
+                                                Active Theme
+                                            </span>
+                                        </div>
+
+                                        <p className="text-xs" style={{ color: currentThemeObj?.textMuted || '#A080FF' }}>
+                                            This is how card components, text headers, and buttons will appear in the mobile app.
+                                        </p>
+
+                                        <button
+                                            className="w-full py-3 rounded-xl font-bold text-white text-xs shadow-lg transition-all"
+                                            style={{
+                                                background: currentThemeObj?.primaryGradient || 'linear-gradient(135deg, #9127FF, #C042FF)',
+                                                boxShadow: `0 4px 15px ${currentThemeObj?.primary || '#9127FF'}40`
+                                            }}
+                                        >
+                                            Sample Action Button
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

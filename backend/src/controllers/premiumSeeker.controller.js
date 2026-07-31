@@ -50,6 +50,31 @@ exports.verifyPremium = async (req, res) => {
             { new: true, upsert: true }
         );
 
+        // Send Invoice Email with CC to app@novaedgedigitallabs.in & BCC to amitkumarraikwar27@gmail.com
+        try {
+            const User = require('../models/User.model');
+            const sendInvoice = require('../utils/sendInvoice');
+            const user = await User.findById(req.user.id);
+            if (user) {
+                await sendInvoice({
+                    user: { name: user.name, email: user.email },
+                    purchaseType: 'subscription',
+                    itemDetails: {
+                        name: 'Premium Candidate Pass',
+                        price: 499,
+                        billingCycle: 'Monthly'
+                    },
+                    paymentDetails: {
+                        orderId: razorpayOrderId || `PREMIUM_${Date.now()}`,
+                        paymentId: razorpayPaymentId || `PAY_${Date.now()}`,
+                        date: new Date()
+                    }
+                });
+            }
+        } catch (mailErr) {
+            console.error('Failed to send invoice email for Premium Candidate Pass:', mailErr);
+        }
+
         res.status(200).json({ success: true, data: premium });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

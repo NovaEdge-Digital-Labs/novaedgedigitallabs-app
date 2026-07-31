@@ -19,6 +19,275 @@ import ThemeWrapper from '../components/ThemeWrapper';
 import { useAuthStore } from '../store/authStore';
 import postApi, { Post } from '../api/postApi';
 
+interface PostCardProps {
+    item: Post;
+    currentUserId: string;
+    onLike: (id: string) => void;
+    onComment: (id: string, text: string) => Promise<boolean>;
+    onShare: (id: string, content: string, link?: string) => void;
+    onUpdate: (id: string, content: string, link?: string) => Promise<boolean>;
+    onDelete: (id: string) => void;
+    onOpenLink: (url: string) => void;
+    getRelativeTime: (dateString: string) => string;
+}
+
+const PostCard: React.FC<PostCardProps> = ({
+    item,
+    currentUserId,
+    onLike,
+    onComment,
+    onShare,
+    onUpdate,
+    onDelete,
+    onOpenLink,
+    getRelativeTime
+}) => {
+    const [isCommentsExpanded, setIsCommentsExpanded] = useState(false);
+    const [commentText, setCommentText] = useState('');
+    const [isCommenting, setIsCommenting] = useState(false);
+
+    // Edit state
+    const [isEditing, setIsEditing] = useState(false);
+    const [editContent, setEditContent] = useState(item.content);
+    const [editLink, setEditLink] = useState(item.link || '');
+    const [isUpdating, setIsUpdating] = useState(false);
+
+    const handleAddCommentLocal = async () => {
+        if (!commentText.trim()) return;
+        setIsCommenting(true);
+        const success = await onComment(item._id, commentText.trim());
+        setIsCommenting(false);
+        if (success) {
+            setCommentText('');
+        }
+    };
+
+    const isLiked = item.likes ? item.likes.includes(currentUserId) : false;
+    const postUserId = typeof item.userId === 'object' ? item.userId?._id : item.userId;
+    const isOwner = Boolean(currentUserId && postUserId && String(postUserId) === String(currentUserId));
+    const relativeTime = getRelativeTime(item.createdAt);
+    const editedTime = item.updatedAt ? getRelativeTime(item.updatedAt) : 'Just now';
+    const userInitial = item.userId?.name?.charAt(0) || 'U';
+
+    // Strictly check isEdited flag (do NOT use updatedAt alone because likes/comments change updatedAt)
+    const isPostEdited = Boolean(item.isEdited === true);
+
+    return (
+        <View style={[styles.postCard, COLORS.glass]}>
+            <View style={styles.postHeader}>
+                <View style={[styles.avatarContainer, COLORS.getGlow(COLORS.primary, 8, 0.2)]}>
+                    <Text style={styles.avatarText}>{userInitial}</Text>
+                </View>
+                <View style={styles.userInfo}>
+                    <Text style={styles.userName} numberOfLines={1}>{item.userId?.name || 'User'}</Text>
+                    <Text style={styles.userEmail} numberOfLines={1}>
+                        {relativeTime}
+                        {isPostEdited ? (
+                            <Text style={{ color: COLORS.primary, fontWeight: '700' }}>
+                                {` • Edited ${editedTime}`}
+                            </Text>
+                        ) : null}
+                    </Text>
+                </View>
+                {/* Only Post Owner Can View & Execute Edit / Delete */}
+                {isOwner && (
+                    <View style={styles.ownerActionsRow}>
+                        <TouchableOpacity 
+                            onPress={() => {
+                                setEditContent(item.content);
+                                setEditLink(item.link || '');
+                                setIsEditing(!isEditing);
+                            }} 
+                            style={styles.ownerIconButton}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons 
+                                name={isEditing ? "close-circle-outline" : "create-outline"} 
+                                size={18} 
+                                color={isEditing ? '#ef4444' : COLORS.primary} 
+                            />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            onPress={() => onDelete(item._id)} 
+                            style={styles.ownerIconButton}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
+            
+            {/* If Editing Mode is Active */}
+            {isEditing ? (
+                <View style={styles.editFormContainer}>
+                    <Text style={styles.editFormLabel}>Edit Post</Text>
+                    <TextInput
+                        style={styles.editTextInput}
+                        multiline
+                        maxLength={280}
+                        value={editContent}
+                        onChangeText={setEditContent}
+                        placeholder="Edit your post content..."
+                        placeholderTextColor={COLORS.textMuted}
+                    />
+                    <View style={styles.editLinkRow}>
+                        <Ionicons name="link" size={16} color={COLORS.textMuted} style={{ marginRight: 6 }} />
+                        <TextInput
+                            style={styles.editLinkInput}
+                            value={editLink}
+                            onChangeText={setEditLink}
+                            placeholder="Edit link (optional)"
+                            placeholderTextColor={COLORS.textMuted}
+                            autoCapitalize="none"
+                            keyboardType="url"
+                        />
+                    </View>
+                    <View style={styles.editButtonsRow}>
+                        <TouchableOpacity 
+                            style={styles.editCancelBtn} 
+                            onPress={() => setIsEditing(false)}
+                            disabled={isUpdating}
+                        >
+                            <Text style={styles.editCancelBtnText}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                            style={[styles.editSaveBtn, (!editContent.trim() || isUpdating) && { opacity: 0.5 }]} 
+                            disabled={!editContent.trim() || isUpdating}
+                            onPress={async () => {
+                                setIsUpdating(true);
+                                const ok = await onUpdate(item._id, editContent.trim(), editLink.trim());
+                                setIsUpdating(false);
+                                if (ok) {
+                                    setIsEditing(false);
+                                }
+                            }}
+                        >
+                            {isUpdating ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                            ) : (
+                                <Text style={styles.editSaveBtnText}>Save</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            ) : (
+                /* Regular Post View */
+                <>
+                    <Text style={styles.postContent}>{item.content}</Text>
+                    
+                    {item.link && (
+                        <TouchableOpacity onPress={() => onOpenLink(item.link!)} activeOpacity={0.7} style={styles.linkContainer}>
+                            <Ionicons name="link-outline" size={16} color={COLORS.primary} style={{ marginRight: 4 }} />
+                            <Text numberOfLines={1} style={styles.linkText}>{item.link}</Text>
+                        </TouchableOpacity>
+                    )}
+                </>
+            )}
+
+            <View style={styles.postActions}>
+                {/* Like Action */}
+                <TouchableOpacity 
+                    onPress={() => onLike(item._id)} 
+                    style={styles.actionButton}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons 
+                        name={isLiked ? 'heart' : 'heart-outline'} 
+                        size={18} 
+                        color={isLiked ? '#ef4444' : COLORS.textMuted} 
+                    />
+                    <Text style={[styles.actionText, isLiked && { color: '#ef4444' }]}>
+                        {item.likes ? item.likes.length : 0}
+                    </Text>
+                </TouchableOpacity>
+
+                {/* Comment Action */}
+                <TouchableOpacity 
+                    onPress={() => {
+                        setIsCommentsExpanded(!isCommentsExpanded);
+                        setCommentText('');
+                    }} 
+                    style={[styles.actionButton, { marginLeft: 24 }]}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons 
+                        name="chatbubble-outline" 
+                        size={18} 
+                        color={isCommentsExpanded ? COLORS.primary : COLORS.textMuted} 
+                    />
+                    <Text style={[styles.actionText, isCommentsExpanded && { color: COLORS.primary }]}>
+                        {item.comments ? item.comments.length : 0}
+                    </Text>
+                </TouchableOpacity>
+
+                {/* Share Action */}
+                <TouchableOpacity 
+                    onPress={() => onShare(item._id, item.content, item.link)} 
+                    style={[styles.actionButton, { marginLeft: 24 }]}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons 
+                        name="share-social-outline" 
+                        size={18} 
+                        color={COLORS.textMuted} 
+                    />
+                    <Text style={styles.actionText}>
+                        {item.shares ? item.shares.length : 0}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Inline Comments Section */}
+            {isCommentsExpanded && (
+                <View style={styles.commentsSection}>
+                    {item.comments && item.comments.length > 0 && (
+                        <View style={styles.commentsList}>
+                            {item.comments.map((comment) => (
+                                <View key={comment._id} style={styles.commentItem}>
+                                    <View style={styles.commentHeader}>
+                                        <View style={styles.commentAvatar}>
+                                            <Text style={styles.commentAvatarText}>
+                                                {comment.userId?.name?.charAt(0) || 'U'}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.commentInfo}>
+                                            <Text style={styles.commentUser}>{comment.userId?.name || 'User'}</Text>
+                                            <Text style={styles.commentTime}>{getRelativeTime(comment.createdAt)}</Text>
+                                        </View>
+                                    </View>
+                                    <Text style={styles.commentContent}>{comment.text}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    )}
+
+                    <View style={styles.addCommentRow}>
+                        <TextInput
+                            style={styles.commentInput}
+                            placeholder="Write a comment..."
+                            placeholderTextColor={COLORS.textMuted}
+                            value={commentText}
+                            onChangeText={setCommentText}
+                        />
+                        <TouchableOpacity 
+                            onPress={handleAddCommentLocal} 
+                            style={[styles.sendCommentButton, !commentText.trim() && { opacity: 0.5 }]}
+                            disabled={!commentText.trim() || isCommenting}
+                        >
+                            {isCommenting ? (
+                                <ActivityIndicator size="small" color={COLORS.primary} />
+                            ) : (
+                                <Ionicons name="send" size={18} color={COLORS.primary} />
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
+        </View>
+    );
+};
+
 const HomeScreen: React.FC<any> = ({ navigation }) => {
     const { user } = useAuthStore();
     const [posts, setPosts] = useState<Post[]>([]);
@@ -28,10 +297,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     const [isPosting, setIsPosting] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // Comments states
-    const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
-    const [commentText, setCommentText] = useState('');
-    const [isCommenting, setIsCommenting] = useState(false);
+    const currentUserId = user?.id || (user as any)?._id || '';
 
     const fetchFeed = useCallback(async (showLoader = false) => {
         if (showLoader) setIsLoading(true);
@@ -68,14 +334,14 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     };
 
     const handleLikePost = async (postId: string) => {
-        const currentUserId = user?.id || '';
         setPosts((prevPosts) => 
             prevPosts.map((post) => {
                 if (post._id === postId) {
-                    const liked = post.likes.includes(currentUserId);
+                    const postLikes = post.likes || [];
+                    const liked = postLikes.includes(currentUserId);
                     const updatedLikes = liked 
-                        ? post.likes.filter((id) => id !== currentUserId)
-                        : [...post.likes, currentUserId];
+                        ? postLikes.filter((id) => id !== currentUserId)
+                        : [...postLikes, currentUserId];
                     return { ...post, likes: updatedLikes };
                 }
                 return post;
@@ -85,20 +351,16 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
         await postApi.likePost(postId);
     };
 
-    const handleAddComment = async (postId: string) => {
-        if (!commentText.trim()) return;
-
-        setIsCommenting(true);
-        const res = await postApi.addComment(postId, commentText);
-        setIsCommenting(false);
-
+    const handleAddComment = async (postId: string, text: string) => {
+        const res = await postApi.addComment(postId, text);
         if (res && res.success) {
-            setCommentText('');
             setPosts((prevPosts) => 
                 prevPosts.map((post) => post._id === postId ? res.data : post)
             );
+            return true;
         } else {
             Alert.alert('Error', res.message || 'Failed to submit comment.');
+            return false;
         }
     };
 
@@ -108,11 +370,11 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
             setPosts((prevPosts) => 
                 prevPosts.map((post) => {
                     if (post._id === postId) {
-                        const currentUserId = user?.id || '';
-                        const shared = post.shares.includes(currentUserId);
+                        const postShares = post.shares || [];
+                        const shared = postShares.includes(currentUserId);
                         const updatedShares = shared 
-                            ? post.shares.filter((id) => id !== currentUserId)
-                            : [...post.shares, currentUserId];
+                            ? postShares.filter((id) => id !== currentUserId)
+                            : [...postShares, currentUserId];
                         return { ...post, shares: updatedShares };
                     }
                     return post;
@@ -129,6 +391,31 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
             });
         } catch (error) {
             console.error('Error sharing post:', error);
+        }
+    };
+
+    const handleUpdatePost = async (postId: string, content: string, link?: string) => {
+        const nowIso = new Date().toISOString();
+        // Optimistic UI update for instant feedback
+        setPosts((prevPosts) => 
+            prevPosts.map((post) => 
+                post._id === postId 
+                    ? { ...post, content, link: link || undefined, isEdited: true, updatedAt: nowIso } 
+                    : post
+            )
+        );
+
+        const res = await postApi.updatePost(postId, content, link);
+        if (res && res.success) {
+            setPosts((prevPosts) => 
+                prevPosts.map((post) => (post._id === postId ? { ...res.data, isEdited: true, updatedAt: res.data.updatedAt || nowIso } : post))
+            );
+            Alert.alert('Success', 'Post updated successfully.');
+            return true;
+        } else {
+            Alert.alert('Error', res.message || 'Failed to update post.');
+            fetchFeed();
+            return false;
         }
     };
 
@@ -185,142 +472,6 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
         return `${diffDays}d ago`;
     };
 
-    const renderPostItem = ({ item }: { item: Post }) => {
-        const isLiked = item.likes.includes(user?.id || '');
-        const isOwner = item.userId?._id === user?.id;
-        const relativeTime = getRelativeTime(item.createdAt);
-        const userInitial = item.userId?.name?.charAt(0) || 'U';
-        const isCommentsExpanded = expandedPostId === item._id;
-
-        return (
-            <View style={[styles.postCard, COLORS.glass]}>
-                <View style={styles.postHeader}>
-                    <View style={[styles.avatarContainer, COLORS.getGlow(COLORS.primary, 8, 0.2)]}>
-                        <Text style={styles.avatarText}>{userInitial}</Text>
-                    </View>
-                    <View style={styles.userInfo}>
-                        <Text style={styles.userName}>{item.userId?.name || 'User'}</Text>
-                        <Text style={styles.userEmail}>{item.userId?.email || ''} • {relativeTime}</Text>
-                    </View>
-                    {isOwner && (
-                        <TouchableOpacity onPress={() => handleDeletePost(item._id)} style={{ padding: 4 }}>
-                            <Ionicons name="trash-outline" size={18} color={COLORS.textMuted} />
-                        </TouchableOpacity>
-                    )}
-                </View>
-                
-                <Text style={styles.postContent}>{item.content}</Text>
-                
-                {item.link && (
-                    <TouchableOpacity onPress={() => handleOpenLink(item.link!)} activeOpacity={0.7} style={styles.linkContainer}>
-                        <Ionicons name="link-outline" size={16} color={COLORS.primary} style={{ marginRight: 4 }} />
-                        <Text numberOfLines={1} style={styles.linkText}>{item.link}</Text>
-                    </TouchableOpacity>
-                )}
-
-                <View style={styles.postActions}>
-                    {/* Like Action */}
-                    <TouchableOpacity 
-                        onPress={() => handleLikePost(item._id)} 
-                        style={styles.actionButton}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons 
-                            name={isLiked ? 'heart' : 'heart-outline'} 
-                            size={18} 
-                            color={isLiked ? '#ef4444' : COLORS.textMuted} 
-                        />
-                        <Text style={[styles.actionText, isLiked && { color: '#ef4444' }]}>
-                            {item.likes.length}
-                        </Text>
-                    </TouchableOpacity>
-
-                    {/* Comment Action */}
-                    <TouchableOpacity 
-                        onPress={() => {
-                            setExpandedPostId(isCommentsExpanded ? null : item._id);
-                            setCommentText('');
-                        }} 
-                        style={[styles.actionButton, { marginLeft: 24 }]}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons 
-                            name="chatbubble-outline" 
-                            size={18} 
-                            color={isCommentsExpanded ? COLORS.primary : COLORS.textMuted} 
-                        />
-                        <Text style={[styles.actionText, isCommentsExpanded && { color: COLORS.primary }]}>
-                            {item.comments ? item.comments.length : 0}
-                        </Text>
-                    </TouchableOpacity>
-
-                    {/* Share Action */}
-                    <TouchableOpacity 
-                        onPress={() => handleSharePost(item._id, item.content, item.link)} 
-                        style={[styles.actionButton, { marginLeft: 24 }]}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons 
-                            name="share-social-outline" 
-                            size={18} 
-                            color={COLORS.textMuted} 
-                        />
-                        <Text style={styles.actionText}>
-                            {item.shares ? item.shares.length : 0}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Inline Comments Section */}
-                {isCommentsExpanded && (
-                    <View style={styles.commentsSection}>
-                        {item.comments && item.comments.length > 0 && (
-                            <View style={styles.commentsList}>
-                                {item.comments.map((comment) => (
-                                    <View key={comment._id} style={styles.commentItem}>
-                                        <View style={styles.commentHeader}>
-                                            <View style={styles.commentAvatar}>
-                                                <Text style={styles.commentAvatarText}>
-                                                    {comment.userId?.name?.charAt(0) || 'U'}
-                                                </Text>
-                                            </View>
-                                            <View style={styles.commentInfo}>
-                                                <Text style={styles.commentUser}>{comment.userId?.name || 'User'}</Text>
-                                                <Text style={styles.commentTime}>{getRelativeTime(comment.createdAt)}</Text>
-                                            </View>
-                                        </View>
-                                        <Text style={styles.commentContent}>{comment.text}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-
-                        <View style={styles.addCommentRow}>
-                            <TextInput
-                                style={styles.commentInput}
-                                placeholder="Write a comment..."
-                                placeholderTextColor={COLORS.textMuted}
-                                value={commentText}
-                                onChangeText={setCommentText}
-                            />
-                            <TouchableOpacity 
-                                onPress={() => handleAddComment(item._id)} 
-                                style={[styles.sendCommentButton, !commentText.trim() && { opacity: 0.5 }]}
-                                disabled={!commentText.trim() || isCommenting}
-                            >
-                                {isCommenting ? (
-                                    <ActivityIndicator size="small" color={COLORS.primary} />
-                                ) : (
-                                    <Ionicons name="send" size={18} color={COLORS.primary} />
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                )}
-            </View>
-        );
-    };
-
     return (
         <ThemeWrapper>
             {/* Header */}
@@ -343,7 +494,19 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
             <FlatList
                 data={posts}
                 keyExtractor={(item) => item._id}
-                renderItem={renderPostItem}
+                renderItem={({ item }) => (
+                    <PostCard
+                        item={item}
+                        currentUserId={currentUserId}
+                        onLike={handleLikePost}
+                        onComment={handleAddComment}
+                        onShare={handleSharePost}
+                        onUpdate={handleUpdatePost}
+                        onDelete={handleDeletePost}
+                        onOpenLink={handleOpenLink}
+                        getRelativeTime={getRelativeTime}
+                    />
+                )}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
                 refreshControl={
@@ -553,6 +716,85 @@ const styles = StyleSheet.create({
         color: COLORS.textMuted,
         fontSize: 12,
         marginTop: 2,
+    },
+    ownerActionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    ownerIconButton: {
+        padding: 6,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    },
+    editFormContainer: {
+        backgroundColor: 'rgba(0, 0, 0, 0.25)',
+        padding: 12,
+        borderRadius: 14,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    editFormLabel: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: COLORS.primary,
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    editTextInput: {
+        minHeight: 70,
+        color: COLORS.white,
+        fontSize: 14,
+        textAlignVertical: 'top',
+        padding: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 10,
+        marginBottom: 10,
+    },
+    editLinkRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        height: 36,
+        marginBottom: 12,
+    },
+    editLinkInput: {
+        flex: 1,
+        color: COLORS.white,
+        fontSize: 13,
+    },
+    editButtonsRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 10,
+    },
+    editCancelBtn: {
+        paddingHorizontal: 14,
+        paddingVertical: 7,
+        borderRadius: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    },
+    editCancelBtnText: {
+        color: COLORS.textMuted,
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    editSaveBtn: {
+        paddingHorizontal: 16,
+        paddingVertical: 7,
+        borderRadius: 10,
+        backgroundColor: COLORS.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    editSaveBtnText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 'bold',
     },
     postContent: {
         color: COLORS.white,

@@ -38,7 +38,10 @@ const LoginScreen = () => {
 
         setLoading(true);
         try {
-            await login(email, password);
+            const res = await login(email, password);
+            if (res && res.requiresOtp) {
+                navigation.navigate('VerifyOtp', { email: email.trim() });
+            }
         } catch (error: any) {
             const errorMessage = error.response?.data?.message || error.message || 'Something went wrong';
             Alert.alert('Login Failed', errorMessage);

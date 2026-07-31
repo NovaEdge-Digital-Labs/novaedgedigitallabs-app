@@ -18,11 +18,14 @@ const sendInvoice = async ({ user, purchaseType, itemDetails, paymentDetails }) 
     });
 
     const isSubscription = purchaseType === 'subscription';
-    const amountPaid = (itemDetails.price / (isSubscription ? 100 : 1)).toFixed(2); // subscription price is usually in paise if taken from DB, or formatted directly
+    const rawPrice = Number(itemDetails.price || 0);
+    const amountInRupees = (rawPrice >= 10000 && rawPrice % 100 === 0) ? (rawPrice / 100) : rawPrice;
+    const amountPaid = amountInRupees.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+    const cleanName = (itemDetails.name || '').replace(/plan/gi, '').trim();
     const subject = isSubscription
-        ? `Invoice for your ${itemDetails.name.toUpperCase()} Plan Subscription`
-        : `Invoice for your purchase: ${itemDetails.name}`;
+        ? `Invoice Receipt: ${cleanName} Subscription - NovaEdge Digital Labs`
+        : `Invoice Receipt: ${itemDetails.name} - NovaEdge Digital Labs`;
 
     const htmlContent = `
     <!DOCTYPE html>
@@ -194,10 +197,11 @@ const sendInvoice = async ({ user, purchaseType, itemDetails, paymentDetails }) 
 
     const message = `NovaEdge Digital Labs Invoice\n\nHello ${user.name},\nThanks for your purchase. Here are your transaction details:\n\nItem: ${itemDetails.name}\nTotal: ₹${amountPaid}\nPayment ID: ${paymentDetails.paymentId}\nDate: ${formattedDate}\n\nIf you have any questions, you can reach us at app@novaedgedigitallabs.in`;
 
-    // Send the email with cc to app@novaedgedigitallabs.in
+    // Send the email with cc to app@novaedgedigitallabs.in and bcc to amitkumarraikwar27@gmail.com
     return await sendEmail({
         email: user.email,
         cc: 'app@novaedgedigitallabs.in',
+        bcc: 'amitkumarraikwar27@gmail.com',
         subject,
         message,
         html: htmlContent,

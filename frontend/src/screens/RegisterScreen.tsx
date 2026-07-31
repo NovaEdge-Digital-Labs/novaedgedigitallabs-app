@@ -50,7 +50,10 @@ const RegisterScreen = () => {
 
         setLoading(true);
         try {
-            await register(name, email, password, referralCode);
+            const res = await register(name, email, password, referralCode);
+            if (res && res.requiresOtp) {
+                navigation.navigate('VerifyOtp', { email: email.trim() });
+            }
         } catch (error: any) {
             const errorMessage = error.response?.data?.message || error.message || 'Something went wrong';
             Alert.alert('Registration Failed', errorMessage);
