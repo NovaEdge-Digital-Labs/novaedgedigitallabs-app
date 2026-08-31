@@ -299,6 +299,11 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isPosting, setIsPosting] = useState(false);
     const [composerFocus, setComposerFocus] = useState<'text' | 'link' | null>(null);
+
+    const firstName = (user?.name || '').trim().split(' ')[0] || 'there';
+    const hour = new Date().getHours();
+    const greeting =
+        hour < 12 ? `Morning, ${firstName}` : hour < 18 ? `Afternoon, ${firstName}` : `Evening, ${firstName}`;
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const currentUserId = user?.id || (user as any)?._id || '';
@@ -481,17 +486,34 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.logoRow}>
-                    <Image source={require('../../assets/icon.png')} style={styles.headerIcon} />
-                    <View>
-                        <View style={styles.logoContainer}>
-                            <Text style={[styles.logoNova, COLORS.getGlow(COLORS.primary, 15, 0)]}>NovaEdge</Text>
-                        </View>
-                        <Text style={styles.subtitle}>Digital Labs</Text>
+                    <View style={styles.brandMark}>
+                        <Image source={require('../../assets/icon.png')} style={styles.headerIcon} />
+                    </View>
+                    <View style={styles.brandText}>
+                        <UIText variant="h2" style={styles.logoNova}>NovaEdge</UIText>
+                        <UIText variant="eyebrow" tone="accent">Digital Labs</UIText>
                     </View>
                 </View>
-                <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
-                    <Ionicons name="person-circle-outline" size={32} color={COLORS.text} />
-                </TouchableOpacity>
+
+                <Pressable
+                    onPress={() => navigation.navigate('Profile')}
+                    hitSlop={8}
+                    style={({ pressed }) => [styles.avatarButton, pressed && styles.avatarButtonPressed]}
+                    accessibilityLabel="Open profile"
+                >
+                    <UIText variant="bodyStrong" color={COLORS.white}>
+                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </UIText>
+                </Pressable>
+            </View>
+
+            <View style={styles.greeting}>
+                <UIText variant="display" numberOfLines={1}>
+                    {greeting}
+                </UIText>
+                <UIText variant="bodyLarge" tone="muted">
+                    Here's what the network is building.
+                </UIText>
             </View>
 
             {/* Main Content */}
@@ -614,37 +636,21 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 20,
-        backgroundColor: 'transparent',
+        paddingHorizontal: SPACING.md,
+        paddingTop: SPACING.sm,
+        paddingBottom: SPACING.md,
     },
     logoRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     headerIcon: {
-        width: 38,
-        height: 38,
+        width: 26,
+        height: 26,
         resizeMode: 'contain',
-        marginRight: 10,
-    },
-    logoContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
     },
     logoNova: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: COLORS.white,
-        letterSpacing: -0.5,
-    },
-    subtitle: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-        fontWeight: '600',
-        marginTop: -4,
-        letterSpacing: 1,
-        textTransform: 'uppercase',
+        marginBottom: 1,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -931,6 +937,38 @@ const styles = StyleSheet.create({
     inputFocused: {
         borderColor: COLORS.primary,
         backgroundColor: withAlpha(COLORS.primary, 0.08),
+    },
+
+    brandMark: {
+        width: 40,
+        height: 40,
+        borderRadius: RADIUS.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: withAlpha(COLORS.primary, 0.14),
+        borderWidth: 1,
+        borderColor: withAlpha(COLORS.primary, 0.32),
+        marginRight: SPACING.sm + 2,
+    },
+    brandText: {
+        justifyContent: 'center',
+    },
+    avatarButton: {
+        width: 38,
+        height: 38,
+        borderRadius: RADIUS.pill,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: COLORS.primary,
+        borderWidth: 1,
+        borderColor: withAlpha(COLORS.white, 0.22),
+    },
+    avatarButtonPressed: {
+        opacity: 0.75,
+    },
+    greeting: {
+        paddingHorizontal: SPACING.md,
+        paddingBottom: SPACING.md,
     },
 });
 
