@@ -1,4 +1,4 @@
-const DEV_BASE_URL = 'http://192.168.29.100:5000';
+const DEV_BASE_URL = 'http://192.168.1.10:5000';
 const PROD_BASE_URL = 'https://app.novaedgedigitallabs.in';
 
 export const CONFIG = {

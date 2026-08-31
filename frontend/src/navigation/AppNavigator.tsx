@@ -1,76 +1,63 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import HomeNavigator from './HomeNavigator';
-import ProfileScreen from '../screens/ProfileScreen';
 import ProfileNavigator from './ProfileNavigator';
 import AuthNavigator from './AuthNavigator';
+import ExploreNavigator from './ExploreNavigator';
 import MarketplaceNavigator from './MarketplaceNavigator';
 import JobsNavigator from './JobsNavigator';
 import CourseNavigator from './CourseNavigator';
-import { COLORS } from '../constants/colors';
+import TabBar from './TabBar';
+import theme from '../constants/theme.json';
 import { useAuthStore } from '../store/authStore';
-
-import { useThemeStore } from '../store/themeStore';
 
 const Tab = createBottomTabNavigator();
 
-const TabNavigator = () => {
-    const { theme } = useThemeStore();
+/**
+ * Five primary tabs. Marketplace and Academy remain registered so Explore and
+ * deep links can `navigate()` to them, but they stay off the bar — five is the
+ * most that stays comfortably tappable on a small phone.
+ */
+const TabNavigator = () => (
+    <Tab.Navigator
+        tabBar={(props) => <TabBar {...props} />}
+        screenOptions={{
+            headerShown: false,
+            // The bar floats above content, so screens keep their own bottom inset.
+            tabBarHideOnKeyboard: true,
+        }}
+    >
+        <Tab.Screen name="Home" component={HomeNavigator} options={{ title: 'Home' }} />
+        <Tab.Screen name="Jobs" component={JobsNavigator} options={{ title: 'Jobs' }} />
+        <Tab.Screen name="Explore" component={ExploreNavigator} options={{ title: 'Explore' }} />
+        <Tab.Screen name="Academy" component={CourseNavigator} options={{ title: 'Academy' }} />
+        <Tab.Screen name="Profile" component={ProfileNavigator} options={{ title: 'Profile' }} />
+        <Tab.Screen
+            name="Marketplace"
+            component={MarketplaceNavigator}
+            options={{ title: 'Marketplace', tabBarButton: () => null }}
+        />
+    </Tab.Navigator>
+);
 
-    return (
-        <Tab.Navigator
-            screenOptions={({ route }) => ({
-                tabBarIcon: ({ focused, color, size }) => {
-                    let iconName: any;
-
-                    if (route.name === 'Home') {
-                        iconName = focused ? 'home' : 'home-outline';
-                    } else if (route.name === 'Store') {
-                        iconName = focused ? 'cart' : 'cart-outline';
-                    } else if (route.name === 'Marketplace') {
-                        iconName = focused ? 'people' : 'people-outline';
-                    } else if (route.name === 'Tools') {
-                        iconName = focused ? 'apps' : 'apps-outline';
-                    } else if (route.name === 'Jobs') {
-                        iconName = focused ? 'briefcase' : 'briefcase-outline';
-                    } else if (route.name === 'Services') {
-                        iconName = focused ? 'briefcase' : 'briefcase-outline';
-                    } else if (route.name === 'Profile') {
-                        iconName = focused ? 'person' : 'person-outline';
-                    } else if (route.name === 'Academy') {
-                        iconName = focused ? 'school' : 'school-outline';
-                    }
-
-                    return <Ionicons name={iconName} size={size} color={color} />;
-                },
-                headerShown: false,
-                tabBarActiveTintColor: theme.primary,
-                tabBarInactiveTintColor: theme.textMuted,
-                tabBarStyle: {
-                    backgroundColor: theme.background,
-                    borderTopWidth: 1,
-                    borderTopColor: theme.border,
-                    height: 60,
-                    paddingBottom: 8,
-                },
-            })}
-        >
-            <Tab.Screen name="Home" component={HomeNavigator} options={{ title: 'NovaEdge' }} />
-            <Tab.Screen name="Marketplace" component={MarketplaceNavigator} />
-            <Tab.Screen name="Jobs" component={JobsNavigator} />
-            <Tab.Screen name="Academy" component={CourseNavigator} />
-            <Tab.Screen name="Profile" component={ProfileNavigator} />
-        </Tab.Navigator>
-    );
+const navTheme = {
+    ...DarkTheme,
+    colors: {
+        ...DarkTheme.colors,
+        background: theme.background,
+        card: theme.backgroundElevated,
+        text: theme.text,
+        border: theme.borderSubtle,
+        primary: theme.primary,
+    },
 };
 
 const AppNavigator = () => {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
     return (
-        <NavigationContainer>
+        <NavigationContainer theme={navTheme}>
             {isAuthenticated ? <TabNavigator /> : <AuthNavigator />}
         </NavigationContainer>
     );

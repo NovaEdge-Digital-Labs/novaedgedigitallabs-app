@@ -9,6 +9,8 @@ interface User {
     plan: 'free' | 'pro' | 'business';
     planExpiry?: string;
     isActive: boolean;
+    /** Returned by /auth/login and /auth/me; gates the admin surfaces. */
+    role?: 'user' | 'admin' | string;
     novaedgeCredits?: number;
     referralCode?: string;
     dailyLoginStreak?: number;

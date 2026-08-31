@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
+import { Text as UIText, Card, Badge, Button, EmptyState, SkeletonCard, TopBar } from '../components/ui';
+import { SPACING, RADIUS, withAlpha } from '../constants/colors';
 import { marketplaceApi } from '../api/marketplaceApi';
 import PrimaryButton from '../components/PrimaryButton';
 import { formatCurrency } from '../utils/helpers';
@@ -205,7 +207,11 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
     if (loading) {
         return (
             <ThemeWrapper>
-                <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 100 }} />
+                <TopBar title="Job" showBack onBack={() => navigation.goBack()} />
+                <View style={styles.scrollContent}>
+                    <SkeletonCard lines={4} />
+                    <SkeletonCard lines={3} />
+                </View>
             </ThemeWrapper>
         );
     }
@@ -213,34 +219,46 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
     if (!job) {
         return (
             <ThemeWrapper>
-                <Text style={{ color: COLORS.text, textAlign: 'center', marginTop: 50 }}>Job not found</Text>
+                <TopBar title="Job" showBack onBack={() => navigation.goBack()} />
+                <EmptyState
+                    icon="alert-circle-outline"
+                    title="Job not found"
+                    message="This listing may have been closed or removed."
+                    actionLabel="Back to jobs"
+                    onAction={() => navigation.goBack()}
+                />
             </ThemeWrapper>
         );
     }
 
     return (
         <ThemeWrapper>
-            <View style={styles.topNav}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.navBtn}>
-                    <Ionicons name="arrow-back" size={22} color={COLORS.white} />
-                </TouchableOpacity>
-
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    {isOwner && (
-                        <>
-                            <TouchableOpacity onPress={openEditModal} activeOpacity={0.7} style={styles.navActionBtn}>
-                                <Ionicons name="create-outline" size={18} color="#a855f7" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={handleDeleteJob} activeOpacity={0.7} style={[styles.navActionBtn, { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.3)' }]}>
-                                <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                            </TouchableOpacity>
-                        </>
-                    )}
-                    <TouchableOpacity onPress={handleShareJob} activeOpacity={0.7} style={styles.navBtn}>
-                        <Ionicons name="share-outline" size={22} color={COLORS.white} />
-                    </TouchableOpacity>
-                </View>
-            </View>
+            <TopBar
+                title={job.title}
+                subtitle={job.companyId?.name || 'Company'}
+                showBack
+                onBack={() => navigation.goBack()}
+                right={
+                    <View style={styles.navActions}>
+                        {isOwner && (
+                            <>
+                                <TouchableOpacity onPress={openEditModal} style={styles.navActionBtn}>
+                                    <Ionicons name="create-outline" size={17} color={COLORS.accent} />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={handleDeleteJob}
+                                    style={[styles.navActionBtn, styles.navActionDanger]}
+                                >
+                                    <Ionicons name="trash-outline" size={17} color={COLORS.error} />
+                                </TouchableOpacity>
+                            </>
+                        )}
+                        <TouchableOpacity onPress={handleShareJob} style={styles.navActionBtn}>
+                            <Ionicons name="share-outline" size={17} color={COLORS.text} />
+                        </TouchableOpacity>
+                    </View>
+                }
+            />
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.headerCard}>
@@ -323,31 +341,35 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
             {/* Bottom Footer Actions */}
             <View style={styles.footer}>
                 <TouchableOpacity
-                    style={[styles.saveButton, isSaved && { backgroundColor: 'rgba(168, 85, 247, 0.25)', borderColor: '#a855f7' }]}
+                    style={[styles.saveButton, isSaved && styles.saveButtonActive]}
                     onPress={handleToggleBookmark}
                     activeOpacity={0.7}
+                    accessibilityLabel={isSaved ? 'Remove bookmark' : 'Save job'}
                 >
-                    <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={22} color={isSaved ? "#c042ff" : COLORS.primary} />
+                    <Ionicons
+                        name={isSaved ? 'bookmark' : 'bookmark-outline'}
+                        size={20}
+                        color={isSaved ? COLORS.accent : COLORS.primary}
+                    />
                 </TouchableOpacity>
 
-                {isOwner ? (
-                    <TouchableOpacity
-                        style={styles.manageApplicantsBtn}
-                        onPress={() => navigation.navigate('EmployerApplicants')}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="people-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                        <Text style={styles.manageApplicantsBtnText}>Manage Applicants</Text>
-                    </TouchableOpacity>
-                ) : (
-                    <TouchableOpacity
-                        style={styles.mainApplyBtn}
-                        onPress={() => navigation.navigate('JobApplication', { jobId: job._id, jobTitle: job.title })}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.mainApplyBtnText}>Apply for this job</Text>
-                    </TouchableOpacity>
-                )}
+                <View style={styles.footerCta}>
+                    {isOwner ? (
+                        <Button
+                            title="Manage applicants"
+                            icon={<Ionicons name="people-outline" size={17} color={COLORS.white} />}
+                            onPress={() => navigation.navigate('EmployerApplicants')}
+                        />
+                    ) : (
+                        <Button
+                            title="Apply for this job"
+                            size="lg"
+                            onPress={() =>
+                                navigation.navigate('JobApplication', { jobId: job._id, jobTitle: job.title })
+                            }
+                        />
+                    )}
+                </View>
             </View>
 
             {/* EDIT JOB MODAL */}
@@ -411,25 +433,16 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-    topNav: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: Platform.OS === 'android' ? 20 : 10,
-        paddingBottom: 15,
-    },
-    navBtn: {
-        padding: 6,
-        borderRadius: 10,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    },
     navActionBtn: {
-        padding: 6,
-        borderRadius: 10,
-        backgroundColor: 'rgba(168, 85, 247, 0.15)',
+        width: 34,
+        height: 34,
+        borderRadius: RADIUS.pill,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: withAlpha(COLORS.white, 0.06),
         borderWidth: 1,
-        borderColor: 'rgba(168, 85, 247, 0.3)',
+        borderColor: COLORS.borderSubtle,
+        marginLeft: 6,
     },
     scrollContent: {
         padding: 20,
@@ -543,59 +556,25 @@ const styles = StyleSheet.create({
         marginRight: 5,
     },
     footer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.card,
-        paddingHorizontal: 20,
-        paddingTop: 12,
-        paddingBottom: Platform.OS === 'ios' ? 25 : 12,
+        paddingHorizontal: SPACING.md,
+        paddingTop: SPACING.sm + 2,
+        paddingBottom: SPACING.lg,
         borderTopWidth: 1,
-        borderTopColor: COLORS.border,
-        gap: 10,
+        borderTopColor: COLORS.divider,
+        backgroundColor: withAlpha(COLORS.background, 0.9),
     },
     saveButton: {
-        width: 52,
-        height: 52,
-        borderRadius: 14,
+        width: 48,
+        height: 48,
+        borderRadius: RADIUS.md,
+        alignItems: 'center',
+        justifyContent: 'center',
         borderWidth: 1,
         borderColor: COLORS.border,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    },
-    manageApplicantsBtn: {
-        flex: 1,
-        height: 52,
-        backgroundColor: '#a855f7',
-        borderRadius: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 20,
-    },
-    manageApplicantsBtnText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    mainApplyBtn: {
-        flex: 1,
-        height: 52,
-        backgroundColor: COLORS.primary,
-        borderRadius: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 20,
-    },
-    mainApplyBtnText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
+        backgroundColor: withAlpha(COLORS.primary, 0.08),
+        marginRight: SPACING.sm + 2,
     },
     // Modal Styles
     modalOverlay: {
@@ -655,6 +634,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderRadius: 12,
         backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    },
+
+    navActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    navActionDanger: {
+        backgroundColor: withAlpha(COLORS.error, 0.14),
+        borderColor: withAlpha(COLORS.error, 0.3),
+    },
+    saveButtonActive: {
+        backgroundColor: withAlpha(COLORS.primary, 0.25),
+        borderColor: COLORS.primary,
+    },
+    footerCta: {
+        flex: 1,
     },
 });
 

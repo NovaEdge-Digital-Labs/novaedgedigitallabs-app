@@ -5,6 +5,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import postApi, { Post } from '../api/postApi';
 import ThemeWrapper from '../components/ThemeWrapper';
+import {
+    Screen,
+    Text as UIText,
+    Card,
+    Button,
+    Badge,
+    ListRow,
+    SectionHeader,
+    StatTile,
+    EmptyState,
+    SkeletonCard,
+} from '../components/ui';
+import { SPACING, RADIUS, withAlpha } from '../constants/colors';
 import { useFocusEffect } from '@react-navigation/native';
 
 interface UserPostItemProps {
@@ -213,244 +226,256 @@ const ProfileScreen = ({ navigation }: any) => {
         );
     };
 
-    const MenuItem = ({ icon, title, subtitle, onPress, color = '#a855f7' }: any) => (
-        <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
-            <View style={[styles.menuIconContainer, { backgroundColor: `${color}18`, borderColor: `${color}35`, borderWidth: 1 }]}>
-                <Ionicons name={icon} size={20} color={color} />
-            </View>
-            <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>{title}</Text>
-                {subtitle && <Text style={styles.menuSubtitle}>{subtitle}</Text>}
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
-        </TouchableOpacity>
+    /**
+     * Profile is account-only now. Tools, Store, Services and Workspace moved
+     * to the Explore tab, which cut this list from 20 flat rows to 4 groups.
+     */
+    const isAdmin = Boolean(
+        (user as any)?.role === 'admin' || (user as any)?.isAdmin || user?.email?.includes('admin')
     );
+
+    const MENU_GROUPS: Array<{
+        eyebrow: string;
+        title: string;
+        rows: Array<{
+            icon: keyof typeof Ionicons.glyphMap;
+            title: string;
+            subtitle?: string;
+            tint: string;
+            onPress: () => void;
+            badge?: string;
+        }>;
+    }> = [
+        {
+            eyebrow: 'Activity',
+            title: 'Your work',
+            rows: [
+                {
+                    icon: 'document-text-outline',
+                    title: 'My Applications',
+                    subtitle: 'Track roles you have applied to',
+                    tint: '#ac4bff',
+                    onPress: () => navigation.navigate('MyApplications'),
+                },
+                {
+                    icon: 'bookmark-outline',
+                    title: 'Saved Jobs',
+                    subtitle: 'Listings you bookmarked',
+                    tint: '#fcbb00',
+                    onPress: () => navigation.navigate('SavedJobs'),
+                },
+                {
+                    icon: 'megaphone-outline',
+                    title: 'My Posted Jobs',
+                    subtitle: 'Edit or close your listings',
+                    tint: '#f6339a',
+                    onPress: () => navigation.navigate('MyPostedJobs'),
+                },
+                {
+                    icon: 'people-outline',
+                    title: 'Received Applicants',
+                    subtitle: 'Candidates who applied to you',
+                    tint: '#3080ff',
+                    onPress: () => navigation.navigate('EmployerApplicants'),
+                },
+                {
+                    icon: 'download-outline',
+                    title: 'My Purchases',
+                    subtitle: 'Assets you have bought',
+                    tint: '#00b7d7',
+                    onPress: () => navigation.navigate('MyPurchases'),
+                },
+            ],
+        },
+        {
+            eyebrow: 'Account',
+            title: 'Settings',
+            rows: [
+                {
+                    icon: 'person-outline',
+                    title: 'Edit Profile',
+                    subtitle: 'Name, avatar and details',
+                    tint: '#c07eff',
+                    onPress: () => navigation.navigate('EditProfile'),
+                },
+                {
+                    icon: 'notifications-outline',
+                    title: 'Notifications',
+                    subtitle: 'Alerts and news',
+                    tint: '#ff6568',
+                    onPress: () => navigation.navigate('Notifications'),
+                },
+                {
+                    icon: 'shield-checkmark-outline',
+                    title: 'Privacy & Security',
+                    subtitle: 'Password and data settings',
+                    tint: '#00bb7f',
+                    onPress: () => navigation.navigate('PrivacySecurity'),
+                },
+            ],
+        },
+        {
+            eyebrow: 'Billing',
+            title: 'Plan & rewards',
+            rows: [
+                {
+                    icon: 'card-outline',
+                    title: 'Manage Subscription',
+                    subtitle: 'Billing history and plans',
+                    tint: '#ac4bff',
+                    onPress: () => navigation.navigate('Subscription'),
+                },
+                {
+                    icon: 'star-outline',
+                    title: 'Premium Candidate Pass',
+                    subtitle: 'Verified badge and top ranking',
+                    tint: '#fcbb00',
+                    badge: 'PRO',
+                    onPress: () => navigation.navigate('PremiumUpgrade'),
+                },
+                {
+                    icon: 'gift-outline',
+                    title: 'Refer and Earn',
+                    subtitle: 'Invite friends, get Pro free',
+                    tint: '#5ee9b5',
+                    onPress: () => navigation.navigate('ReferEarn'),
+                },
+            ],
+        },
+        {
+            eyebrow: 'Support',
+            title: 'Get help',
+            rows: [
+                {
+                    icon: 'help-circle-outline',
+                    title: 'Help Center',
+                    subtitle: 'FAQs and guides',
+                    tint: '#54a2ff',
+                    onPress: () => navigation.navigate('Support', { title: 'Help Center' }),
+                },
+                {
+                    icon: 'chatbubble-ellipses-outline',
+                    title: 'Contact Support',
+                    subtitle: 'Talk to our team',
+                    tint: '#00bb7f',
+                    onPress: () => navigation.navigate('Support', { title: 'Contact Support' }),
+                },
+                {
+                    icon: 'information-circle-outline',
+                    title: 'About NovaEdge',
+                    tint: '#99a1af',
+                    onPress: () => navigation.navigate('About'),
+                },
+            ],
+        },
+    ];
+
+    const planLabel = (user?.plan || 'free').toUpperCase();
+    const isPaidPlan = user?.plan === 'pro' || user?.plan === 'business';
 
     return (
         <ThemeWrapper>
-            <ScrollView 
-                contentContainerStyle={styles.contentContainer} 
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={isRefreshing}
-                        onRefresh={() => {
-                            setIsRefreshing(true);
-                            fetchUserPosts(false);
-                        }}
-                        tintColor={COLORS.primary}
-                    />
-                }
-            >
+            <Screen scroll refreshing={isRefreshing} onRefresh={() => {
+                setIsRefreshing(true);
+                fetchUserPosts(false);
+            }}>
+                {/* Identity */}
                 <View style={styles.header}>
                     <View style={[styles.avatarContainer, COLORS.getGlow(COLORS.primary, 20, 0.4)]}>
-                        <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
+                        <UIText variant="display" color={COLORS.white}>
+                            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                        </UIText>
                     </View>
-                    <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
-                    <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
-
-                    <View style={[styles.planBadge, { backgroundColor: user?.plan === 'free' ? COLORS.backgroundSoft : COLORS.primary }]}>
-                        <Ionicons name="star" size={12} color="white" style={{ marginRight: 5 }} />
-                        <Text style={styles.planText}>{user?.plan?.toUpperCase() || 'FREE'} PLAN</Text>
-                    </View>
-                </View>
-
-                <View style={styles.statsContainer}>
-                    <View style={styles.statBox}>
-                        <Text style={styles.statValue}>{userPosts.length}</Text>
-                        <Text style={styles.statLabel} numberOfLines={1}>Posts</Text>
-                    </View>
-
-                    <View style={styles.divider} />
-
-                    <TouchableOpacity 
-                        style={styles.statBox} 
-                        onPress={() => navigation.navigate('Subscription')}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={[styles.statValue, { color: '#38bdf8' }]}>
-                            {user?.plan === 'free' ? 'FREE' : user?.plan === 'pro' ? 'PRO' : 'ACTIVE'}
-                        </Text>
-                        <Text style={styles.statLabel} numberOfLines={1}>Plan</Text>
-                    </TouchableOpacity>
-
-                    <View style={styles.divider} />
-
-                    <View style={styles.statBox}>
-                        <Text style={[styles.statValue, { color: '#c042ff', fontSize: user?.plan === 'free' ? 18 : 22 }]}>
-                            {user?.plan === 'business' || user?.plan === 'pro' ? '∞' : '1'}
-                        </Text>
-                        <Text style={styles.statLabel} numberOfLines={1}>Job Quota</Text>
-                    </View>
-                </View>
-
-                {/* Services & Tools */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Services & Tools</Text>
-                    <MenuItem
-                        icon="apps-outline"
-                        title="Utility Tools"
-                        subtitle="Access GST, EMI calculators and more"
-                        onPress={() => navigation.navigate('Tools')}
-                        color="#a855f7"
-                    />
-                    <MenuItem
-                        icon="cart-outline"
-                        title="Digital Store"
-                        subtitle="Buy premium assets and products"
-                        onPress={() => navigation.navigate('Store')}
-                        color="#38bdf8"
-                    />
-                    <MenuItem
-                        icon="business-outline"
-                        title="Studio Services"
-                        subtitle="Request web/app development and quotes"
-                        onPress={() => navigation.navigate('Services')}
-                        color="#34d399"
+                    <UIText variant="h1" center>{user?.name || 'User Name'}</UIText>
+                    <UIText variant="body" tone="muted" center style={styles.headerEmail}>
+                        {user?.email || 'user@example.com'}
+                    </UIText>
+                    <Badge
+                        label={`${planLabel} PLAN`}
+                        tone={isPaidPlan ? 'primary' : 'neutral'}
+                        style={styles.headerBadge}
                     />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>My Workspace</Text>
-                    <MenuItem
+                {/* Metrics */}
+                <View style={styles.statsRow}>
+                    <StatTile label="Posts" value={userPosts.length} icon="chatbubbles-outline" />
+                    <StatTile
+                        label="Plan"
+                        value={planLabel}
+                        icon="ribbon-outline"
+                        tint="#54a2ff"
+                        style={styles.statSpacer}
+                    />
+                    <StatTile
+                        label="Job Quota"
+                        value={isPaidPlan ? '\u221e' : '1'}
                         icon="briefcase-outline"
-                        title="Workspace Overview"
-                        subtitle="View your active projects and tickets"
-                        onPress={() => navigation.navigate('MyWorkspace')}
-                        color="#fbbf24"
+                        tint="#c07eff"
+                        style={styles.statSpacer}
                     />
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Account Settings</Text>
-                    <MenuItem
-                        icon="person-outline"
-                        title="Edit Profile"
-                        subtitle="Update your personal details"
-                        onPress={() => navigation.navigate('EditProfile')}
-                        color="#818cf8"
-                    />
-                    <MenuItem
-                        icon="notifications-outline"
-                        title="Notifications"
-                        subtitle="Manage alerts and news"
-                        onPress={() => navigation.navigate('Notifications')}
-                        color="#f43f5e"
-                    />
-                    <MenuItem
-                        icon="download-outline"
-                        title="My Purchases"
-                        subtitle="Assets you have bought"
-                        onPress={() => navigation.navigate('MyPurchases')}
-                        color="#38bdf8"
-                    />
-                    <MenuItem
-                        icon="star-outline"
-                        title="Premium Candidate Pass"
-                        subtitle="Get verified checkmark & top rank for recruiters"
-                        onPress={() => navigation.navigate('PremiumUpgrade')}
-                        color="#FFD700"
-                    />
-                    <MenuItem
-                        icon="document-text-outline"
-                        title="My Job Applications"
-                        subtitle="Track status of your submitted applications"
-                        onPress={() => navigation.navigate('MyApplications')}
-                        color="#a855f7"
-                    />
-                    <MenuItem
-                        icon="bookmark-outline"
-                        title="Saved / Bookmarked Jobs"
-                        subtitle="View your saved job listings"
-                        onPress={() => navigation.navigate('SavedJobs')}
-                        color="#fbbf24"
-                    />
-                    <MenuItem
-                        icon="briefcase-outline"
-                        title="My Posted Jobs"
-                        subtitle="Edit or delete your posted job listings"
-                        onPress={() => navigation.navigate('MyPostedJobs')}
-                        color="#ec4899"
-                    />
-                    <MenuItem
-                        icon="people-outline"
-                        title="Received Applicants"
-                        subtitle="Manage candidate applications for your jobs"
-                        onPress={() => navigation.navigate('EmployerApplicants')}
-                        color="#38bdf8"
-                    />
-                    <MenuItem
-                        icon="shield-checkmark-outline"
-                        title="Privacy & Security"
-                        subtitle="Password and data settings"
-                        onPress={() => navigation.navigate('PrivacySecurity')}
-                        color="#34d399"
-                    />
-                </View>
+                <Button
+                    title="Edit Profile"
+                    variant="secondary"
+                    size="sm"
+                    icon={<Ionicons name="create-outline" size={16} color={COLORS.text} />}
+                    onPress={() => navigation.navigate('EditProfile')}
+                    style={styles.editCta}
+                />
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Subscription</Text>
-                    <MenuItem
-                        icon="card-outline"
-                        title="Manage Subscription"
-                        subtitle="View billing history and plans"
-                        onPress={() => navigation.navigate('Subscription')}
-                        color="#a855f7"
-                    />
-                    <MenuItem
-                        icon="gift-outline"
-                        title="Refer and Earn"
-                        subtitle="Invite friends and get Pro free"
-                        onPress={() => navigation.navigate('ReferEarn')}
-                        color="#fbbf24"
-                    />
-                </View>
-
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Support</Text>
-                    <MenuItem
-                        icon="help-circle-outline"
-                        title="Help Center"
-                        subtitle="FAQs and guides"
-                        onPress={() => navigation.navigate('Support', { title: 'Help Center' })}
-                        color="#60a5fa"
-                    />
-                    <MenuItem
-                        icon="chatbubble-ellipses-outline"
-                        title="Contact Support"
-                        subtitle="Talk to our experts"
-                        onPress={() => navigation.navigate('Support', { title: 'Contact Support' })}
-                        color="#34d399"
-                    />
-                    <MenuItem
-                        icon="book-outline"
-                        title="About NovaEdge"
-                        onPress={() => navigation.navigate('About')}
-                        color="#a855f7"
-                    />
-                </View>
-
-                {/* Admin Section (Fallback check) */}
-                {(user?.email?.includes('admin') || (user as any)?.role === 'admin' || (user as any)?.isAdmin) && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Admin</Text>
-                        <MenuItem
-                            icon="shield-half-outline"
-                            title="Admin Dashboard"
-                            subtitle="Manage users, jobs, courses"
-                            onPress={() => navigation.navigate('AdminDashboard')}
-                            color={COLORS.warning || '#ffb800'}
-                        />
+                {/* Grouped menu */}
+                {MENU_GROUPS.map((group) => (
+                    <View key={group.eyebrow} style={styles.menuGroup}>
+                        <SectionHeader eyebrow={group.eyebrow} title={group.title} />
+                        <Card padded={false} variant="subtle">
+                            {group.rows.map((row, i) => (
+                                <View key={row.title}>
+                                    {i > 0 ? <View style={styles.rowDivider} /> : null}
+                                    <ListRow
+                                        icon={row.icon}
+                                        iconColor={row.tint}
+                                        title={row.title}
+                                        subtitle={row.subtitle}
+                                        badge={row.badge}
+                                        badgeTone="warning"
+                                        onPress={row.onPress}
+                                    />
+                                </View>
+                            ))}
+                        </Card>
                     </View>
-                )}
+                ))}
 
-                {/* My Shared Updates (Social Feed on Profile) */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>My Updates</Text>
+                {isAdmin ? (
+                    <View style={styles.menuGroup}>
+                        <SectionHeader eyebrow="Admin" title="Operations" />
+                        <Card padded={false} variant="subtle">
+                            <ListRow
+                                icon="shield-half-outline"
+                                iconColor={COLORS.warning}
+                                title="Admin Dashboard"
+                                subtitle="Users, jobs and courses"
+                                onPress={() => navigation.navigate('AdminDashboard')}
+                            />
+                        </Card>
+                    </View>
+                ) : null}
+
+                {/* Own posts */}
+                <View style={styles.menuGroup}>
+                    <SectionHeader eyebrow="Feed" title="My updates" />
                     {isPostsLoading ? (
-                        <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 20 }} />
+                        <SkeletonCard lines={2} />
                     ) : userPosts.length === 0 ? (
-                        <Text style={styles.emptyPostsText}>You haven't posted anything yet.</Text>
+                        <EmptyState
+                            icon="create-outline"
+                            title="Nothing shared yet"
+                            message="Your updates appear here once you post to the Home feed."
+                            actionLabel="Go to feed"
+                            onAction={() => navigation.navigate('Home')}
+                        />
                     ) : (
                         userPosts.map((post) => (
                             <UserPostItem
@@ -463,169 +488,42 @@ const ProfileScreen = ({ navigation }: any) => {
                     )}
                 </View>
 
-                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                    <Ionicons name="log-out-outline" size={20} color="#ef4444" style={{ marginRight: 10 }} />
-                    <Text style={styles.logoutText}>Logout</Text>
-                </TouchableOpacity>
+                <Button
+                    title="Log out"
+                    variant="ghost"
+                    onPress={handleLogout}
+                    icon={<Ionicons name="log-out-outline" size={18} color={COLORS.error} />}
+                    textStyle={{ color: COLORS.error }}
+                    style={styles.logoutBtn}
+                />
 
-                <Text style={styles.versionText}>Version 1.0.0 (Build 42)</Text>
-            </ScrollView>
+                <UIText variant="caption" tone="faint" center style={styles.versionText}>
+                    Version 1.0.0 (Build 42)
+                </UIText>
+            </Screen>
         </ThemeWrapper>
     );
 };
 
 const styles = StyleSheet.create({
-    contentContainer: {
-        padding: 20,
-        paddingBottom: 40,
-    },
     header: {
         alignItems: 'center',
-        marginVertical: 30,
+        marginTop: SPACING.md,
+        marginBottom: SPACING.lg,
     },
     avatarContainer: {
-        width: 110,
-        height: 110,
-        borderRadius: 55,
+        width: 88,
+        height: 88,
+        borderRadius: 44,
         backgroundColor: COLORS.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: SPACING.md,
         borderWidth: 2,
-        borderColor: COLORS.white + '30',
-    },
-    avatarText: {
-        fontSize: 48,
-        fontWeight: '900',
-        color: 'white',
-    },
-    userName: {
-        fontSize: 26,
-        fontWeight: 'bold',
-        color: COLORS.white,
-        marginBottom: 6,
-    },
-    userEmail: {
-        fontSize: 14,
-        color: COLORS.textMuted,
-        marginBottom: 20,
-    },
-    planBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-    planText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
-        letterSpacing: 1,
-    },
-    statsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-around',
-        backgroundColor: 'rgba(255, 255, 255, 0.04)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.08)',
-        borderRadius: 20,
-        paddingVertical: 18,
-        paddingHorizontal: 12,
-        marginBottom: 30,
-    },
-    statBox: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    statValue: {
-        fontSize: 19,
-        fontWeight: 'bold',
-        color: '#FFFFFF',
-        textAlign: 'center',
-    },
-    statLabel: {
-        fontSize: 11,
-        fontWeight: '600',
-        color: '#94A3B8',
-        marginTop: 6,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        textAlign: 'center',
-    },
-    divider: {
-        width: 1,
-        height: 36,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    section: {
-        marginBottom: 30,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: COLORS.white,
-        marginBottom: 15,
-        marginLeft: 4,
-    },
-    menuItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.04)',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.08)',
-        padding: 14,
-        borderRadius: 16,
-        marginBottom: 10,
-    },
-    menuIconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 14,
-    },
-    menuTextContainer: {
-        flex: 1,
-    },
-    menuTitle: {
-        fontSize: 15,
-        fontWeight: 'bold',
-        color: '#FFFFFF',
-    },
-    menuSubtitle: {
-        fontSize: 12,
-        color: '#94A3B8',
-        marginTop: 2,
-    },
-    logoutButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-        padding: 18,
-        borderRadius: COLORS.geometry.radiusMedium,
-        marginTop: 10,
-        marginBottom: 25,
-        borderWidth: 1,
-        borderColor: 'rgba(239, 68, 68, 0.2)',
-    },
-    logoutText: {
-        color: '#ef4444',
-        fontSize: 16,
-        fontWeight: 'bold',
+        borderColor: withAlpha(COLORS.white, 0.2),
     },
     versionText: {
-        textAlign: 'center',
-        color: COLORS.textMuted,
-        fontSize: 12,
-        marginBottom: 10,
-        opacity: 0.7,
+        marginTop: SPACING.lg,
     },
     userPostCard: {
         padding: 14,
@@ -735,11 +633,35 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginLeft: 4,
     },
-    emptyPostsText: {
-        color: COLORS.textMuted,
-        fontSize: 14,
-        textAlign: 'center',
-        marginVertical: 15,
+
+    headerEmail: {
+        marginTop: 4,
+    },
+    headerBadge: {
+        marginTop: SPACING.sm + 4,
+        alignSelf: 'center',
+    },
+    statsRow: {
+        flexDirection: 'row',
+        marginBottom: SPACING.md,
+    },
+    statSpacer: {
+        marginLeft: SPACING.sm,
+    },
+    editCta: {
+        marginBottom: SPACING.lg,
+    },
+    menuGroup: {
+        marginBottom: SPACING.lg,
+    },
+    rowDivider: {
+        height: 1,
+        backgroundColor: COLORS.divider,
+        marginHorizontal: SPACING.md,
+    },
+    logoutBtn: {
+        marginTop: SPACING.sm,
+        borderColor: withAlpha(COLORS.error, 0.4),
     },
 });
 

@@ -10,6 +10,7 @@ import {
     ActivityIndicator, 
     Linking, 
     Alert,
+    Pressable,
     RefreshControl,
     Share
 } from 'react-native';
@@ -18,6 +19,8 @@ import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { useAuthStore } from '../store/authStore';
 import postApi, { Post } from '../api/postApi';
+import { Text as UIText, Card, Button, EmptyState, SkeletonCard } from '../components/ui';
+import { SPACING, RADIUS, withAlpha } from '../constants/colors';
 
 interface PostCardProps {
     item: Post;
@@ -295,6 +298,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     const [newPostLink, setNewPostLink] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isPosting, setIsPosting] = useState(false);
+    const [composerFocus, setComposerFocus] = useState<'text' | 'link' | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     const currentUserId = user?.id || (user as any)?._id || '';
@@ -520,58 +524,84 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
                     />
                 }
                 ListHeaderComponent={
-                    <View style={[styles.createPostCard, COLORS.glass]}>
-                        <Text style={styles.cardHeading}>Share an Update</Text>
+                    <Card style={styles.createPostCard}>
+                        <View style={styles.composerHeader}>
+                            <View style={styles.composerAvatar}>
+                                <UIText variant="bodyStrong" color={COLORS.white}>
+                                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                </UIText>
+                            </View>
+                            <UIText variant="h3">Share an update</UIText>
+                        </View>
+
                         <TextInput
-                            style={styles.textInput}
-                            placeholder="What's happening?"
-                            placeholderTextColor={COLORS.textMuted}
+                            style={[styles.textInput, composerFocus === 'text' && styles.inputFocused]}
+                            placeholder="What are you working on?"
+                            placeholderTextColor={COLORS.textFaint}
                             multiline
                             maxLength={280}
                             value={newPostText}
                             onChangeText={setNewPostText}
+                            onFocus={() => setComposerFocus('text')}
+                            onBlur={() => setComposerFocus(null)}
                         />
-                        <View style={styles.linkInputRow}>
-                            <Ionicons name="link" size={18} color={COLORS.textMuted} style={{ marginRight: 8 }} />
+
+                        <View style={[styles.linkInputRow, composerFocus === 'link' && styles.inputFocused]}>
+                            <Ionicons
+                                name="link"
+                                size={16}
+                                color={composerFocus === 'link' ? COLORS.accent : COLORS.textMuted}
+                            />
                             <TextInput
                                 style={styles.linkInput}
-                                placeholder="Add link (optional)"
-                                placeholderTextColor={COLORS.textMuted}
+                                placeholder="Add a link (optional)"
+                                placeholderTextColor={COLORS.textFaint}
                                 value={newPostLink}
                                 onChangeText={setNewPostLink}
+                                onFocus={() => setComposerFocus('link')}
+                                onBlur={() => setComposerFocus(null)}
                                 autoCapitalize="none"
+                                autoCorrect={false}
                                 keyboardType="url"
                             />
+                            {newPostLink ? (
+                                <Pressable onPress={() => setNewPostLink('')} hitSlop={10}>
+                                    <Ionicons name="close-circle" size={16} color={COLORS.textMuted} />
+                                </Pressable>
+                            ) : null}
                         </View>
+
                         <View style={styles.cardFooter}>
-                            <Text style={[styles.charCount, newPostText.length >= 260 && { color: '#ef4444' }]}>
-                                {280 - newPostText.length} characters left
-                            </Text>
-                            <TouchableOpacity 
-                                style={[styles.postButton, (!newPostText.trim() || isPosting) && styles.postButtonDisabled, COLORS.getGlow(COLORS.primary, 8, 0.2)]}
-                                onPress={handleCreatePost}
-                                disabled={!newPostText.trim() || isPosting}
-                                activeOpacity={0.8}
+                            <UIText
+                                variant="caption"
+                                tone={newPostText.length >= 260 ? 'error' : 'faint'}
                             >
-                                {isPosting ? (
-                                    <ActivityIndicator size="small" color="#fff" />
-                                ) : (
-                                    <Text style={styles.postButtonText}>Post</Text>
-                                )}
-                            </TouchableOpacity>
+                                {280 - newPostText.length} left
+                            </UIText>
+                            <Button
+                                title="Post"
+                                size="sm"
+                                fullWidth={false}
+                                loading={isPosting}
+                                disabled={!newPostText.trim()}
+                                onPress={handleCreatePost}
+                                icon={<Ionicons name="send" size={14} color={COLORS.white} />}
+                            />
                         </View>
-                    </View>
+                    </Card>
                 }
                 ListEmptyComponent={
                     isLoading ? (
-                        <View style={styles.loaderContainer}>
-                            <ActivityIndicator size="large" color={COLORS.primary} />
+                        <View>
+                            <SkeletonCard lines={3} />
+                            <SkeletonCard lines={2} />
                         </View>
                     ) : (
-                        <View style={styles.emptyContainer}>
-                            <Ionicons name="chatbubble-ellipses-outline" size={48} color={COLORS.textMuted} />
-                            <Text style={styles.emptyText}>No posts yet. Be the first to share an update!</Text>
-                        </View>
+                        <EmptyState
+                            icon="chatbubble-ellipses-outline"
+                            title="No updates yet"
+                            message="Be the first to share what you're building."
+                        />
                     )
                 }
             />
@@ -621,64 +651,45 @@ const styles = StyleSheet.create({
         paddingBottom: 30,
     },
     createPostCard: {
-        padding: 16,
-        borderRadius: 20,
-        marginBottom: 20,
-    },
-    cardHeading: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: COLORS.white,
-        marginBottom: 12,
+        marginBottom: SPACING.md,
     },
     textInput: {
-        minHeight: 80,
-        color: COLORS.white,
-        fontSize: 15,
+        minHeight: 84,
+        maxHeight: 160,
+        borderRadius: RADIUS.md,
+        borderWidth: 1,
+        borderColor: COLORS.borderSubtle,
+        backgroundColor: withAlpha(COLORS.white, 0.05),
+        paddingHorizontal: SPACING.md - 2,
+        paddingTop: 12,
+        paddingBottom: 12,
+        color: COLORS.text,
         textAlignVertical: 'top',
-        marginBottom: 12,
-        padding: 8,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 12,
+        fontSize: 15,
+        lineHeight: 21,
     },
     linkInputRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        height: 40,
-        marginBottom: 15,
+        marginTop: SPACING.sm,
+        height: 44,
+        borderRadius: RADIUS.md,
+        borderWidth: 1,
+        borderColor: COLORS.borderSubtle,
+        backgroundColor: withAlpha(COLORS.white, 0.05),
+        paddingHorizontal: SPACING.md - 2,
     },
     linkInput: {
         flex: 1,
-        color: COLORS.white,
+        marginHorizontal: SPACING.sm,
+        color: COLORS.text,
         fontSize: 14,
     },
     cardFooter: {
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    charCount: {
-        color: COLORS.textMuted,
-        fontSize: 12,
-    },
-    postButton: {
-        backgroundColor: COLORS.primary,
-        paddingHorizontal: 24,
-        paddingVertical: 10,
-        borderRadius: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    postButtonDisabled: {
-        opacity: 0.5,
-    },
-    postButtonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 14,
+        marginTop: SPACING.md,
     },
     postCard: {
         padding: 16,
@@ -902,21 +913,24 @@ const styles = StyleSheet.create({
     sendCommentButton: {
         padding: 4,
     },
-    loaderContainer: {
-        paddingVertical: 40,
+
+    composerHeader: {
+        flexDirection: 'row',
         alignItems: 'center',
+        marginBottom: SPACING.md,
     },
-    emptyContainer: {
-        paddingVertical: 60,
+    composerAvatar: {
+        width: 32,
+        height: 32,
+        borderRadius: RADIUS.pill,
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: COLORS.primary,
+        marginRight: SPACING.sm + 2,
     },
-    emptyText: {
-        color: COLORS.textMuted,
-        fontSize: 14,
-        textAlign: 'center',
-        marginTop: 12,
-        paddingHorizontal: 40,
+    inputFocused: {
+        borderColor: COLORS.primary,
+        backgroundColor: withAlpha(COLORS.primary, 0.08),
     },
 });
 

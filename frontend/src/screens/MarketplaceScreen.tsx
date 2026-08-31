@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, ActivityIndicator, Image } from 'react-native';
+import { View, StyleSheet, TextInput, TouchableOpacity, Pressable, FlatList, Image, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, SPACING, RADIUS, withAlpha } from '../constants/colors';
+import { TYPOGRAPHY } from '../constants/typography';
 import ThemeWrapper from '../components/ThemeWrapper';
+import { Text, Card, Badge, Button, EmptyState, SkeletonCard, TopBar } from '../components/ui';
 import { marketplaceApi } from '../api/marketplaceApi';
 import { formatCurrency } from '../utils/helpers';
 
@@ -16,8 +18,10 @@ const MarketplaceScreen = ({ navigation }: any) => {
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Debounced so each keystroke doesn't fire its own request.
     useEffect(() => {
-        fetchData();
+        const id = setTimeout(fetchData, searchQuery ? 350 : 0);
+        return () => clearTimeout(id);
     }, [activeTab, searchQuery]);
 
     const fetchData = async () => {
@@ -76,133 +80,184 @@ const MarketplaceScreen = ({ navigation }: any) => {
         const hasCoverImage = item.images && item.images.length > 0 && item.images[0];
 
         return (
-            <TouchableOpacity
-                style={styles.card}
+            <Card
+                padded={false}
                 onPress={() => navigation.navigate('GigDetails', { id: item._id })}
+                style={styles.card}
             >
                 {hasCoverImage ? (
                     <Image source={{ uri: item.images[0] }} style={styles.cardImage} resizeMode="cover" />
                 ) : (
                     <View style={styles.imagePlaceholder}>
-                        <Ionicons name="image-outline" size={40} color={COLORS.textMuted} />
+                        <Ionicons name="image-outline" size={30} color={COLORS.textMuted} />
                     </View>
                 )}
 
                 <View style={styles.cardContent}>
                     <View style={styles.cardTitleRow}>
-                        <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+                        <Text variant="bodyStrong" numberOfLines={2} style={styles.cardTitleText}>
+                            {item.title}
+                        </Text>
                         {isOwner && (
                             <TouchableOpacity
                                 style={styles.deleteCardBtn}
                                 onPress={() => handleDeleteGig(item._id, item.title)}
+                                hitSlop={8}
                             >
-                                <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+                                <Ionicons name="trash-outline" size={17} color={COLORS.error} />
                             </TouchableOpacity>
                         )}
                     </View>
 
-                    <Text style={styles.freelancerName}>By {item.freelancerId?.name || 'Freelancer'}</Text>
-                    
+                    <Text variant="caption" tone="muted" numberOfLines={1}>
+                        By {item.freelancerId?.name || 'Freelancer'}
+                    </Text>
+
                     <View style={styles.cardFooter}>
-                        <Text style={styles.price}>From {formatCurrency(item.price)}</Text>
-                        <View style={styles.ratingContainer}>
-                            <Ionicons name="star" size={14} color="#FFD700" />
-                            <Text style={styles.ratingText}>4.8 (24)</Text>
-                        </View>
+                        <Text variant="bodyStrong" tone="success">
+                            From {formatCurrency(item.price)}
+                        </Text>
+                        {item.rating ? (
+                            <View style={styles.ratingContainer}>
+                                <Ionicons name="star" size={13} color="#fcbb00" />
+                                <Text variant="caption" tone="muted" style={styles.ratingText}>
+                                    {Number(item.rating).toFixed(1)}
+                                    {item.reviewCount ? ` (${item.reviewCount})` : ''}
+                                </Text>
+                            </View>
+                        ) : (
+                            <Text variant="caption" tone="faint">No reviews yet</Text>
+                        )}
                     </View>
                 </View>
-            </TouchableOpacity>
+            </Card>
         );
     };
 
     const renderProjectItem = ({ item }: any) => (
-        <TouchableOpacity
-            style={styles.card}
+        <Card
             onPress={() => navigation.navigate('ProjectDetails', { id: item._id })}
+            style={styles.card}
         >
-            <View style={styles.cardContent}>
-                <View style={styles.projectHeader}>
-                    <Text style={styles.cardTitle}>{item.title}</Text>
-                    <View style={styles.statusBadge}>
-                        <Text style={styles.statusText}>{item.status}</Text>
-                    </View>
-                </View>
-                <Text style={styles.projectDesc} numberOfLines={3}>{item.description}</Text>
-                <View style={styles.skillsContainer}>
-                    {item.skillsRequired?.slice(0, 3).map((skill: string) => (
-                        <View key={skill} style={styles.skillBadge}>
-                            <Text style={styles.skillText}>{skill}</Text>
-                        </View>
-                    ))}
-                </View>
-                <View style={styles.cardFooter}>
-                    <Text style={styles.budget}>{formatCurrency(item.budgetRange?.min)} - {formatCurrency(item.budgetRange?.max)}</Text>
-                    <Text style={styles.proposals}>{item.totalProposals || 0} proposals</Text>
-                </View>
+            <View style={styles.projectHeader}>
+                <Text variant="bodyStrong" numberOfLines={2} style={styles.cardTitleText}>
+                    {item.title}
+                </Text>
+                {item.status ? <Badge label={item.status} tone="info" /> : null}
             </View>
-        </TouchableOpacity>
+
+            <Text variant="body" tone="muted" numberOfLines={3} style={styles.projectDesc}>
+                {item.description}
+            </Text>
+
+            <View style={styles.skillsContainer}>
+                {item.skillsRequired?.slice(0, 3).map((skill: string) => (
+                    <Badge key={skill} label={skill} tone="neutral" style={styles.skillBadge} />
+                ))}
+            </View>
+
+            <View style={styles.cardFooter}>
+                <Text variant="bodyStrong" tone="success">
+                    {formatCurrency(item.budgetRange?.min)} – {formatCurrency(item.budgetRange?.max)}
+                </Text>
+                <Text variant="caption" tone="muted">
+                    {item.totalProposals || 0} proposals
+                </Text>
+            </View>
+        </Card>
     );
+
+    const isGigs = activeTab === 'gigs';
 
     return (
         <ThemeWrapper>
-            <View style={styles.topContainer}>
-                <View style={styles.titleRow}>
-                    <Text style={styles.headerTitle}>Marketplace</Text>
-                    <TouchableOpacity
-                        style={styles.postButton}
-                        onPress={() => navigation.navigate(activeTab === 'gigs' ? 'CreateGig' : 'CreateProject')}
-                        activeOpacity={0.8}
-                    >
-                        <Ionicons name="add" size={24} color="#FFF" />
-                    </TouchableOpacity>
-                </View>
+            <TopBar
+                title="Marketplace"
+                subtitle={isGigs ? 'Services offered by the network' : 'Open briefs looking for talent'}
+                showBack={false}
+                right={
+                    <Button
+                        title={isGigs ? 'New gig' : 'New brief'}
+                        size="sm"
+                        fullWidth={false}
+                        icon={<Ionicons name="add" size={16} color={COLORS.white} />}
+                        onPress={() => navigation.navigate(isGigs ? 'CreateGig' : 'CreateProject')}
+                    />
+                }
+            />
 
-                <View style={styles.searchContainer}>
-                    <View style={styles.searchBar}>
-                        <Ionicons name="search" size={20} color={COLORS.textMuted} />
-                        <TextInput
-                            placeholder={activeTab === 'gigs' ? "Search services..." : "Search projects..."}
-                            placeholderTextColor={COLORS.textMuted}
-                            style={styles.searchInput}
-                            value={searchQuery}
-                            onChangeText={setSearchQuery}
-                        />
-                    </View>
-                </View>
+            {/* Segmented control: the two modes are a switch, not two buttons. */}
+            <View style={styles.tabContainer}>
+                {([
+                    { key: 'gigs', label: 'Find Services' },
+                    { key: 'projects', label: 'Find Work' },
+                ] as const).map((t) => {
+                    const active = activeTab === t.key;
+                    return (
+                        <Pressable
+                            key={t.key}
+                            style={[styles.tab, active && styles.activeTab]}
+                            onPress={() => setActiveTab(t.key)}
+                        >
+                            <Text variant="label" color={active ? COLORS.white : COLORS.textMuted}>
+                                {t.label}
+                            </Text>
+                        </Pressable>
+                    );
+                })}
+            </View>
 
-                <View style={styles.tabContainer}>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'gigs' && styles.activeTab]}
-                        onPress={() => setActiveTab('gigs')}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'gigs' && styles.activeTabText]}>Find Services</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.tab, activeTab === 'projects' && styles.activeTab]}
-                        onPress={() => setActiveTab('projects')}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={[styles.tabText, activeTab === 'projects' && styles.activeTabText]}>Find Work</Text>
-                    </TouchableOpacity>
+            <View style={styles.searchContainer}>
+                <View style={styles.searchBar}>
+                    <Ionicons name="search" size={17} color={COLORS.textMuted} />
+                    <TextInput
+                        placeholder={isGigs ? 'Search services…' : 'Search briefs…'}
+                        placeholderTextColor={COLORS.textFaint}
+                        style={styles.searchInput}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        autoCapitalize="none"
+                        returnKeyType="search"
+                    />
+                    {searchQuery ? (
+                        <Pressable onPress={() => setSearchQuery('')} hitSlop={10}>
+                            <Ionicons name="close-circle" size={17} color={COLORS.textMuted} />
+                        </Pressable>
+                    ) : null}
                 </View>
             </View>
 
             {loading ? (
-                <View style={styles.loader}>
-                    <ActivityIndicator size="large" color={COLORS.primary} />
+                <View style={styles.list}>
+                    <SkeletonCard lines={2} />
+                    <SkeletonCard lines={2} />
+                    <SkeletonCard lines={2} />
                 </View>
             ) : (
                 <FlatList
                     data={data}
-                    renderItem={activeTab === 'gigs' ? renderGigItem : renderProjectItem}
+                    renderItem={isGigs ? renderGigItem : renderProjectItem}
                     keyExtractor={(item) => item._id}
                     contentContainerStyle={styles.list}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
                     ListEmptyComponent={
-                        <View style={styles.empty}>
-                            <Ionicons name="search-outline" size={48} color={COLORS.textMuted} />
-                            <Text style={styles.emptyText}>No results found</Text>
-                        </View>
+                        <EmptyState
+                            icon={isGigs ? 'pricetags-outline' : 'clipboard-outline'}
+                            title={searchQuery ? 'Nothing matches that' : isGigs ? 'No services listed yet' : 'No open briefs'}
+                            message={
+                                searchQuery
+                                    ? 'Try a broader keyword.'
+                                    : isGigs
+                                        ? 'Be the first to offer a service on the marketplace.'
+                                        : 'Post a brief and let freelancers come to you.'
+                            }
+                            actionLabel={searchQuery ? 'Clear search' : isGigs ? 'Create a gig' : 'Post a brief'}
+                            onAction={() => {
+                                if (searchQuery) setSearchQuery('');
+                                else navigation.navigate(isGigs ? 'CreateGig' : 'CreateProject');
+                            }}
+                        />
                     }
                 />
             )}
@@ -211,215 +266,114 @@ const MarketplaceScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-    topContainer: {
-        paddingTop: 50, // For status bar compensation
-        paddingBottom: 8,
-    },
-    titleRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 20,
-    },
-    headerTitle: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: COLORS.white,
-    },
     searchContainer: {
-        paddingHorizontal: 20,
-        marginBottom: 16,
+        paddingHorizontal: SPACING.md,
+        marginBottom: SPACING.md,
     },
     searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: `rgba(255, 255, 255, ${COLORS.effects.inputOpacity})`,
-        borderRadius: COLORS.geometry.radiusMedium,
-        paddingHorizontal: 15,
-        height: 52,
+        backgroundColor: withAlpha(COLORS.white, 0.05),
+        borderRadius: RADIUS.md,
+        paddingHorizontal: SPACING.md - 2,
+        height: 46,
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: COLORS.borderSubtle,
     },
     searchInput: {
         flex: 1,
-        marginLeft: 10,
-        fontSize: 16,
+        marginLeft: SPACING.sm,
         color: COLORS.text,
-    },
-    postButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: COLORS.primary,
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...COLORS.getGlow(COLORS.primary),
+        ...TYPOGRAPHY.body,
     },
     tabContainer: {
         flexDirection: 'row',
-        marginHorizontal: 20,
-        marginBottom: 16,
-        backgroundColor: COLORS.card,
-        borderRadius: COLORS.geometry.radiusLarge,
+        marginHorizontal: SPACING.md,
+        marginBottom: SPACING.md,
+        backgroundColor: withAlpha(COLORS.white, 0.05),
+        borderRadius: RADIUS.pill,
         padding: 4,
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: COLORS.borderSubtle,
     },
     tab: {
         flex: 1,
-        paddingVertical: 10,
         alignItems: 'center',
-        borderRadius: COLORS.geometry.radiusLarge - 4,
+        justifyContent: 'center',
+        paddingVertical: 9,
+        borderRadius: RADIUS.pill,
     },
     activeTab: {
-        backgroundColor: COLORS.primary + '30', // Semi-transparent primary
-        borderWidth: 1,
-        borderColor: COLORS.primary,
-    },
-    tabText: {
-        color: COLORS.textMuted,
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    activeTabText: {
-        color: COLORS.white,
+        backgroundColor: COLORS.primary,
     },
     list: {
-        padding: 16,
-        paddingBottom: 100,
+        paddingHorizontal: SPACING.md,
+        paddingBottom: SPACING.xxl * 2,
     },
     card: {
-        backgroundColor: COLORS.card,
-        borderRadius: 16,
-        marginBottom: 16,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: COLORS.border,
+        marginBottom: SPACING.sm + 4,
     },
     imagePlaceholder: {
         width: '100%',
-        height: 140,
-        backgroundColor: COLORS.backgroundSoft,
-        justifyContent: 'center',
+        height: 150,
         alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: withAlpha(COLORS.white, 0.04),
     },
     cardImage: {
         width: '100%',
-        height: 140,
+        height: 150,
     },
     cardContent: {
-        padding: 12,
+        padding: SPACING.md,
     },
     cardTitleRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'flex-start',
+        justifyContent: 'space-between',
         marginBottom: 4,
     },
-    cardTitle: {
-        flex: 1,
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: COLORS.text,
-        marginRight: 8,
-    },
     deleteCardBtn: {
-        padding: 4,
-    },
-    freelancerName: {
-        fontSize: 14,
-        color: COLORS.textMuted,
-        marginBottom: 8,
+        marginLeft: SPACING.sm,
+        padding: 2,
     },
     cardFooter: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: 8,
-        paddingTop: 8,
+        justifyContent: 'space-between',
+        marginTop: SPACING.md,
+        paddingTop: SPACING.sm + 2,
         borderTopWidth: 1,
-        borderTopColor: COLORS.border,
-    },
-    price: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: COLORS.primary,
-    },
-    budget: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: COLORS.accent,
+        borderTopColor: COLORS.divider,
     },
     ratingContainer: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    ratingText: {
-        fontSize: 12,
-        color: COLORS.text,
-        marginLeft: 4,
-    },
     projectHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 8,
-    },
-    statusBadge: {
-        backgroundColor: COLORS.primary + '20',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
-    },
-    statusText: {
-        color: COLORS.primary,
-        fontSize: 10,
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-    },
-    projectDesc: {
-        fontSize: 14,
-        color: COLORS.textMuted,
-        lineHeight: 20,
-        marginBottom: 12,
+        justifyContent: 'space-between',
     },
     skillsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        marginBottom: 12,
+        marginTop: SPACING.sm,
     },
     skillBadge: {
-        backgroundColor: COLORS.backgroundSoft,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 4,
         marginRight: 6,
-        marginBottom: 6,
+        marginTop: 6,
     },
-    skillText: {
-        color: COLORS.text,
-        fontSize: 11,
-    },
-    proposals: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-    },
-    loader: {
+    cardTitleText: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        paddingRight: SPACING.xs,
     },
-    empty: {
-        flex: 1,
-        alignItems: 'center',
-        paddingTop: 60,
+    ratingText: {
+        marginLeft: 4,
     },
-    emptyText: {
-        color: COLORS.textMuted,
-        marginTop: 12,
-        fontSize: 16,
-    }
+    projectDesc: {
+        marginTop: 6,
+    },
 });
 
 export default MarketplaceScreen;

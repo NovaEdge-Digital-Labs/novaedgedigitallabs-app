@@ -1,14 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+    View,
+    StyleSheet,
+    FlatList,
+    TextInput,
+    Pressable,
+    RefreshControl,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, SPACING, RADIUS, withAlpha } from '../constants/colors';
+import { TYPOGRAPHY } from '../constants/typography';
 import ThemeWrapper from '../components/ThemeWrapper';
+import { Text, Card, Badge, Button, EmptyState, SkeletonCard, TopBar } from '../components/ui';
 import { marketplaceApi } from '../api/marketplaceApi';
-import { LinearGradient } from 'expo-linear-gradient';
-import PrimaryButton from '../components/PrimaryButton';
 import { formatCurrency } from '../utils/helpers';
-
 import { useAuthStore } from '../store/authStore';
+
+const FILTERS = ['All', 'Full-time', 'Remote', 'Internship', 'Part-time'];
+
+const QUICK_LINKS: Array<{
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    tint: string;
+    route: string;
+}> = [
+    { label: 'Applications', icon: 'document-text-outline', tint: '#54a2ff', route: 'MyApplications' },
+    { label: 'Saved', icon: 'bookmark-outline', tint: '#fcbb00', route: 'SavedJobs' },
+    { label: 'Applicants', icon: 'people-outline', tint: '#c07eff', route: 'EmployerApplicants' },
+    { label: 'Pro Pass', icon: 'star-outline', tint: '#f99c00', route: 'PremiumUpgrade' },
+];
+
+const relativeTime = (iso?: string) => {
+    if (!iso) return '';
+    const diff = Date.now() - new Date(iso).getTime();
+    if (Number.isNaN(diff) || diff < 0) return 'Just now';
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return days < 30 ? `${days}d ago` : `${Math.floor(days / 30)}mo ago`;
+};
+
+const salaryLabel = (range?: { min?: number; max?: number }) => {
+    if (!range || (range.min == null && range.max == null)) return 'Not disclosed';
+    if (range.min != null && range.max != null) {
+        return `${formatCurrency(range.min)} – ${formatCurrency(range.max)}`;
+    }
+    return formatCurrency((range.min ?? range.max) as number);
+};
 
 export const JobFeedScreen = ({ navigation }: any) => {
     const [jobs, setJobs] = useState<any[]>([]);
@@ -19,15 +60,12 @@ export const JobFeedScreen = ({ navigation }: any) => {
     const user = useAuthStore((state) => state.user);
     const currentUserId = user?.id || (user as any)?._id;
 
-    const filters = ['All', 'Full-time', 'Remote', 'Internship', 'Part-time'];
-
-    const fetchJobs = async () => {
+    const fetchJobs = useCallback(async (term: string, filter: string) => {
         try {
             const res = await marketplaceApi.getAllJobs({
-                search,
-                jobType: activeFilter !== 'All' ? activeFilter : undefined
+                search: term,
+                jobType: filter !== 'All' ? filter : undefined,
             });
-            // Ensure we handle both {data: []} and [] response formats
             setJobs(Array.isArray(res) ? res : res.data || []);
         } catch (error) {
             console.error(error);
@@ -35,428 +73,338 @@ export const JobFeedScreen = ({ navigation }: any) => {
             setLoading(false);
             setRefreshing(false);
         }
-    };
+    }, []);
 
+    // `search` was previously absent from the dependency list, so typing a
+    // query never triggered a refetch. Debounced so each keystroke isn't a call.
     useEffect(() => {
-        fetchJobs();
-    }, [activeFilter]);
+        const id = setTimeout(() => {
+            setLoading(true);
+            fetchJobs(search, activeFilter);
+        }, search ? 350 : 0);
+        return () => clearTimeout(id);
+    }, [search, activeFilter, fetchJobs]);
 
     const renderJobItem = ({ item }: any) => {
         const postedById = typeof item.postedBy === 'object' ? item.postedBy?._id : item.postedBy;
         const isOwner = Boolean(currentUserId && postedById && String(postedById) === String(currentUserId));
+        const highlighted = item.listingType === 'Premium' || item.listingType === 'Featured';
 
         return (
-            <TouchableOpacity
-                style={[
-                    styles.jobCard,
-                    item.listingType === 'Premium' && styles.premiumCard,
-                    item.listingType === 'Featured' && styles.featuredCard
-                ]}
+            <Card
                 onPress={() => navigation.navigate('JobDetail', { jobId: item._id })}
+                style={[styles.jobCard, highlighted && styles.highlightedCard]}
             >
                 <View style={styles.cardHeader}>
-                    <View style={styles.companyInfo}>
-                        <View style={styles.logoPlaceholder}>
-                            <Ionicons name="business" size={24} color={COLORS.primary} />
-                        </View>
-                        <View>
-                            <Text style={styles.jobTitle}>{item.title}</Text>
-                            <Text style={styles.companyName}>{item.companyId?.name || 'Company'}</Text>
-                        </View>
+                    <View style={styles.logoBox}>
+                        <Ionicons name="business-outline" size={20} color={COLORS.accent} />
                     </View>
-                    {item.listingType !== 'Basic' && (
-                        <View style={[
-                            styles.badge,
-                            item.listingType === 'Premium' ? styles.premiumBadge : styles.featuredBadge
-                        ]}>
-                            <Text style={styles.badgeText}>{item.listingType}</Text>
-                        </View>
-                    )}
+                    <View style={styles.headerText}>
+                        <Text variant="bodyStrong" numberOfLines={2}>{item.title}</Text>
+                        <Text variant="caption" tone="muted" numberOfLines={1}>
+                            {item.companyId?.name || 'Company'}
+                        </Text>
+                    </View>
+                    {item.listingType && item.listingType !== 'Basic' ? (
+                        <Badge
+                            label={item.listingType}
+                            tone={item.listingType === 'Premium' ? 'warning' : 'info'}
+                        />
+                    ) : null}
                 </View>
 
-                <View style={styles.detailsRow}>
-                    <View style={styles.detailItem}>
-                        <Ionicons name="location-outline" size={16} color={COLORS.textMuted} />
-                        <Text style={styles.detailText}>{item.location}</Text>
+                <View style={styles.metaRow}>
+                    <View style={styles.metaItem}>
+                        <Ionicons name="location-outline" size={13} color={COLORS.textMuted} />
+                        <Text variant="caption" tone="muted" style={styles.metaText} numberOfLines={1}>
+                            {item.location || 'Anywhere'}
+                        </Text>
                     </View>
-                    <View style={styles.detailItem}>
-                        <Ionicons name="time-outline" size={16} color={COLORS.textMuted} />
-                        <Text style={styles.detailText}>{item.jobType}</Text>
+                    <View style={styles.metaItem}>
+                        <Ionicons name="time-outline" size={13} color={COLORS.textMuted} />
+                        <Text variant="caption" tone="muted" style={styles.metaText} numberOfLines={1}>
+                            {item.jobType || 'Full-time'}
+                        </Text>
                     </View>
-                    <View style={styles.detailItem}>
-                        <Ionicons name="cash-outline" size={16} color={COLORS.textMuted} />
-                        <Text style={styles.detailText}>{formatCurrency(item.salaryRange.min)} - {formatCurrency(item.salaryRange.max)}</Text>
-                    </View>
+                </View>
+
+                <View style={styles.salaryRow}>
+                    <Ionicons name="cash-outline" size={14} color={COLORS.success} />
+                    <Text variant="bodyStrong" tone="success" style={styles.metaText}>
+                        {salaryLabel(item.salaryRange)}
+                    </Text>
                 </View>
 
                 <View style={styles.cardFooter}>
-                    <Text style={styles.timeAgo}>1 day ago</Text>
+                    <Text variant="caption" tone="faint">{relativeTime(item.createdAt)}</Text>
                     {isOwner ? (
-                        <View style={styles.ownerBadge}>
-                            <Ionicons name="sparkles-outline" size={13} color="#a855f7" style={{ marginRight: 4 }} />
-                            <Text style={styles.ownerBadgeText}>Your Job Listing</Text>
-                        </View>
+                        <Badge label="Your listing" tone="primary" icon={<Ionicons name="sparkles-outline" size={11} color={COLORS.primary} />} />
                     ) : (
-                        <TouchableOpacity 
-                            style={styles.applySmallButton}
-                            onPress={(e) => {
-                                e.stopPropagation();
-                                navigation.navigate('JobApplication', { jobId: item._id, jobTitle: item.title });
-                            }}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={styles.applySmallText}>Apply Now</Text>
-                        </TouchableOpacity>
+                        <Button
+                            title="Apply"
+                            size="sm"
+                            fullWidth={false}
+                            onPress={() =>
+                                navigation.navigate('JobApplication', { jobId: item._id, jobTitle: item.title })
+                            }
+                        />
                     )}
                 </View>
-            </TouchableOpacity>
+            </Card>
         );
     };
 
     return (
         <ThemeWrapper>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Jobs</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <TouchableOpacity
-                        style={styles.headerSavedBtn}
-                        onPress={() => navigation.navigate('SavedJobs')}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="bookmark" size={16} color="#fbbf24" style={{ marginRight: 4 }} />
-                        <Text style={styles.headerSavedText}>Saved Jobs</Text>
-                    </TouchableOpacity>
-
-                    <PrimaryButton
-                        title="Post Job"
+            <TopBar
+                title="Jobs"
+                subtitle="Roles from the NovaEdge network"
+                showBack={false}
+                right={
+                    <Button
+                        title="Post"
+                        size="sm"
+                        fullWidth={false}
+                        icon={<Ionicons name="add" size={16} color={COLORS.white} />}
                         onPress={() => navigation.navigate('PostJob')}
-                        style={styles.postButton}
-                        textStyle={styles.postButtonText}
-                        icon={<Ionicons name="add" size={18} color="#FFF" />}
                     />
-                </View>
-            </View>
+                }
+            />
 
-            {/* Clean Quick Navigation Bar */}
-            <View style={styles.quickNavRow}>
-                <TouchableOpacity
-                    style={styles.quickNavBtn}
-                    onPress={() => navigation.navigate('MyApplications')}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons name="document-text-outline" size={14} color="#38bdf8" />
-                    <Text style={[styles.quickNavText, { color: '#38bdf8' }]}>My Applications</Text>
-                </TouchableOpacity>
+            <FlatList
+                data={loading ? [] : jobs}
+                keyExtractor={(item) => item._id}
+                renderItem={renderJobItem}
+                contentContainerStyle={styles.listContainer}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={() => {
+                            setRefreshing(true);
+                            fetchJobs(search, activeFilter);
+                        }}
+                        tintColor={COLORS.primary}
+                        colors={[COLORS.primary]}
+                    />
+                }
+                ListHeaderComponent={
+                    <View>
+                        {/* Shortcuts scroll horizontally rather than stacking three
+                            full-width rows above the first result. */}
+                        <FlatList
+                            horizontal
+                            data={QUICK_LINKS}
+                            keyExtractor={(q) => q.route}
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.quickRow}
+                            renderItem={({ item: q }) => (
+                                <Pressable
+                                    onPress={() => navigation.navigate(q.route)}
+                                    style={({ pressed }) => [
+                                        styles.quickChip,
+                                        {
+                                            backgroundColor: withAlpha(q.tint, pressed ? 0.24 : 0.12),
+                                            borderColor: withAlpha(q.tint, 0.28),
+                                        },
+                                    ]}
+                                >
+                                    <Ionicons name={q.icon} size={13} color={q.tint} />
+                                    <Text variant="caption" color={q.tint} style={styles.quickLabel}>
+                                        {q.label}
+                                    </Text>
+                                </Pressable>
+                            )}
+                        />
 
-                <TouchableOpacity
-                    style={[styles.quickNavBtn, { backgroundColor: 'rgba(168, 85, 247, 0.12)', borderColor: 'rgba(168, 85, 247, 0.25)' }]}
-                    onPress={() => navigation.navigate('EmployerApplicants')}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons name="people-outline" size={14} color="#c042ff" />
-                    <Text style={[styles.quickNavText, { color: '#c042ff' }]}>Applicants</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.quickNavBtn, { backgroundColor: 'rgba(255, 215, 0, 0.12)', borderColor: 'rgba(255, 215, 0, 0.25)' }]}
-                    onPress={() => navigation.navigate('PremiumUpgrade')}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons name="star" size={14} color="#FFD700" />
-                    <Text style={[styles.quickNavText, { color: '#FFD700' }]}>Pro Pass</Text>
-                </TouchableOpacity>
-            </View>
-
-            <View style={styles.searchContainer}>
-                <Ionicons name="search" size={20} color={COLORS.textMuted} style={styles.searchIcon} />
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search roles, skills..."
-                    placeholderTextColor={COLORS.textMuted}
-                    value={search}
-                    onChangeText={setSearch}
-                />
-            </View>
-
-            <View style={{ height: 50, marginBottom: 10 }}>
-                <FlatList
-                    horizontal
-                    data={filters}
-                    keyExtractor={(item) => item}
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.filterList}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[styles.filterChip, activeFilter === item && styles.activeChip]}
-                            onPress={() => setActiveFilter(item)}
-                        >
-                            <Text style={[styles.filterText, activeFilter === item && styles.activeFilterText]}>
-                                {item}
-                            </Text>
-                        </TouchableOpacity>
-                    )}
-                />
-            </View>
-
-            {loading ? (
-                <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />
-            ) : (
-                <FlatList
-                    data={jobs}
-                    keyExtractor={(item) => item._id}
-                    renderItem={renderJobItem}
-                    contentContainerStyle={styles.listContainer}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={() => fetchJobs()} tintColor={COLORS.primary} />
-                    }
-                    ListEmptyComponent={
-                        <View style={styles.emptyContainer}>
-                            <Ionicons name="search-outline" size={60} color={COLORS.textMuted} />
-                            <Text style={styles.emptyText}>No jobs found matching your criteria</Text>
+                        <View style={styles.searchContainer}>
+                            <Ionicons name="search" size={17} color={COLORS.textMuted} />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Search roles, skills, companies"
+                                placeholderTextColor={COLORS.textFaint}
+                                value={search}
+                                onChangeText={setSearch}
+                                returnKeyType="search"
+                                autoCapitalize="none"
+                            />
+                            {search ? (
+                                <Pressable onPress={() => setSearch('')} hitSlop={10}>
+                                    <Ionicons name="close-circle" size={17} color={COLORS.textMuted} />
+                                </Pressable>
+                            ) : null}
                         </View>
-                    }
-                />
-            )}
+
+                        <FlatList
+                            horizontal
+                            data={FILTERS}
+                            keyExtractor={(f) => f}
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.filterList}
+                            renderItem={({ item: f }) => {
+                                const active = activeFilter === f;
+                                return (
+                                    <Pressable
+                                        onPress={() => setActiveFilter(f)}
+                                        style={[styles.filterChip, active && styles.filterChipActive]}
+                                    >
+                                        <Text
+                                            variant="label"
+                                            color={active ? COLORS.white : COLORS.textMuted}
+                                        >
+                                            {f}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            }}
+                        />
+
+                        {loading ? (
+                            <View style={styles.skeletons}>
+                                <SkeletonCard lines={3} />
+                                <SkeletonCard lines={3} />
+                                <SkeletonCard lines={3} />
+                            </View>
+                        ) : null}
+                    </View>
+                }
+                ListEmptyComponent={
+                    loading ? null : (
+                        <EmptyState
+                            icon="search-outline"
+                            title="No jobs match that"
+                            message={
+                                search || activeFilter !== 'All'
+                                    ? 'Try a different keyword or clear the filter.'
+                                    : 'Nothing posted yet — be the first to list a role.'
+                            }
+                            actionLabel={search || activeFilter !== 'All' ? 'Clear filters' : 'Post a job'}
+                            onAction={() => {
+                                if (search || activeFilter !== 'All') {
+                                    setSearch('');
+                                    setActiveFilter('All');
+                                } else {
+                                    navigation.navigate('PostJob');
+                                }
+                            }}
+                        />
+                    )
+                }
+            />
         </ThemeWrapper>
     );
 };
 
 const styles = StyleSheet.create({
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: 50,
-        paddingBottom: 15,
+    listContainer: {
+        paddingHorizontal: SPACING.md,
+        paddingBottom: SPACING.xxl * 2,
     },
-    headerTitle: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: COLORS.text,
+    quickRow: {
+        paddingBottom: SPACING.md,
     },
-    headerSavedBtn: {
+    quickChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(251, 191, 36, 0.15)',
-        borderWidth: 1,
-        borderColor: 'rgba(251, 191, 36, 0.35)',
-        borderRadius: 12,
         paddingHorizontal: 12,
-        height: 40,
+        paddingVertical: 7,
+        borderRadius: RADIUS.pill,
+        borderWidth: 1,
+        marginRight: SPACING.sm,
     },
-    headerSavedText: {
-        color: '#fbbf24',
-        fontSize: 13,
-        fontWeight: 'bold',
-    },
-    postButtonText: {
-        color: COLORS.white,
-        fontWeight: 'bold',
+    quickLabel: {
         marginLeft: 5,
-    },
-    quickNavRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 15,
-        gap: 10,
-    },
-    quickNavBtn: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(56, 189, 248, 0.12)',
-        borderWidth: 1,
-        borderColor: 'rgba(56, 189, 248, 0.25)',
-        borderRadius: 12,
-        paddingVertical: 10,
-        paddingHorizontal: 12,
-        gap: 6,
-    },
-    quickNavText: {
-        fontSize: 13,
-        fontWeight: 'bold',
+        fontWeight: '600',
     },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.card,
-        marginHorizontal: 20,
-        paddingHorizontal: 15,
-        borderRadius: 12,
-        height: 50,
-        marginBottom: 15,
+        backgroundColor: withAlpha(COLORS.white, 0.05),
         borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-    searchIcon: {
-        marginRight: 10,
+        borderColor: COLORS.borderSubtle,
+        borderRadius: RADIUS.md,
+        paddingHorizontal: SPACING.md - 2,
+        height: 46,
     },
     searchInput: {
         flex: 1,
         color: COLORS.text,
-        fontSize: 16,
+        marginLeft: SPACING.sm,
+        ...TYPOGRAPHY.body,
     },
     filterList: {
-        paddingHorizontal: 20,
-        alignItems: 'center',
+        paddingVertical: SPACING.md,
     },
     filterChip: {
-        paddingHorizontal: 18,
+        paddingHorizontal: 14,
         paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: COLORS.card,
-        marginRight: 10,
+        borderRadius: RADIUS.pill,
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: COLORS.borderSubtle,
+        backgroundColor: withAlpha(COLORS.white, 0.04),
+        marginRight: SPACING.sm,
     },
-    activeChip: {
+    filterChipActive: {
         backgroundColor: COLORS.primary,
         borderColor: COLORS.primary,
     },
-    filterText: {
-        color: COLORS.text,
-        fontWeight: '600',
-    },
-    activeFilterText: {
-        color: '#FFF',
-    },
-    listContainer: {
-        padding: 20,
-        paddingTop: 10,
+    skeletons: {
+        marginTop: SPACING.xs,
     },
     jobCard: {
-        backgroundColor: COLORS.card,
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: COLORS.border,
+        marginBottom: SPACING.sm + 4,
     },
-    premiumCard: {
-        borderColor: '#FFD700',
-        backgroundColor: 'rgba(255, 215, 0, 0.05)',
-    },
-    featuredCard: {
-        borderColor: COLORS.primary,
-        backgroundColor: 'rgba(110, 68, 255, 0.05)',
+    highlightedCard: {
+        borderColor: withAlpha(COLORS.primary, 0.45),
     },
     cardHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 15,
     },
-    companyInfo: {
-        flexDirection: 'row',
+    logoBox: {
+        width: 40,
+        height: 40,
+        borderRadius: RADIUS.sm,
         alignItems: 'center',
-        flex: 1,
-    },
-    logoPlaceholder: {
-        width: 45,
-        height: 45,
-        borderRadius: 10,
-        backgroundColor: 'rgba(255,255,255,0.1)',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
+        backgroundColor: withAlpha(COLORS.primary, 0.12),
+        borderWidth: 1,
+        borderColor: withAlpha(COLORS.primary, 0.25),
+        marginRight: SPACING.sm + 2,
     },
-    jobTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: COLORS.text,
-        marginBottom: 2,
+    headerText: {
+        flex: 1,
+        paddingRight: SPACING.sm,
     },
-    companyName: {
-        fontSize: 14,
-        color: COLORS.textMuted,
-    },
-    badge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 6,
-    },
-    premiumBadge: {
-        backgroundColor: '#FFD700',
-    },
-    featuredBadge: {
-        backgroundColor: COLORS.primary,
-    },
-    badgeText: {
-        color: '#000',
-        fontSize: 10,
-        fontWeight: 'bold',
-    },
-    detailsRow: {
+    metaRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        marginBottom: 15,
+        marginTop: SPACING.md - 4,
     },
-    detailItem: {
+    metaItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginRight: 15,
-        marginBottom: 5,
+        marginRight: SPACING.md,
+        marginTop: 4,
     },
-    detailText: {
-        color: COLORS.textMuted,
-        fontSize: 13,
+    metaText: {
         marginLeft: 5,
+    },
+    salaryRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: SPACING.sm,
     },
     cardFooter: {
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        marginTop: SPACING.md,
+        paddingTop: SPACING.sm + 2,
         borderTopWidth: 1,
-        borderTopColor: COLORS.border,
-        paddingTop: 12,
+        borderTopColor: COLORS.divider,
     },
-    timeAgo: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-    },
-    applySmallButton: {
-        backgroundColor: 'rgba(110, 68, 255, 0.1)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 8,
-    },
-    applySmallText: {
-        color: COLORS.primary,
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    ownerBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(168, 85, 247, 0.12)',
-        borderWidth: 1,
-        borderColor: 'rgba(168, 85, 247, 0.3)',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 8,
-    },
-    ownerBadgeText: {
-        color: '#c042ff',
-        fontSize: 11,
-        fontWeight: 'bold',
-    },
-    emptyContainer: {
-        alignItems: 'center',
-        marginTop: 100,
-    },
-    emptyText: {
-        color: COLORS.textMuted,
-        marginTop: 10,
-        fontSize: 16,
-    },
-    postButton: {
-        height: 38,
-        paddingHorizontal: 14,
-        borderRadius: 10,
-    }
 });
 
 export default JobFeedScreen;

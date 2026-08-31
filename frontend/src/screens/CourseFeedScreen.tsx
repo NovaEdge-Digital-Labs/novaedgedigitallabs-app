@@ -1,23 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import {
     View,
-    Text,
     StyleSheet,
     FlatList,
     Image,
-    TouchableOpacity,
-    ActivityIndicator,
     RefreshControl,
-    Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../constants/theme';
+import { COLORS, SPACING, RADIUS, withAlpha } from '../constants/colors';
+import ThemeWrapper from '../components/ThemeWrapper';
+import { Text, Card, Badge, Button, EmptyState, SkeletonCard, TopBar } from '../components/ui';
 import courseApi, { Course } from '../api/courseApi';
 import { formatCurrency } from '../utils/helpers';
-import PrimaryButton from '../components/PrimaryButton';
-
-const { width } = Dimensions.get('window');
 
 const CourseFeedScreen = () => {
     const navigation = useNavigation<any>();
@@ -48,227 +43,180 @@ const CourseFeedScreen = () => {
         fetchCourses();
     };
 
-    const renderCourseItem = ({ item }: { item: Course }) => (
-        <TouchableOpacity
-            style={styles.courseCard}
-            onPress={() => navigation.navigate('CourseDetail', { courseId: item._id })}
-            activeOpacity={0.9}
-        >
-            <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
-            <View style={styles.badge}>
-                <Text style={styles.badgeText}>{item.category}</Text>
-            </View>
-            <View style={styles.courseInfo}>
-                <Text style={styles.courseTitle} numberOfLines={2}>{item.title}</Text>
-                <View style={styles.instructorRow}>
-                    <View style={styles.instructorProfile}>
-                        <Image 
-                            source={{ uri: item.instructor.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.instructor.name) + '&background=random&color=fff' }} 
-                            style={styles.instructorAvatarSmall} 
-                        />
-                        <Text style={styles.instructorName}>By {item.instructor.name}</Text>
-                    </View>
-                    <View style={styles.ratingRow}>
-                        <Ionicons name="star" size={14} color="#FFD700" />
-                        <Text style={styles.ratingText}>{item.rating}</Text>
-                    </View>
-                </View>
-                <View style={styles.footerRow}>
-                    <View style={styles.priceContainer}>
-                        <Text style={styles.price}>{formatCurrency(item.price)}</Text>
-                        {item.originalPrice && item.originalPrice > item.price && (
-                            <Text style={styles.originalPrice}>{formatCurrency(item.originalPrice)}</Text>
-                        )}
-                    </View>
-                    <Text style={styles.enrolledText}>{item.enrolledCount} enrolled</Text>
-                </View>
-            </View>
-        </TouchableOpacity>
-    );
+    const renderCourseItem = ({ item }: { item: Course }) => {
+        const avatar =
+            item.instructor.avatar ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(item.instructor.name)}&background=ac4bff&color=fff`;
+        const discounted = item.originalPrice && item.originalPrice > item.price;
 
-    if (loading && !refreshing) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-            </View>
+            <Card
+                padded={false}
+                onPress={() => navigation.navigate('CourseDetail', { courseId: item._id })}
+                style={styles.courseCard}
+            >
+                <View>
+                    <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
+                    {item.category ? (
+                        <Badge label={item.category} tone="primary" style={styles.badge} />
+                    ) : null}
+                </View>
+
+                <View style={styles.courseInfo}>
+                    <Text variant="bodyStrong" numberOfLines={2}>{item.title}</Text>
+
+                    <View style={styles.instructorRow}>
+                        <View style={styles.instructorProfile}>
+                            <Image source={{ uri: avatar }} style={styles.instructorAvatarSmall} />
+                            <Text variant="caption" tone="muted" numberOfLines={1} style={styles.instructorName}>
+                                {item.instructor.name}
+                            </Text>
+                        </View>
+                        {item.rating ? (
+                            <View style={styles.ratingRow}>
+                                <Ionicons name="star" size={13} color="#fcbb00" />
+                                <Text variant="caption" tone="muted" style={styles.ratingText}>
+                                    {item.rating}
+                                </Text>
+                            </View>
+                        ) : null}
+                    </View>
+
+                    <View style={styles.footerRow}>
+                        <View style={styles.priceContainer}>
+                            <Text variant="bodyStrong" tone="success">{formatCurrency(item.price)}</Text>
+                            {discounted ? (
+                                <Text variant="caption" tone="faint" style={styles.originalPrice}>
+                                    {formatCurrency(item.originalPrice as number)}
+                                </Text>
+                            ) : null}
+                        </View>
+                        <Text variant="caption" tone="muted">
+                            {item.enrolledCount || 0} enrolled
+                        </Text>
+                    </View>
+                </View>
+            </Card>
         );
-    }
+    };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <View>
-                    <Text style={styles.headerTitle}>Explore Courses</Text>
-                    <Text style={styles.headerSubtitle}>Upskill with our mini tutorials</Text>
-                </View>
-                <TouchableOpacity
-                    style={styles.myCoursesBtn}
-                    onPress={() => navigation.navigate('MyCourses')}
-                >
-                    <Ionicons name="play-circle-outline" size={24} color={COLORS.primary} />
-                </TouchableOpacity>
-            </View>
-
-            <FlatList
-                data={courses}
-                renderItem={renderCourseItem}
-                keyExtractor={(item) => item._id}
-                contentContainerStyle={styles.listContainer}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
-                }
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Ionicons name="school-outline" size={64} color={COLORS.gray[400]} />
-                        <Text style={styles.emptyText}>No courses available yet.</Text>
-                    </View>
+        <ThemeWrapper>
+            <TopBar
+                title="Academy"
+                subtitle="Upskill with short, focused courses"
+                showBack={false}
+                right={
+                    <Button
+                        title="My courses"
+                        size="sm"
+                        variant="secondary"
+                        fullWidth={false}
+                        icon={<Ionicons name="play-circle-outline" size={16} color={COLORS.text} />}
+                        onPress={() => navigation.navigate('MyCourses')}
+                    />
                 }
             />
-        </View>
+
+            {loading && !refreshing ? (
+                <View style={styles.listContainer}>
+                    <SkeletonCard lines={3} />
+                    <SkeletonCard lines={3} />
+                    <SkeletonCard lines={3} />
+                </View>
+            ) : (
+                <FlatList
+                    data={courses}
+                    renderItem={renderCourseItem}
+                    keyExtractor={(item) => item._id}
+                    contentContainerStyle={styles.listContainer}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={COLORS.primary}
+                            colors={[COLORS.primary]}
+                        />
+                    }
+                    ListEmptyComponent={
+                        <EmptyState
+                            icon="school-outline"
+                            title="No courses yet"
+                            message="New tutorials land here as the team publishes them."
+                        />
+                    }
+                />
+            )}
+        </ThemeWrapper>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: COLORS.background,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: COLORS.background,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: SPACING.lg,
-        paddingTop: SPACING.xl,
-        paddingBottom: SPACING.md,
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: COLORS.text,
-    },
-    headerSubtitle: {
-        fontSize: 14,
-        color: COLORS.textMuted,
-        marginTop: 4,
-    },
-    myCoursesBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: COLORS.gray[100],
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...SHADOWS.small,
-    },
     listContainer: {
-        padding: SPACING.lg,
+        paddingHorizontal: SPACING.md,
+        paddingBottom: SPACING.xxl * 2,
     },
     courseCard: {
-        backgroundColor: COLORS.surface,
-        borderRadius: 16,
-        marginBottom: SPACING.lg,
-        overflow: 'hidden',
-        ...SHADOWS.medium,
+        marginBottom: SPACING.sm + 4,
     },
     thumbnail: {
         width: '100%',
-        height: 180,
+        height: 168,
+        backgroundColor: withAlpha(COLORS.white, 0.05),
     },
     badge: {
         position: 'absolute',
-        top: 12,
-        left: 12,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 8,
-    },
-    badgeText: {
-        color: '#FFF',
-        fontSize: 12,
-        fontWeight: '600',
+        top: SPACING.sm,
+        left: SPACING.sm,
     },
     courseInfo: {
         padding: SPACING.md,
     },
-    courseTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: COLORS.text,
-        marginBottom: 8,
-    },
     instructorRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        justifyContent: 'space-between',
+        marginTop: SPACING.sm,
     },
     instructorProfile: {
         flexDirection: 'row',
         alignItems: 'center',
+        flex: 1,
+        paddingRight: SPACING.sm,
     },
     instructorAvatarSmall: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        marginRight: 8,
+        width: 22,
+        height: 22,
+        borderRadius: RADIUS.pill,
+        marginRight: SPACING.sm,
     },
     instructorName: {
-        fontSize: 14,
-        color: COLORS.textSecondary,
+        flex: 1,
     },
     ratingRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     ratingText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: COLORS.text,
         marginLeft: 4,
     },
     footerRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: SPACING.md,
+        paddingTop: SPACING.sm + 2,
         borderTopWidth: 1,
-        borderTopColor: COLORS.gray[100],
-        paddingTop: 12,
+        borderTopColor: COLORS.divider,
     },
     priceContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
-    },
-    price: {
-        fontSize: 20,
-        fontWeight: '800',
-        color: COLORS.primary,
+        alignItems: 'baseline',
     },
     originalPrice: {
-        fontSize: 14,
-        color: COLORS.gray[400],
+        marginLeft: 6,
         textDecorationLine: 'line-through',
-        marginLeft: 8,
-    },
-    enrolledText: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-    },
-    emptyContainer: {
-        alignItems: 'center',
-        marginTop: 100,
-    },
-    emptyText: {
-        fontSize: 16,
-        color: COLORS.textSecondary,
-        marginTop: SPACING.md,
     },
 });
 

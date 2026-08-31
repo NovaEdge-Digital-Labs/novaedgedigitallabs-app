@@ -1,24 +1,21 @@
 import React, { useState } from 'react';
 import {
     View,
-    Text,
     StyleSheet,
-    TextInput,
-    TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
     Image,
-    ActivityIndicator,
+    Pressable,
     Alert,
-    Linking
+    Linking,
 } from 'react-native';
-import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { COLORS, SPACING, RADIUS, withAlpha } from '../constants/colors';
 import { useAuthStore } from '../store/authStore';
 import ThemeWrapper from '../components/ThemeWrapper';
-import PrimaryButton from '../components/PrimaryButton';
+import { Text, Button, Input } from '../components/ui';
 import { CONFIG } from '../constants/config';
 
 const LoginScreen = () => {
@@ -28,13 +25,19 @@ const LoginScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
+    const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+
+    const validate = () => {
+        const next: { email?: string; password?: string } = {};
+        if (!email.trim()) next.email = 'Email is required';
+        else if (!/^\S+@\S+\.\S+$/.test(email.trim())) next.email = 'Enter a valid email address';
+        if (!password) next.password = 'Password is required';
+        setErrors(next);
+        return Object.keys(next).length === 0;
+    };
 
     const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
+        if (!validate()) return;
 
         setLoading(true);
         try {
@@ -50,100 +53,91 @@ const LoginScreen = () => {
         }
     };
 
-
-
     return (
         <ThemeWrapper>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.flex}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
                     <View style={styles.header}>
                         <View style={styles.logoWrapper}>
-                            <Image
-                                source={require('../../assets/icon.png')}
-                                style={styles.logoIcon}
-                            />
-                            <Text style={[styles.logoText, COLORS.getGlow(COLORS.primary, 15, 0)]}>NovaEdge</Text>
-                            <Text style={styles.brandSubtitle}>Digital Labs</Text>
+                            <Image source={require('../../assets/icon.png')} style={styles.logoIcon} />
                         </View>
-                        <Text style={styles.title}>Welcome Back!</Text>
-                        <Text style={styles.subtitle}>Sign in to continue your digital journey.</Text>
+                        <Text variant="eyebrow" tone="accent" style={styles.eyebrow}>
+                            NovaEdge Digital Labs
+                        </Text>
+                        <Text variant="display" center>Welcome back</Text>
+                        <Text variant="bodyLarge" tone="muted" center style={styles.subtitle}>
+                            Sign in to pick up where you left off.
+                        </Text>
                     </View>
 
                     <View style={styles.form}>
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="mail-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Email Address"
-                                placeholderTextColor={COLORS.textMuted}
-                                value={email}
-                                onChangeText={setEmail}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                            />
-                        </View>
-
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="lock-closed-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Password"
-                                placeholderTextColor={COLORS.textMuted}
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry={!showPassword}
-                            />
-                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} activeOpacity={0.7}>
-                                <Ionicons
-                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                                    size={20}
-                                    color={COLORS.textMuted}
-                                />
-                            </TouchableOpacity>
-                        </View>
-
-                        <TouchableOpacity
-                            style={styles.forgotPassword}
-                            activeOpacity={0.7}
-                            onPress={() => navigation.navigate('ForgotPassword')}
-                        >
-                            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-                        </TouchableOpacity>
-
-                        <PrimaryButton
-                            title="Sign In"
-                            onPress={handleLogin}
-                            loading={loading}
-                            style={styles.loginButton}
+                        <Input
+                            label="Email"
+                            icon="mail-outline"
+                            placeholder="you@example.com"
+                            value={email}
+                            onChangeText={(t) => { setEmail(t); if (errors.email) setErrors((e) => ({ ...e, email: undefined })); }}
+                            error={errors.email}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoComplete="email"
+                            returnKeyType="next"
                         />
 
+                        <Input
+                            label="Password"
+                            icon="lock-closed-outline"
+                            placeholder="Your password"
+                            value={password}
+                            onChangeText={(t) => { setPassword(t); if (errors.password) setErrors((e) => ({ ...e, password: undefined })); }}
+                            error={errors.password}
+                            password
+                            autoComplete="password"
+                            returnKeyType="go"
+                            onSubmitEditing={handleLogin}
+                        />
+
+                        <Pressable
+                            style={styles.forgotPassword}
+                            hitSlop={8}
+                            onPress={() => navigation.navigate('ForgotPassword')}
+                        >
+                            <Text variant="label" tone="accent">Forgot password?</Text>
+                        </Pressable>
+
+                        <Button title="Sign in" onPress={handleLogin} loading={loading} size="lg" />
+
                         <View style={styles.signupContainer}>
-                            <Text style={styles.signupText}>Don't have an account? </Text>
-                            <TouchableOpacity onPress={() => navigation.navigate('Register')} activeOpacity={0.7}>
-                                <Text style={styles.signupLink}>Sign Up</Text>
-                            </TouchableOpacity>
+                            <Text variant="body" tone="muted">Don't have an account? </Text>
+                            <Pressable onPress={() => navigation.navigate('Register')} hitSlop={8}>
+                                <Text variant="bodyStrong" tone="accent">Sign up</Text>
+                            </Pressable>
                         </View>
                     </View>
 
                     <View style={styles.footer}>
-                        <Text style={styles.footerText}>By continuing, you agree to our</Text>
+                        <Text variant="caption" tone="faint" center>By continuing, you agree to our</Text>
                         <View style={styles.footerLinks}>
-                            <TouchableOpacity
-                                activeOpacity={0.7}
+                            <Pressable
+                                hitSlop={8}
                                 onPress={() => Linking.openURL(`${CONFIG.BASE_URL}/terms-and-conditions.html`)}
                             >
-                                <Text style={styles.footerLink}>Terms of Service</Text>
-                            </TouchableOpacity>
-                            <Text style={styles.footerText}> & </Text>
-                            <TouchableOpacity
-                                activeOpacity={0.7}
+                                <Text variant="caption" tone="accent">Terms of Service</Text>
+                            </Pressable>
+                            <Text variant="caption" tone="faint"> & </Text>
+                            <Pressable
+                                hitSlop={8}
                                 onPress={() => Linking.openURL(`${CONFIG.BASE_URL}/privacy-policy.html`)}
                             >
-                                <Text style={styles.footerLink}>Privacy Policy</Text>
-                            </TouchableOpacity>
+                                <Text variant="caption" tone="accent">Privacy Policy</Text>
+                            </Pressable>
                         </View>
                     </View>
                 </ScrollView>
@@ -158,121 +152,60 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        padding: 30,
         justifyContent: 'center',
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.xxl,
     },
     header: {
         alignItems: 'center',
-        marginBottom: 40,
+        marginBottom: SPACING.xl,
     },
     logoWrapper: {
+        width: 72,
+        height: 72,
+        borderRadius: RADIUS.lg,
         alignItems: 'center',
-        marginBottom: 30,
+        justifyContent: 'center',
+        backgroundColor: withAlpha(COLORS.primary, 0.12),
+        borderWidth: 1,
+        borderColor: withAlpha(COLORS.primary, 0.3),
+        marginBottom: SPACING.md,
+        overflow: 'hidden',
     },
     logoIcon: {
-        width: 80,
-        height: 80,
-        marginBottom: 10,
+        width: 48,
+        height: 48,
         resizeMode: 'contain',
     },
-    logoText: {
-        fontSize: 32,
-        fontWeight: '900',
-        color: COLORS.white,
-        letterSpacing: -0.5,
-    },
-    brandSubtitle: {
-        fontSize: 14,
-        color: COLORS.textMuted,
-        fontWeight: '600',
-        marginTop: -4,
-        letterSpacing: 1.5,
-        textTransform: 'uppercase',
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: COLORS.text,
-        marginBottom: 8,
+    eyebrow: {
+        marginBottom: SPACING.sm,
     },
     subtitle: {
-        fontSize: 16,
-        color: COLORS.textLight,
-        textAlign: 'center',
+        marginTop: SPACING.sm,
+        maxWidth: 300,
     },
     form: {
         width: '100%',
     },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderWidth: 1,
-        borderColor: COLORS.border,
-        borderRadius: 12,
-        paddingHorizontal: 15,
-        marginBottom: 15,
-        height: 55,
-    },
-    inputIcon: {
-        marginRight: 10,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        color: COLORS.text,
-    },
     forgotPassword: {
         alignSelf: 'flex-end',
-        marginBottom: 25,
-    },
-    forgotPasswordText: {
-        color: COLORS.accent,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    loginButton: {
-        height: 55,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'hidden',
-    },
-    loginButtonText: {
-        color: COLORS.white,
-        fontSize: 18,
-        fontWeight: 'bold',
+        marginBottom: SPACING.lg,
+        marginTop: -SPACING.xs,
     },
     signupContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        marginTop: 25,
-    },
-    signupText: {
-        color: COLORS.textLight,
-        fontSize: 14,
-    },
-    signupLink: {
-        color: COLORS.accent,
-        fontSize: 14,
-        fontWeight: 'bold',
+        alignItems: 'center',
+        marginTop: SPACING.lg,
     },
     footer: {
-        marginTop: 40,
         alignItems: 'center',
-    },
-    footerText: {
-        fontSize: 12,
-        color: COLORS.textMuted,
+        marginTop: SPACING.xl,
     },
     footerLinks: {
         flexDirection: 'row',
-        marginTop: 5,
-    },
-    footerLink: {
-        fontSize: 12,
-        color: COLORS.accent,
-        textDecorationLine: 'underline',
+        alignItems: 'center',
+        marginTop: 4,
     },
 });
 

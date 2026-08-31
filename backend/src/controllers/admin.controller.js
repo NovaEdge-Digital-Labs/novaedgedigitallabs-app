@@ -27,20 +27,20 @@ exports.getPublicTheme = async (req, res, next) => {
     try {
         let config = await PlatformConfig.findOne().sort({ createdAt: -1 });
         const defaultTheme = {
-            preset: 'purple-cyber',
-            primary: '#9127FF',
-            primaryDark: '#7B00FF',
-            secondary: '#120025',
-            background: '#06000F',
-            accent: '#C042FF',
-            glow: '#9127FF',
-            primaryGradient: 'linear-gradient(135deg, #9127FF, #C042FF)',
-            backgroundGradient: 'radial-gradient(circle at top left, #2D006D, #06000F)',
+            preset: 'nova-web',
+            primary: '#ac4bff',
+            primaryDark: '#8200da',
+            secondary: '#3c0366',
+            background: '#070010',
+            accent: '#c07eff',
+            glow: '#ac4bff',
+            primaryGradient: 'linear-gradient(135deg, #ac4bff, #9810fa)',
+            backgroundGradient: 'radial-gradient(circle at top left, #3c0366, #070010)',
             text: '#FFFFFF',
-            textLight: '#E0E0FF',
-            textMuted: '#A080FF',
-            card: 'rgba(255, 255, 255, 0.03)',
-            border: 'rgba(145, 39, 255, 0.2)'
+            textLight: '#d1d5dc',
+            textMuted: '#99a1af',
+            card: 'rgba(17, 24, 39, 0.5)',
+            border: 'rgba(172, 75, 255, 0.2)'
         };
 
         const theme = config && config.themeConfig ? { ...defaultTheme, ...config.themeConfig.toObject() } : defaultTheme;
