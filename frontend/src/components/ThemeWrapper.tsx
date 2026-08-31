@@ -21,15 +21,22 @@ const ThemeWrapper: React.FC<ThemeWrapperProps> = ({ children, useSafeArea = tru
     const Content = (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+            {/* Decorative only: these must never intercept scroll or taps. */}
             <LinearGradient
                 colors={backgroundGradient}
                 style={StyleSheet.absoluteFill}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
+                pointerEvents="none"
             />
-            {/* Dynamic Nebula Accent Effects */}
-            <View style={[styles.nebula, { top: -100, left: -100, backgroundColor: theme.primary + '30' }]} />
-            <View style={[styles.nebula, { bottom: -150, right: -50, backgroundColor: theme.accent + '20' }]} />
+            <View
+                pointerEvents="none"
+                style={[styles.nebula, { top: -100, left: -100, backgroundColor: theme.primary + '30' }]}
+            />
+            <View
+                pointerEvents="none"
+                style={[styles.nebula, { bottom: -150, right: -50, backgroundColor: theme.accent + '20' }]}
+            />
 
             {children}
         </View>

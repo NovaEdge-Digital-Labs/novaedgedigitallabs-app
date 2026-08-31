@@ -53,7 +53,9 @@ const Screen: React.FC<ScreenProps> = ({
             {scroll ? (
                 <ScrollView
                     style={styles.flex}
-                    contentContainerStyle={[inner, { paddingBottom: bottomPad }, contentStyle]}
+                    // flexGrow (not flex) on the content container: `flex: 1`
+                    // here caps content at viewport height and kills scrolling.
+                    contentContainerStyle={[styles.grow, inner, { paddingBottom: bottomPad }, contentStyle]}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                     refreshControl={
@@ -83,6 +85,9 @@ const styles = StyleSheet.create({
     },
     flex: {
         flex: 1,
+    },
+    grow: {
+        flexGrow: 1,
     },
     padded: {
         paddingHorizontal: SPACING.md,
