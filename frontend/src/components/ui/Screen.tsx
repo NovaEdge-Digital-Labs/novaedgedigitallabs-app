@@ -10,6 +10,7 @@ interface ScreenProps {
     title?: string;
     subtitle?: string;
     showBack?: boolean;
+    largeTitle?: boolean;
     onBack?: () => void;
     right?: React.ReactNode;
     /** Wraps children in a ScrollView with consistent gutters and bottom inset. */
@@ -30,6 +31,7 @@ const Screen: React.FC<ScreenProps> = ({
     title,
     subtitle,
     showBack,
+    largeTitle,
     onBack,
     right,
     scroll = false,
@@ -47,7 +49,7 @@ const Screen: React.FC<ScreenProps> = ({
     return (
         <View style={[styles.root, style]}>
             {title ? (
-                <TopBar title={title} subtitle={subtitle} showBack={showBack} onBack={onBack} right={right} />
+                <TopBar title={title} subtitle={subtitle} showBack={showBack} onBack={onBack} right={right} large={largeTitle} />
             ) : null}
 
             {scroll ? (

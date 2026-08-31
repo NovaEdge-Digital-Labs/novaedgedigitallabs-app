@@ -148,7 +148,7 @@ const ExploreScreen: React.FC = () => {
 
     return (
         <ThemeWrapper>
-            <Screen title="Explore" subtitle="Everything NovaEdge does, in one place" showBack={false} scroll>
+            <Screen title="Explore" subtitle="Everything NovaEdge does, in one place" showBack={false} largeTitle scroll>
                 {groups.map((group) => (
                     <View key={group.eyebrow} style={styles.group}>
                         <SectionHeader eyebrow={group.eyebrow} title={group.title} />

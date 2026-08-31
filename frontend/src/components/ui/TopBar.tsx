@@ -11,6 +11,8 @@ interface TopBarProps {
     showBack?: boolean;
     onBack?: () => void;
     right?: React.ReactNode;
+    /** Stacks a large display title under the controls, magazine-style. */
+    large?: boolean;
 }
 
 /**
@@ -18,7 +20,7 @@ interface TopBarProps {
  * target rather than a bare chevron — the previous bar had no back control at
  * all, which is a large part of why deep stacks felt like dead ends.
  */
-const TopBar: React.FC<TopBarProps> = ({ title, subtitle, showBack, onBack, right }) => {
+const TopBar: React.FC<TopBarProps> = ({ title, subtitle, showBack, onBack, right, large }) => {
     const navigation = useNavigation<any>();
     const canGoBack = showBack ?? navigation.canGoBack();
 
@@ -26,6 +28,27 @@ const TopBar: React.FC<TopBarProps> = ({ title, subtitle, showBack, onBack, righ
         if (onBack) return onBack();
         if (navigation.canGoBack()) navigation.goBack();
     };
+
+    if (large) {
+        return (
+            <View style={styles.largeBar}>
+                <View style={styles.largeTop}>
+                    {canGoBack ? (
+                        <Pressable onPress={handleBack} hitSlop={12} style={styles.backButton}>
+                            <Ionicons name="chevron-back" size={20} color={COLORS.text} />
+                        </Pressable>
+                    ) : <View />}
+                    {right}
+                </View>
+                <Text variant="display" style={styles.largeTitle}>{title}</Text>
+                {subtitle ? (
+                    <Text variant="bodyLarge" tone="muted" style={styles.largeSubtitle}>
+                        {subtitle}
+                    </Text>
+                ) : null}
+            </View>
+        );
+    }
 
     return (
         <View style={styles.bar}>
@@ -76,6 +99,24 @@ const styles = StyleSheet.create({
     },
     right: {
         marginLeft: SPACING.sm,
+    },
+    largeBar: {
+        paddingHorizontal: SPACING.md,
+        paddingTop: SPACING.sm,
+        paddingBottom: SPACING.md,
+    },
+    largeTop: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        minHeight: 36,
+        marginBottom: SPACING.md,
+    },
+    largeTitle: {
+        marginBottom: 2,
+    },
+    largeSubtitle: {
+        maxWidth: 320,
     },
 });
 

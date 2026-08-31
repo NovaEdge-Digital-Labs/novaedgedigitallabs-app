@@ -1,49 +1,41 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useThemeStore } from '../store/themeStore';
+import AuroraBackground from './AuroraBackground';
 
 interface ThemeWrapperProps {
     children: React.ReactNode;
     useSafeArea?: boolean;
+    /** Turn off aurora drift on heavy screens (video, long lists). */
+    animatedBackground?: boolean;
 }
 
-const ThemeWrapper: React.FC<ThemeWrapperProps> = ({ children, useSafeArea = true }) => {
-    const { theme, fetchTheme, getGradient } = useThemeStore();
+const ThemeWrapper: React.FC<ThemeWrapperProps> = ({
+    children,
+    useSafeArea = true,
+    animatedBackground = true,
+}) => {
+    const { theme, fetchTheme } = useThemeStore();
 
     useEffect(() => {
         fetchTheme();
     }, []);
 
-    const backgroundGradient = getGradient(theme.backgroundGradient);
-
     const Content = (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-            {/* Decorative only: these must never intercept scroll or taps. */}
-            <LinearGradient
-                colors={backgroundGradient}
-                style={StyleSheet.absoluteFill}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                pointerEvents="none"
-            />
-            <View
-                pointerEvents="none"
-                style={[styles.nebula, { top: -100, left: -100, backgroundColor: theme.primary + '30' }]}
-            />
-            <View
-                pointerEvents="none"
-                style={[styles.nebula, { bottom: -150, right: -50, backgroundColor: theme.accent + '20' }]}
-            />
-
+            <AuroraBackground animated={animatedBackground} />
             {children}
         </View>
     );
 
     if (useSafeArea) {
-        return <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>{Content}</SafeAreaView>;
+        return (
+            <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+                {Content}
+            </SafeAreaView>
+        );
     }
 
     return Content;
@@ -55,15 +47,9 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
+        // Keeps the oversized aurora blooms from inflating page height on web.
+        overflow: 'hidden',
     },
-    nebula: {
-        position: 'absolute',
-        width: 400,
-        height: 400,
-        borderRadius: 200,
-        opacity: 0.4,
-        transform: [{ scale: 1.5 }],
-    }
 });
 
 export default ThemeWrapper;

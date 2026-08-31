@@ -157,6 +157,7 @@ export const JobFeedScreen = ({ navigation }: any) => {
     return (
         <ThemeWrapper>
             <TopBar
+                large
                 title="Jobs"
                 subtitle="Roles from the NovaEdge network"
                 showBack={false}

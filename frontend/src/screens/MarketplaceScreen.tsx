@@ -172,6 +172,7 @@ const MarketplaceScreen = ({ navigation }: any) => {
     return (
         <ThemeWrapper>
             <TopBar
+                large
                 title="Marketplace"
                 subtitle={isGigs ? 'Services offered by the network' : 'Open briefs looking for talent'}
                 showBack={false}

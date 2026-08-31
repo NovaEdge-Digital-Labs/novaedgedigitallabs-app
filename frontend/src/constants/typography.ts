@@ -29,21 +29,21 @@ export const TYPOGRAPHY: Record<string, Variant> = {
     /** Hero numerals and screen-opening statements. */
     display: {
         fontFamily: stack(FONTS.display),
-        fontSize: 34,
-        lineHeight: 40,
-        letterSpacing: -0.8,
+        fontSize: 40,
+        lineHeight: 44,
+        letterSpacing: -1.4,
     },
     h1: {
         fontFamily: stack(FONTS.display),
-        fontSize: 28,
-        lineHeight: 34,
-        letterSpacing: -0.6,
+        fontSize: 32,
+        lineHeight: 37,
+        letterSpacing: -1,
     },
     h2: {
         fontFamily: stack(FONTS.displayBold),
-        fontSize: 22,
-        lineHeight: 28,
-        letterSpacing: -0.4,
+        fontSize: 25,
+        lineHeight: 30,
+        letterSpacing: -0.6,
     },
     h3: {
         fontFamily: stack(FONTS.displaySemi),

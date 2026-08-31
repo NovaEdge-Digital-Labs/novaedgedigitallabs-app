@@ -103,6 +103,7 @@ const CourseFeedScreen = () => {
     return (
         <ThemeWrapper>
             <TopBar
+                large
                 title="Academy"
                 subtitle="Upskill with short, focused courses"
                 showBack={false}
