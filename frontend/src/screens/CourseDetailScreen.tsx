@@ -65,12 +65,18 @@ const CourseDetailScreen = () => {
             const response = await courseApi.enrollInCourse(courseId);
             if (response.success) {
                 const order = response.data;
+                const keyId = response.keyId;
+
+                if (!order?.id || !keyId) {
+                    throw new Error('Could not start payment. Please try again shortly.');
+                }
+
                 const options = {
                     description: course?.title || 'Course Enrollment',
                     image: 'https://novaedgedigitallabs.tech/logo.png',
                     currency: 'INR',
-                    key: 'rzp_test_dummy', // Replace with real env key
-                    amount: course?.price ? course.price * 100 : 0,
+                    key: keyId,
+                    amount: order.amount,
                     name: 'NovaEdge Digital Labs',
                     order_id: order.id,
                     prefill: {

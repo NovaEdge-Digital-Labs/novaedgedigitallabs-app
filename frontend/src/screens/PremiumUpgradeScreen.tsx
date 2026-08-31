@@ -50,11 +50,15 @@ const PremiumUpgradeScreen = ({ navigation }: any) => {
         try {
             const order = await marketplaceApi.createPremiumSeekerOrder();
 
+            if (!order?.orderId || !order?.keyId) {
+                throw new Error('Could not start payment. Please try again shortly.');
+            }
+
             const options = {
                 description: `${passTitle} Upgrade`,
                 image: 'https://novaedgedigitallabs.tech/logo.png',
                 currency: 'INR',
-                key: order?.keyId || 'rzp_test_dummy',
+                key: order.keyId,
                 amount: passPrice * 100,
                 name: 'NovaEdge Digital Labs',
                 order_id: order.orderId,

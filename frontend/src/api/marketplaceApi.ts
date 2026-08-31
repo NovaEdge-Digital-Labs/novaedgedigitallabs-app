@@ -57,8 +57,17 @@ export const marketplaceApi = {
         const response = await axiosInstance.post('/marketplace/hire', { proposalId });
         return response.data;
     },
-    verifyEscrow: async (paymentData: any) => {
-        const response = await axiosInstance.post('/marketplace/verify-escrow', paymentData);
+    /**
+     * `contractId` is intentionally not part of this payload. The server
+     * resolves the contract from the escrow transaction the order was created
+     * for; sending one let a caller fund a contract they hadn't paid for.
+     */
+    verifyEscrow: async (payment: {
+        razorpayOrderId: string;
+        razorpayPaymentId: string;
+        razorpaySignature: string;
+    }) => {
+        const response = await axiosInstance.post('/marketplace/verify-escrow', payment);
         return response.data;
     },
 

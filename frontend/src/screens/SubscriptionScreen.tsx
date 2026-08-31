@@ -4,6 +4,7 @@ import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
+import { useSubscriptionStore } from '../store/subscriptionStore';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -58,6 +59,8 @@ const SubscriptionScreen = () => {
     const navigation = useNavigation();
     const { user, updateUser } = useAuthStore();
     const [isYearly, setIsYearly] = useState(false);
+    const initPayment = useSubscriptionStore((state) => state.initPayment);
+    const isLoadingPayment = useSubscriptionStore((state) => state.isLoadingPayment);
     const primaryGradient = COLORS.getGradient(COLORS.primaryGradient);
 
     const handlePlanSelect = (planName: string) => {
@@ -68,30 +71,37 @@ const SubscriptionScreen = () => {
             return;
         }
 
+        if (planKey === 'free') {
+            Alert.alert('Free plan', 'Cancel your current plan from Manage Subscription instead.');
+            return;
+        }
+
+        const billingCycle = isYearly ? 'yearly' : 'monthly';
+
         Alert.alert(
             'Upgrade Plan',
-            `Confirm upgrade to ${planName} ${isYearly ? 'Yearly' : 'Monthly'} plan?`,
+            `Continue to payment for the ${planName} ${isYearly ? 'Yearly' : 'Monthly'} plan?`,
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Confirm',
-                    onPress: () => {
-                        // Mock Razorpay Flow
-                        Alert.alert(
-                            'Processing Payment',
-                            'Connecting to Razorpay...',
-                            [],
-                            { cancelable: false }
-                        );
+                    text: 'Continue',
+                    onPress: async () => {
+                        // This used to fake the whole purchase: a setTimeout that
+                        // set the plan locally without contacting the server or
+                        // taking payment. The plan is now activated only after
+                        // the backend verifies the payment.
+                        const ok = await initPayment(planKey, billingCycle);
 
-                        setTimeout(() => {
-                            updateUser({ plan: planKey });
+                        if (ok) {
                             Alert.alert(
-                                'Success!',
+                                'Success',
                                 `Your plan has been updated to ${planName}.`,
                                 [{ text: 'OK', onPress: () => navigation.goBack() }]
                             );
-                        }, 2000);
+                        } else {
+                            const error = useSubscriptionStore.getState().paymentError;
+                            if (error) Alert.alert('Payment failed', error);
+                        }
                     }
                 }
             ]

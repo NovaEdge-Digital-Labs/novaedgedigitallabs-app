@@ -49,12 +49,17 @@ const ProductDetailScreen = ({ route, navigation }: any) => {
             setBuying(true);
             const orderResponse = await storeApi.createOrder(productId);
             const order = orderResponse.data;
+            const keyId = orderResponse.keyId;
+
+            if (!order?.id || !keyId) {
+                throw new Error('Could not start payment. Please try again shortly.');
+            }
 
             const options = {
                 description: product.description.substring(0, 50),
                 image: 'https://novaedgedigitallabs.tech/logo.png',
                 currency: order.currency,
-                key: 'rzp_test_dummy', // This should be from your env usually
+                key: keyId,
                 amount: order.amount,
                 name: 'NovaEdge Store',
                 order_id: order.id,

@@ -117,48 +117,35 @@ const PostJobScreen = ({ navigation }: any) => {
                 listingType: activeTier.id || 'Premium'
             };
 
-            // Direct 100% Free publish for Business / Pro plan users or on Web dev environment
-            if (isBusinessUser || Platform.OS === 'web') {
-                const response = await marketplaceApi.publishJob({
-                    razorpayOrderId: `FREE_BUSINESS_${Date.now()}`,
-                    razorpayPaymentId: `FREE_BUSINESS_${Date.now()}`,
-                    jobData
-                });
-
-                setLoading(false);
-                showAlert(
-                    '🎉 Premium Job Published!',
-                    'Your Premium Job Listing is now LIVE with 60 days visibility & instant push notifications!',
-                    () => {
-                        navigation.navigate('JobFeed');
-                    }
-                );
-                return;
-            }
-
+            // Entitlement is the server's call. This used to publish directly
+            // with forged `FREE_BUSINESS_*` ids whenever the client believed the
+            // user was on a business plan — or simply because it was running on
+            // web — which the backend accepted as proof of payment.
             // Mobile Native Razorpay Flow for normal free tier accounts
             const order = await marketplaceApi.createJobOrder(activeTier.id);
 
+            // Server says this account posts free: publish with no payment
+            // fields at all, rather than inventing placeholder ids.
             if (order && order.isFree) {
-                await marketplaceApi.publishJob({
-                    razorpayOrderId: order.orderId || `FREE_BUSINESS_${Date.now()}`,
-                    razorpayPaymentId: `FREE_BUSINESS_${Date.now()}`,
-                    jobData
-                });
+                await marketplaceApi.publishJob({ jobData });
 
                 setLoading(false);
-                showAlert('🎉 Job Published!', 'Your Premium Listing is now live!', () => {
+                showAlert('🎉 Job Published!', 'Your listing is now live!', () => {
                     navigation.navigate('JobFeed');
                 });
                 return;
+            }
+
+            if (!order?.orderId || !order?.keyId) {
+                throw new Error('Could not start payment. Please try again shortly.');
             }
 
             const options = {
                 description: `Job Listing: ${title} (${activeTier.id})`,
                 image: 'https://novaedgedigitallabs.tech/logo.png',
                 currency: 'INR',
-                key: order?.keyId || 'rzp_test_dummy',
-                amount: activeTier.price * 100,
+                key: order.keyId,
+                amount: order.amount,
                 name: 'NovaEdge Digital Labs',
                 order_id: order.orderId,
                 prefill: {
