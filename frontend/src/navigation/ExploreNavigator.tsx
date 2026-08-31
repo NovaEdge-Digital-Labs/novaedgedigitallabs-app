@@ -1,5 +1,6 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import { stackScreenOptions } from './screenOptions';
 import ExploreScreen from '../screens/ExploreScreen';
 import ToolsNavigator from './ToolsNavigator';
 import StoreNavigator from './StoreNavigator';
@@ -18,10 +19,7 @@ const Stack = createStackNavigator();
  */
 const ExploreNavigator = () => (
     <Stack.Navigator
-        screenOptions={{
-            headerShown: false,
-            cardStyle: { backgroundColor: COLORS.background },
-        }}
+        screenOptions={stackScreenOptions}
     >
         <Stack.Screen name="ExploreHome" component={ExploreScreen} />
         <Stack.Screen name="Tools" component={ToolsNavigator} />

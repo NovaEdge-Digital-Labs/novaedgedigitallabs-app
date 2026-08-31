@@ -1,5 +1,6 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import { stackScreenOptions } from './screenOptions';
 import MarketplaceScreen from '../screens/MarketplaceScreen';
 import GigDetailsScreen from '../screens/GigDetailsScreen';
 import ProjectDetailsScreen from '../screens/ProjectDetailsScreen';
@@ -14,6 +15,7 @@ const MarketplaceNavigator = () => {
     return (
         <Stack.Navigator
             screenOptions={{
+                ...stackScreenOptions,
                 headerShown: false,
             }}
         >

@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { nativeStackScreenOptions } from './screenOptions';
 import StoreScreen from '../screens/StoreScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 
@@ -14,6 +15,7 @@ const StoreNavigator = () => {
     return (
         <Stack.Navigator
             screenOptions={{
+                ...nativeStackScreenOptions,
                 headerShown: false,
                 animation: 'slide_from_right'
             }}

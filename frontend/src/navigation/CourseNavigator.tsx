@@ -1,5 +1,6 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import { stackScreenOptions } from './screenOptions';
 import CourseFeedScreen from '../screens/CourseFeedScreen';
 import CourseDetailScreen from '../screens/CourseDetailScreen';
 import MyCoursesScreen from '../screens/MyCoursesScreen';
@@ -12,6 +13,7 @@ const CourseNavigator = () => {
     return (
         <Stack.Navigator
             screenOptions={{
+                ...stackScreenOptions,
                 headerStyle: {
                     backgroundColor: COLORS.background,
                     elevation: 0,

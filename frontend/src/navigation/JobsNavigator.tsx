@@ -1,5 +1,6 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import { stackScreenOptions } from './screenOptions';
 // Force reload comment v2
 import JobFeedScreen from '../screens/JobFeedScreen';
 import JobDetailScreen from '../screens/JobDetailScreen';
@@ -18,10 +19,7 @@ const Stack = createStackNavigator();
 const JobsNavigator = () => {
     return (
         <Stack.Navigator
-            screenOptions={{
-                headerShown: false,
-                cardStyle: { backgroundColor: COLORS.background },
-            }}
+            screenOptions={stackScreenOptions}
         >
             <Stack.Screen name="JobFeed" component={JobFeedScreen} />
             <Stack.Screen name="JobDetail" component={JobDetailScreen} />
