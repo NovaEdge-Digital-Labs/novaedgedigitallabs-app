@@ -1,4 +1,5 @@
 const FreelancerProfile = require('../models/FreelancerProfile.model');
+const { verifySignature, assertOrderPaid } = require('../utils/payments');
 const Gig = require('../models/Gig.model');
 const Project = require('../models/Project.model');
 const Proposal = require('../models/Proposal.model');
@@ -260,24 +261,55 @@ exports.hireFreelancer = async (req, res) => {
 
 exports.verifyEscrowPayment = async (req, res) => {
     try {
-        const { razorpayOrderId, razorpayPaymentId, razorpaySignature, contractId } = req.body;
+        // `contractId` is deliberately NOT read from the body. It used to be,
+        // which meant a caller could fund a cheap contract and then name any
+        // other contract — including someone else's — as the one to mark funded.
+        const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
 
-        const body = razorpayOrderId + '|' + razorpayPaymentId;
-        const expectedSignature = crypto
-            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-            .update(body.toString())
-            .digest('hex');
-
-        if (expectedSignature !== razorpaySignature) {
+        if (!verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature)) {
             return res.status(400).json({ success: false, message: 'Payment verification failed' });
         }
 
-        // Update Contract and Transaction
-        await Contract.findByIdAndUpdate(contractId, { escrowStatus: 'funded' });
-        await EscrowTransaction.findOneAndUpdate(
-            { razorpayOrderId },
-            { status: 'held', razorpayPaymentId }
+        const escrow = await EscrowTransaction.findOne({
+            razorpayOrderId,
+            status: 'pending'
+        });
+
+        if (!escrow) {
+            return res.status(409).json({
+                success: false,
+                message: 'No pending escrow transaction found for this payment'
+            });
+        }
+
+        // The contract to fund comes from the transaction the order was created
+        // for, and only its client may fund it.
+        const contract = await Contract.findById(escrow.contractId);
+        if (!contract) {
+            return res.status(404).json({ success: false, message: 'Contract not found' });
+        }
+
+        if (contract.clientId.toString() !== (req.user._id || req.user.id).toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized to fund this contract' });
+        }
+
+        // escrow.amount is in rupees; Razorpay reports paise.
+        const paid = await assertOrderPaid(razorpayOrderId, Math.round(escrow.amount * 100));
+        if (!paid.ok) {
+            return res.status(400).json({ success: false, message: paid.reason });
+        }
+
+        const held = await EscrowTransaction.findOneAndUpdate(
+            { _id: escrow._id, status: 'pending' },
+            { status: 'held', razorpayPaymentId },
+            { new: true }
         );
+
+        if (!held) {
+            return res.status(409).json({ success: false, message: 'This payment was already processed' });
+        }
+
+        await Contract.findByIdAndUpdate(escrow.contractId, { escrowStatus: 'funded' });
 
         res.status(200).json({ success: true, message: 'Payment verified and funds held in escrow' });
     } catch (error) {

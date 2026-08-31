@@ -3,8 +3,20 @@ const JobListing = require('../models/JobListing.model');
 const JobApplication = require('../models/JobApplication.model');
 const User = require('../models/User.model');
 const PricingTier = require('../models/PricingTier.model');
+const PaymentOrder = require('../models/PaymentOrder.model');
 const razorpay = require('../config/razorpay');
 const crypto = require('crypto');
+const { verifySignature, assertOrderPaid } = require('../utils/payments');
+
+/** Single source of truth for who may post without paying. */
+const isEntitledToFreeListing = (user) =>
+    Boolean(user && (user.plan === 'business' || user.plan === 'pro' || user.role === 'admin'));
+
+const listingPricePaise = async (listingType) => {
+    const tierDoc = await PricingTier.findOne({ tierId: listingType, isActive: true });
+    const rupees = tierDoc ? tierDoc.price : (PRICES[listingType] || PRICES.Premium);
+    return Math.round(rupees * 100);
+};
 
 // --- Company Profile ---
 
@@ -58,33 +70,37 @@ exports.createJobOrder = async (req, res) => {
     try {
         const { listingType } = req.body;
         const user = await User.findById(req.user.id);
-        const isBusinessUser = user && (user.plan === 'business' || user.plan === 'pro' || user.role === 'admin');
 
         // Business/Pro Plan users get Premium & Featured listings 100% FREE
-        if (isBusinessUser) {
+        if (isEntitledToFreeListing(user)) {
             return res.status(200).json({
                 success: true,
                 isFree: true,
-                orderId: `FREE_BUSINESS_${Date.now()}`,
+                orderId: null,
                 amount: 0,
                 currency: 'INR',
                 keyId: process.env.RAZORPAY_KEY_ID || 'dummy'
             });
         }
 
-        let amount = PRICES[listingType] || 2999;
-        const tierDoc = await PricingTier.findOne({ tierId: listingType, isActive: true });
-        if (tierDoc) {
-            amount = tierDoc.price;
-        }
+        const amount = await listingPricePaise(listingType);
 
-        const options = {
-            amount: amount * 100, // in paise
+        const order = await razorpay.orders.create({
+            amount,
             currency: 'INR',
             receipt: `job_${Date.now()}`
-        };
+        });
 
-        const order = await razorpay.orders.create(options);
+        await PaymentOrder.create({
+            userId: req.user.id,
+            purpose: 'job_listing',
+            amount,
+            currency: 'INR',
+            razorpayOrderId: order.id,
+            status: 'pending',
+            metadata: { listingType: listingType || 'Premium' }
+        });
+
         res.status(200).json({
             success: true,
             isFree: false,
@@ -94,14 +110,12 @@ exports.createJobOrder = async (req, res) => {
             keyId: process.env.RAZORPAY_KEY_ID
         });
     } catch (error) {
-        // Fallback for dev/test mode without razorpay keys
-        res.status(200).json({
-            success: true,
-            isFree: true,
-            orderId: `FREE_BUSINESS_${Date.now()}`,
-            amount: 0,
-            currency: 'INR',
-            keyId: 'dummy'
+        // This previously replied `isFree: true` on any Razorpay failure, which
+        // turned an outage or a bad API key into free paid listings. Fail closed.
+        console.error('Failed to create job listing order:', error);
+        res.status(502).json({
+            success: false,
+            message: 'Could not start payment. Please try again shortly.'
         });
     }
 };
@@ -116,23 +130,47 @@ exports.publishJob = async (req, res) => {
         } = req.body;
 
         const user = await User.findById(req.user.id);
-        const isBusinessUser = user && (user.plan === 'business' || user.plan === 'pro' || user.role === 'admin');
-        const isFreeOrder = !razorpayOrderId || razorpayOrderId.startsWith('FREE_BUSINESS_');
 
-        // Verify Signature if paying via Razorpay
-        if (!isBusinessUser && !isFreeOrder && razorpaySignature) {
-            try {
-                const body = razorpayOrderId + '|' + razorpayPaymentId;
-                const expectedSignature = crypto
-                    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-                    .update(body.toString())
-                    .digest('hex');
+        // Entitlement is decided here, from the user's own plan — never from a
+        // client-supplied order id. The previous version skipped verification
+        // whenever `razorpaySignature` was absent, so simply omitting that field
+        // published a paid listing for free; an order id beginning
+        // `FREE_BUSINESS_` was a second bypass.
+        let paidOrder = null;
 
-                if (expectedSignature !== razorpaySignature) {
-                    return res.status(400).json({ success: false, message: 'Payment verification failed' });
-                }
-            } catch (sigErr) {
-                console.log('Signature check skipped in dev mode');
+        if (!isEntitledToFreeListing(user)) {
+            if (!verifySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature)) {
+                return res.status(400).json({ success: false, message: 'Payment verification failed' });
+            }
+
+            paidOrder = await PaymentOrder.findOne({
+                razorpayOrderId,
+                userId: req.user.id,
+                purpose: 'job_listing',
+                status: 'pending'
+            });
+
+            if (!paidOrder) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'No pending order found for this payment'
+                });
+            }
+
+            const paid = await assertOrderPaid(razorpayOrderId, paidOrder.amount);
+            if (!paid.ok) {
+                return res.status(400).json({ success: false, message: paid.reason });
+            }
+
+            // Consume the order so one payment cannot publish several listings.
+            paidOrder = await PaymentOrder.findOneAndUpdate(
+                { _id: paidOrder._id, status: 'pending' },
+                { status: 'paid', razorpayPaymentId, consumedAt: new Date() },
+                { new: true }
+            );
+
+            if (!paidOrder) {
+                return res.status(409).json({ success: false, message: 'This payment was already used' });
             }
         }
 
@@ -146,7 +184,11 @@ exports.publishJob = async (req, res) => {
             });
         }
 
-        const listingType = jobData?.listingType || 'Premium';
+        // Paid listings get the tier that was actually purchased, not the tier
+        // the client asks for at publish time.
+        const listingType = paidOrder
+            ? (paidOrder.metadata?.listingType || 'Premium')
+            : (jobData?.listingType || 'Premium');
         const expiryDays = EXPIRY_DAYS[listingType] || 60;
         const expiryDate = new Date();
         expiryDate.setDate(expiryDate.getDate() + expiryDays);

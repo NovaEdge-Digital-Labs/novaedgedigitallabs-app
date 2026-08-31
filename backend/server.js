@@ -21,6 +21,10 @@ app.use(cors({
     credentials: true
 }));
 app.use(morgan('dev'));
+
+// Razorpay signs the raw webhook bytes, so this route must see them before
+// any JSON parsing happens. Mounted ahead of express.json() deliberately.
+app.use('/api/payment/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 // Serve static files (Privacy Policy, Terms, etc.)
