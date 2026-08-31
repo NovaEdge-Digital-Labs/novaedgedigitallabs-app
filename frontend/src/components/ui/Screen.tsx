@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, StyleProp, ViewStyle } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING } from '../../constants/colors';
 import TopBar from './TopBar';
 
@@ -41,8 +40,8 @@ const Screen: React.FC<ScreenProps> = ({
     style,
     contentStyle,
 }) => {
-    const insets = useSafeAreaInsets();
-    const bottomPad = SPACING.xxl + insets.bottom;
+    // Tab bar is docked in normal flow now, so this is just breathing room.
+    const bottomPad = SPACING.lg;
 
     const inner = padded ? styles.padded : null;
 

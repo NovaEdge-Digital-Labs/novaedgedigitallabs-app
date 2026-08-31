@@ -156,7 +156,7 @@ const CourseFeedScreen = () => {
 const styles = StyleSheet.create({
     listContainer: {
         paddingHorizontal: SPACING.md,
-        paddingBottom: SPACING.xxl * 2,
+        paddingBottom: SPACING.lg,
     },
     courseCard: {
         marginBottom: SPACING.sm + 4,

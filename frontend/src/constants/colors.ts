@@ -35,24 +35,19 @@ export const COLORS: any = new Proxy({ ...theme }, {
         if (prop === 'textWhite') return target.white;
 
         /**
-         * Legacy token used by screens not yet migrated to <Card>/<Glass>.
-         * Retuned to sit at the same value and edge treatment as the real
-         * glass surface, so mixed screens don't read as two design systems.
+         * Legacy token for screens not yet migrated to <Card>. Now resolves to
+         * the same flat surface as `panel` so mixed screens stay consistent.
          */
         if (prop === 'glass') {
             const currentTheme = useThemeStore.getState()?.theme || target;
-            const elevated = currentTheme.backgroundElevated ?? target.backgroundElevated ?? '#0a0014';
             return {
-                backgroundColor: withAlpha(elevated, 0.62),
+                backgroundColor: currentTheme.card ?? target.card,
                 borderWidth: 1,
-                borderColor: withAlpha('#ffffff', 0.12),
+                borderColor: currentTheme.borderSubtle ?? target.borderSubtle,
             };
         }
 
-        /**
-         * The site's signature card: near-black gray-900/50 fill with a faint
-         * purple-500/20 hairline. Used everywhere in place of ad-hoc glass.
-         */
+        /** Elevated surface: solid fill one step lighter than the page. */
         if (prop === 'panel') {
             const currentTheme = useThemeStore.getState()?.theme || target;
             return {
@@ -127,13 +122,13 @@ export const SHADOWS = {
         shadowRadius: 16,
         elevation: 8,
     },
-    /** Purple bloom used behind primary CTAs and active tab pills. */
+    /** Restrained lift under primary CTAs. No coloured bloom. */
     glow: {
-        shadowColor: theme.primary,
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.35,
-        shadowRadius: 16,
-        elevation: 10,
+        shadowColor: theme.black,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 4,
     },
 };
 

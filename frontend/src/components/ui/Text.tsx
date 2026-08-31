@@ -14,7 +14,8 @@ export type TextVariant =
     | 'bodyStrong'
     | 'label'
     | 'caption'
-    | 'button';
+    | 'button'
+    | 'wordmark';
 
 export type TextTone = 'primary' | 'secondary' | 'muted' | 'faint' | 'accent' | 'success' | 'error' | 'warning';
 

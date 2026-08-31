@@ -24,10 +24,10 @@ const QUICK_LINKS: Array<{
     tint: string;
     route: string;
 }> = [
-    { label: 'Applications', icon: 'document-text-outline', tint: '#54a2ff', route: 'MyApplications' },
-    { label: 'Saved', icon: 'bookmark-outline', tint: '#fcbb00', route: 'SavedJobs' },
-    { label: 'Applicants', icon: 'people-outline', tint: '#c07eff', route: 'EmployerApplicants' },
-    { label: 'Pro Pass', icon: 'star-outline', tint: '#f99c00', route: 'PremiumUpgrade' },
+    { label: 'Applications', icon: 'document-text-outline', tint: '#5B7CFA', route: 'MyApplications' },
+    { label: 'Saved', icon: 'bookmark-outline', tint: '#F1A10D', route: 'SavedJobs' },
+    { label: 'Applicants', icon: 'people-outline', tint: '#9E8CFC', route: 'EmployerApplicants' },
+    { label: 'Pro Pass', icon: 'star-outline', tint: '#F1A10D', route: 'PremiumUpgrade' },
 ];
 
 const relativeTime = (iso?: string) => {
@@ -300,7 +300,7 @@ export const JobFeedScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     listContainer: {
         paddingHorizontal: SPACING.md,
-        paddingBottom: SPACING.xxl * 2,
+        paddingBottom: SPACING.lg,
     },
     quickRow: {
         paddingBottom: SPACING.md,

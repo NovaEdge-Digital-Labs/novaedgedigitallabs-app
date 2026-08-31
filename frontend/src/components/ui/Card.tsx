@@ -18,13 +18,14 @@ interface CardProps {
 }
 
 /**
- * The site's card: gray-900/50 fill, purple-500/20 hairline, rounded-2xl,
- * and a `hover:-translate-y-1` lift translated to a press-in spring.
+ * Flat elevated surface with a hairline border — depth comes from the fill
+ * being lighter than the page, not from blur or glow. `glass` remains
+ * available for the few places a translucent surface genuinely helps.
  */
 const Card: React.FC<CardProps> = ({
     children,
     onPress,
-    variant = 'glass',
+    variant = 'default',
     padded = true,
     style,
     disabled,

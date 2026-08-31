@@ -1,94 +1,111 @@
 import { Platform, TextStyle } from 'react-native';
 
 /**
- * Type system mirrored from novaedgedigitallabs.tech:
- *   - Outfit  -> display / headings (font-black, font-bold)
- *   - Inter   -> body, labels, UI chrome
+ * Inter carries the whole interface. This app is mostly dense, read-for-a-while
+ * content — job listings, applications, course lists, admin tables — where a
+ * loud display face fights the content instead of serving it.
+ *
+ * Outfit survives in exactly one place: the NovaEdge wordmark, where a brand
+ * face earns its keep.
  */
 export const FONTS = {
-    display: 'Outfit_800ExtraBold',
-    displayBold: 'Outfit_700Bold',
-    displaySemi: 'Outfit_600SemiBold',
+    brand: 'Outfit_700Bold',
+    regular: 'Inter_400Regular',
+    medium: 'Inter_500Medium',
+    semibold: 'Inter_600SemiBold',
+    bold: 'Inter_700Bold',
+    mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }) as string,
+
+    // Back-compat aliases for screens still referencing the old display names.
+    display: 'Inter_700Bold',
+    displayBold: 'Inter_700Bold',
+    displaySemi: 'Inter_600SemiBold',
     body: 'Inter_400Regular',
     bodyMedium: 'Inter_500Medium',
     bodySemi: 'Inter_600SemiBold',
     bodyBold: 'Inter_700Bold',
-    mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' }) as string,
 };
 
-/**
- * The web build renders before fonts resolve, so every style keeps a system
- * fallback stack rather than relying on the custom family alone.
- */
 const stack = (family: string) =>
     Platform.OS === 'web' ? `${family}, system-ui, -apple-system, sans-serif` : family;
 
 type Variant = TextStyle;
 
+/**
+ * Sizes are deliberately restrained. The previous scale topped out at 40px,
+ * which turned every screen header into a marketing poster and pushed the
+ * actual content below the fold.
+ */
 export const TYPOGRAPHY: Record<string, Variant> = {
-    /** Hero numerals and screen-opening statements. */
     display: {
-        fontFamily: stack(FONTS.display),
-        fontSize: 40,
-        lineHeight: 44,
-        letterSpacing: -1.4,
+        fontFamily: stack(FONTS.bold),
+        fontSize: 26,
+        lineHeight: 32,
+        letterSpacing: -0.5,
     },
     h1: {
-        fontFamily: stack(FONTS.display),
-        fontSize: 32,
-        lineHeight: 37,
-        letterSpacing: -1,
+        fontFamily: stack(FONTS.bold),
+        fontSize: 22,
+        lineHeight: 28,
+        letterSpacing: -0.4,
     },
     h2: {
-        fontFamily: stack(FONTS.displayBold),
-        fontSize: 25,
-        lineHeight: 30,
-        letterSpacing: -0.6,
-    },
-    h3: {
-        fontFamily: stack(FONTS.displaySemi),
+        fontFamily: stack(FONTS.semibold),
         fontSize: 18,
         lineHeight: 24,
-        letterSpacing: -0.2,
+        letterSpacing: -0.3,
     },
-    /** `uppercase tracking-widest text-xs` section labels from the site. */
+    h3: {
+        fontFamily: stack(FONTS.semibold),
+        fontSize: 15,
+        lineHeight: 20,
+        letterSpacing: -0.1,
+    },
+    /** Quiet section label. Far less tracking than the old poster-style kicker. */
     eyebrow: {
-        fontFamily: stack(FONTS.bodySemi),
+        fontFamily: stack(FONTS.semibold),
         fontSize: 11,
         lineHeight: 14,
-        letterSpacing: 1.6,
+        letterSpacing: 0.6,
         textTransform: 'uppercase',
     },
     bodyLarge: {
-        fontFamily: stack(FONTS.body),
-        fontSize: 16,
-        lineHeight: 24,
+        fontFamily: stack(FONTS.regular),
+        fontSize: 15,
+        lineHeight: 22,
     },
     body: {
-        fontFamily: stack(FONTS.body),
+        fontFamily: stack(FONTS.regular),
         fontSize: 14,
-        lineHeight: 21,
+        lineHeight: 20,
     },
     bodyStrong: {
-        fontFamily: stack(FONTS.bodySemi),
+        fontFamily: stack(FONTS.semibold),
         fontSize: 14,
-        lineHeight: 21,
+        lineHeight: 20,
     },
     label: {
-        fontFamily: stack(FONTS.bodyMedium),
+        fontFamily: stack(FONTS.medium),
         fontSize: 13,
         lineHeight: 18,
     },
     caption: {
-        fontFamily: stack(FONTS.body),
+        fontFamily: stack(FONTS.regular),
         fontSize: 12,
         lineHeight: 16,
     },
     button: {
-        fontFamily: stack(FONTS.bodySemi),
-        fontSize: 15,
-        lineHeight: 20,
-        letterSpacing: 0.2,
+        fontFamily: stack(FONTS.semibold),
+        fontSize: 14,
+        lineHeight: 18,
+        letterSpacing: 0,
+    },
+    /** NovaEdge wordmark only. */
+    wordmark: {
+        fontFamily: stack(FONTS.brand),
+        fontSize: 19,
+        lineHeight: 24,
+        letterSpacing: -0.3,
     },
 };
 

@@ -99,15 +99,19 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
         return [fallbackTheme.primary, fallbackTheme.accent];
     },
 
-    getGlow: (color, size = 10, opacity = 0.4) => {
-        const currentTheme = get().theme || defaultTheme;
-        const glowColor = color || currentTheme.glow || currentTheme.primary;
+    /**
+     * Kept for the many screens that still call it, but no longer emits a
+     * coloured bloom. The theme gets depth from surface elevation, so this
+     * resolves to a restrained neutral drop shadow regardless of the colour
+     * a caller asks for.
+     */
+    getGlow: (_color, size = 10, opacity = 0.4) => {
         return {
-            shadowColor: glowColor,
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: opacity,
-            shadowRadius: size,
-            elevation: size,
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: Math.min(opacity, 0.25),
+            shadowRadius: Math.min(size, 8),
+            elevation: Math.min(size, 4),
         };
     }
 }));

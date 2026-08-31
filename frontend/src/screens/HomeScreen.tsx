@@ -490,7 +490,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
                         <Image source={require('../../assets/icon.png')} style={styles.headerIcon} />
                     </View>
                     <View style={styles.brandText}>
-                        <UIText variant="h2" style={styles.logoNova}>NovaEdge</UIText>
+                        <UIText variant="wordmark" style={styles.logoNova}>NovaEdge</UIText>
                         <UIText variant="eyebrow" tone="accent">Digital Labs</UIText>
                     </View>
                 </View>

@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     },
     list: {
         paddingHorizontal: SPACING.md,
-        paddingBottom: SPACING.xxl * 2,
+        paddingBottom: SPACING.lg,
     },
     card: {
         marginBottom: SPACING.sm + 4,

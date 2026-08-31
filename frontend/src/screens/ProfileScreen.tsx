@@ -254,35 +254,35 @@ const ProfileScreen = ({ navigation }: any) => {
                     icon: 'document-text-outline',
                     title: 'My Applications',
                     subtitle: 'Track roles you have applied to',
-                    tint: '#ac4bff',
+                    tint: '#8B7CF6',
                     onPress: () => navigation.navigate('MyApplications'),
                 },
                 {
                     icon: 'bookmark-outline',
                     title: 'Saved Jobs',
                     subtitle: 'Listings you bookmarked',
-                    tint: '#fcbb00',
+                    tint: '#F1A10D',
                     onPress: () => navigation.navigate('SavedJobs'),
                 },
                 {
                     icon: 'megaphone-outline',
                     title: 'My Posted Jobs',
                     subtitle: 'Edit or close your listings',
-                    tint: '#f6339a',
+                    tint: '#C25EA0',
                     onPress: () => navigation.navigate('MyPostedJobs'),
                 },
                 {
                     icon: 'people-outline',
                     title: 'Received Applicants',
                     subtitle: 'Candidates who applied to you',
-                    tint: '#3080ff',
+                    tint: '#5B7CFA',
                     onPress: () => navigation.navigate('EmployerApplicants'),
                 },
                 {
                     icon: 'download-outline',
                     title: 'My Purchases',
                     subtitle: 'Assets you have bought',
-                    tint: '#00b7d7',
+                    tint: '#00A2C7',
                     onPress: () => navigation.navigate('MyPurchases'),
                 },
             ],
@@ -295,21 +295,21 @@ const ProfileScreen = ({ navigation }: any) => {
                     icon: 'person-outline',
                     title: 'Edit Profile',
                     subtitle: 'Name, avatar and details',
-                    tint: '#c07eff',
+                    tint: '#9E8CFC',
                     onPress: () => navigation.navigate('EditProfile'),
                 },
                 {
                     icon: 'notifications-outline',
                     title: 'Notifications',
                     subtitle: 'Alerts and news',
-                    tint: '#ff6568',
+                    tint: '#FF6369',
                     onPress: () => navigation.navigate('Notifications'),
                 },
                 {
                     icon: 'shield-checkmark-outline',
                     title: 'Privacy & Security',
                     subtitle: 'Password and data settings',
-                    tint: '#00bb7f',
+                    tint: '#4CC38A',
                     onPress: () => navigation.navigate('PrivacySecurity'),
                 },
             ],
@@ -322,14 +322,14 @@ const ProfileScreen = ({ navigation }: any) => {
                     icon: 'card-outline',
                     title: 'Manage Subscription',
                     subtitle: 'Billing history and plans',
-                    tint: '#ac4bff',
+                    tint: '#8B7CF6',
                     onPress: () => navigation.navigate('Subscription'),
                 },
                 {
                     icon: 'star-outline',
                     title: 'Premium Candidate Pass',
                     subtitle: 'Verified badge and top ranking',
-                    tint: '#fcbb00',
+                    tint: '#F1A10D',
                     badge: 'PRO',
                     onPress: () => navigation.navigate('PremiumUpgrade'),
                 },
@@ -337,7 +337,7 @@ const ProfileScreen = ({ navigation }: any) => {
                     icon: 'gift-outline',
                     title: 'Refer and Earn',
                     subtitle: 'Invite friends, get Pro free',
-                    tint: '#5ee9b5',
+                    tint: '#4CC38A',
                     onPress: () => navigation.navigate('ReferEarn'),
                 },
             ],
@@ -350,14 +350,14 @@ const ProfileScreen = ({ navigation }: any) => {
                     icon: 'help-circle-outline',
                     title: 'Help Center',
                     subtitle: 'FAQs and guides',
-                    tint: '#54a2ff',
+                    tint: '#5B7CFA',
                     onPress: () => navigation.navigate('Support', { title: 'Help Center' }),
                 },
                 {
                     icon: 'chatbubble-ellipses-outline',
                     title: 'Contact Support',
                     subtitle: 'Talk to our team',
-                    tint: '#00bb7f',
+                    tint: '#4CC38A',
                     onPress: () => navigation.navigate('Support', { title: 'Contact Support' }),
                 },
                 {
@@ -381,7 +381,7 @@ const ProfileScreen = ({ navigation }: any) => {
             }}>
                 {/* Identity */}
                 <View style={styles.header}>
-                    <View style={[styles.avatarContainer, COLORS.getGlow(COLORS.primary, 20, 0.4)]}>
+                    <View style={styles.avatarContainer}>
                         <UIText variant="display" color={COLORS.white}>
                             {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                         </UIText>

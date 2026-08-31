@@ -2,7 +2,6 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { Screen, Text, SectionHeader } from '../components/ui';
 import { COLORS, SPACING, RADIUS, withAlpha } from '../constants/colors';
@@ -39,14 +38,14 @@ const GROUPS: Group[] = [
                 label: 'Marketplace',
                 description: 'Browse gigs and post projects',
                 icon: 'people',
-                tint: '#ac4bff',
+                tint: '#8B7CF6',
                 tab: 'Marketplace',
             },
             {
                 label: 'Jobs',
                 description: 'Openings, applications and saved roles',
                 icon: 'briefcase',
-                tint: '#3080ff',
+                tint: '#5B7CFA',
                 tab: 'Jobs',
             },
         ],
@@ -59,21 +58,21 @@ const GROUPS: Group[] = [
                 label: 'Tools',
                 description: 'QR, JWT, JSON, EMI and more',
                 icon: 'construct',
-                tint: '#00bb7f',
+                tint: '#4CC38A',
                 route: 'Tools',
             },
             {
                 label: 'Workspace',
                 description: 'Your projects and deliverables',
                 icon: 'folder-open',
-                tint: '#00b7d7',
+                tint: '#00A2C7',
                 route: 'MyWorkspace',
             },
             {
                 label: 'API Dashboard',
                 description: 'Keys, usage and quotas',
                 icon: 'code-slash',
-                tint: '#c07eff',
+                tint: '#9E8CFC',
                 route: 'ApiDashboard',
             },
         ],
@@ -86,21 +85,21 @@ const GROUPS: Group[] = [
                 label: 'Store',
                 description: 'Templates, kits and digital products',
                 icon: 'bag-handle',
-                tint: '#f6339a',
+                tint: '#C25EA0',
                 route: 'Store',
             },
             {
                 label: 'Services',
                 description: 'Hire the studio for custom work',
                 icon: 'sparkles',
-                tint: '#f99c00',
+                tint: '#F1A10D',
                 route: 'Services',
             },
             {
                 label: 'Academy',
                 description: 'Courses and lectures',
                 icon: 'school',
-                tint: '#5ee9b5',
+                tint: '#4CC38A',
                 tab: 'Academy',
             },
         ],
@@ -113,7 +112,7 @@ const GROUPS: Group[] = [
                 label: 'Admin Dashboard',
                 description: 'Platform stats and controls',
                 icon: 'speedometer',
-                tint: '#ff6568',
+                tint: '#FF6369',
                 route: 'AdminDashboard',
                 adminOnly: true,
             },
@@ -121,7 +120,7 @@ const GROUPS: Group[] = [
                 label: 'Manage Users',
                 description: 'Roles, plans and access',
                 icon: 'shield-checkmark',
-                tint: '#fcbb00',
+                tint: '#F1A10D',
                 route: 'AdminUsers',
                 adminOnly: true,
             },
@@ -163,12 +162,6 @@ const ExploreScreen: React.FC = () => {
                                         pressed && styles.tilePressed,
                                     ]}
                                 >
-                                    <LinearGradient
-                                        colors={[withAlpha(item.tint, 0.22), 'transparent']}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
-                                        style={StyleSheet.absoluteFill}
-                                    />
                                     <View
                                         style={[
                                             styles.iconBox,
