@@ -80,6 +80,27 @@ exports.enrollInCourse = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Already enrolled in this course' });
         }
 
+        // Free Course Direct Enrollment
+        if (course.price === 0) {
+            await CoursePurchase.findOneAndUpdate(
+                { userId: req.user._id, courseId },
+                {
+                    amount: 0,
+                    status: 'completed'
+                },
+                { upsert: true, new: true }
+            );
+
+            course.enrolledCount = (course.enrolledCount || 0) + 1;
+            await course.save();
+
+            return res.status(200).json({
+                success: true,
+                isFree: true,
+                message: 'Enrolled in free course successfully! 🎉'
+            });
+        }
+
         const options = {
             amount: course.price * 100, // in paise
             currency: 'INR',
@@ -99,7 +120,7 @@ exports.enrollInCourse = async (req, res) => {
             { upsert: true, new: true }
         );
 
-        res.status(200).json({ success: true, data: order });
+        res.status(200).json({ success: true, data: order, keyId: process.env.RAZORPAY_KEY_ID });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

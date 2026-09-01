@@ -6,6 +6,7 @@ import ThemeWrapper from '../components/ThemeWrapper';
 import { marketplaceApi } from '../api/marketplaceApi';
 import { formatCurrency } from '../utils/helpers';
 import { useAuthStore } from '../store/authStore';
+import { shareContent } from '../utils/shareHelper';
 
 const ProjectDetailsScreen = ({ route, navigation }: any) => {
     const { id } = route.params;
@@ -125,7 +126,12 @@ const ProjectDetailsScreen = ({ route, navigation }: any) => {
                         <Ionicons name="chevron-back" size={28} color={COLORS.white} />
                     </TouchableOpacity>
                     <Text style={styles.headerTitle}>Project Details</Text>
-                    <View style={{ width: 28 }} />
+                    <TouchableOpacity
+                        onPress={() => shareContent({ title: project.title, description: project.description, category: project.category || 'Freelance Project', type: 'Project Requirement' })}
+                        style={styles.backButton}
+                    >
+                        <Ionicons name="share-social-outline" size={22} color={COLORS.white} />
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -256,6 +262,12 @@ const ProjectDetailsScreen = ({ route, navigation }: any) => {
             </ScrollView>
 
             <View style={styles.footer}>
+                <View style={styles.escrowBadge}>
+                    <Ionicons name="shield-checkmark" size={16} color={COLORS.success} />
+                    <Text style={styles.escrowText}>
+                        Payment escrow me — aapka paisa tab milega jab client kaam approve kare
+                    </Text>
+                </View>
                 <TouchableOpacity
                     style={styles.proposalButton}
                     onPress={() => navigation.navigate('SubmitProposal', { projectId: project._id })}
@@ -575,6 +587,24 @@ const styles = StyleSheet.create({
         color: '#000000',
         fontSize: 13,
         fontWeight: 'bold',
+    },
+    escrowBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 255, 157, 0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 255, 157, 0.2)',
+        borderRadius: 12,
+        padding: 10,
+        marginBottom: 12,
+    },
+    escrowText: {
+        color: COLORS.success,
+        fontSize: 12,
+        fontWeight: '600',
+        marginLeft: 8,
+        flex: 1,
+        lineHeight: 16,
     },
 });
 

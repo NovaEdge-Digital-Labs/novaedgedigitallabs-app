@@ -1,0 +1,162 @@
+[
+  {
+    "_id": { "$oid": "6a7284444d8dc074e978ae01" },
+    "clientId": { "$oid": "66b1a1111111111111111111" },
+    "title": "Need Full Stack MERN Developer for Custom EdTech LMS Platform",
+    "description": "We are seeking an experienced MERN Stack developer to build a custom Learning Management System (LMS) with video lectures, course progress tracking, student quizzes, and certificate generation.",
+    "budgetRange": {
+      "min": 25000,
+      "max": 45000
+    },
+    "deadline": { "$date": "2026-10-15T23:59:59.000Z" },
+    "skillsRequired": ["React", "Node.js", "MongoDB", "Express", "TailwindCSS", "JWT Auth"],
+    "status": "open",
+    "totalProposals": 5,
+    "createdAt": { "$date": "2026-08-05T00:10:00.000Z" },
+    "updatedAt": { "$date": "2026-08-05T00:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7284444d8dc074e978ae02" },
+    "clientId": { "$oid": "66b1a1111111111111111111" },
+    "title": "Python Web Scraper & Automated Competitor Price Monitoring Dashboard",
+    "description": "Looking for a Python expert to build an automated web scraping pipeline (Selenium/Scrapy) to monitor competitor prices daily and display real-time price trends on a dashboard.",
+    "budgetRange": {
+      "min": 8000,
+      "max": 15000
+    },
+    "deadline": { "$date": "2026-09-30T23:59:59.000Z" },
+    "skillsRequired": ["Python", "Selenium", "BeautifulSoup", "FastAPI", "Pandas", "PostgreSQL"],
+    "status": "open",
+    "totalProposals": 8,
+    "createdAt": { "$date": "2026-08-05T00:10:00.000Z" },
+    "updatedAt": { "$date": "2026-08-05T00:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7284444d8dc074e978ae03" },
+    "clientId": { "$oid": "66b1a1111111111111111111" },
+    "title": "UI/UX Figma Design for iOS/Android Health & Fitness Tracker App",
+    "description": "We need a creative UI/UX designer to create complete user flows, wireframes, component design systems, and interactive clickable Figma prototypes for a mobile health app.",
+    "budgetRange": {
+      "min": 12000,
+      "max": 20000
+    },
+    "deadline": { "$date": "2026-09-25T23:59:59.000Z" },
+    "skillsRequired": ["Figma", "UI/UX Design", "Wireframing", "Mobile Design", "Prototyping", "User Research"],
+    "status": "open",
+    "totalProposals": 12,
+    "createdAt": { "$date": "2026-08-05T00:10:00.000Z" },
+    "updatedAt": { "$date": "2026-08-05T00:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7284444d8dc074e978ae04" },
+    "clientId": { "$oid": "66b1a1111111111111111111" },
+    "title": "Enterprise Java Spring Boot Backend Refactoring & Microservices Migration",
+    "description": "Senior Java Developer needed to refactor an existing monolithic Java Spring Boot backend into containerized microservices using Spring Cloud, Docker, and PostgreSQL.",
+    "budgetRange": {
+      "min": 35000,
+      "max": 60000
+    },
+    "deadline": { "$date": "2026-11-01T23:59:59.000Z" },
+    "skillsRequired": ["Java", "Spring Boot", "Spring Security", "Microservices", "PostgreSQL", "Docker"],
+    "status": "open",
+    "totalProposals": 3,
+    "createdAt": { "$date": "2026-08-05T00:10:00.000Z" },
+    "updatedAt": { "$date": "2026-08-05T00:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7284444d8dc074e978ae05" },
+    "clientId": { "$oid": "66b1a1111111111111111111" },
+    "title": "Cross-Platform React Native Mobile App for On-Demand Local Delivery",
+    "description": "Build an end-to-end React Native cross-platform app (Android & iOS) with live GPS order tracking, Firebase push notifications, and payment gateway integration.",
+    "budgetRange": {
+      "min": 30000,
+      "max": 50000
+    },
+    "deadline": { "$date": "2026-10-30T23:59:59.000Z" },
+    "skillsRequired": ["React Native", "TypeScript", "Node.js", "Redux Toolkit", "Firebase", "REST APIs"],
+    "status": "open",
+    "totalProposals": 7,
+    "createdAt": { "$date": "2026-08-05T00:10:00.000Z" },
+    "updatedAt": { "$date": "2026-08-05T00:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7284444d8dc074e978ae06" },
+    "clientId": { "$oid": "66b1a1111111111111111111" },
+    "title": "Data Analyst Needed for E-Commerce Customer Segmentation & Sales Funnel Analytics",
+    "description": "Looking for a Data Analyst to process raw transaction data, build customer cohort analysis, and create an interactive Power BI dashboard to optimize sales funnels.",
+    "budgetRange": {
+      "min": 10000,
+      "max": 18000
+    },
+    "deadline": { "$date": "2026-09-20T23:59:59.000Z" },
+    "skillsRequired": ["Data Analysis", "Power BI", "SQL", "Python", "Pandas", "EDA"],
+    "status": "open",
+    "totalProposals": 6,
+    "createdAt": { "$date": "2026-08-05T00:10:00.000Z" },
+    "updatedAt": { "$date": "2026-08-05T00:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7284444d8dc074e978ae07" },
+    "clientId": { "$oid": "66b1a1111111111111111111" },
+    "title": "Next.js & TailwindCSS Modern Corporate Website Development",
+    "description": "Develop a fast, modern corporate web application using Next.js 14, React, TailwindCSS, and Framer Motion animations. Must be fully responsive and SEO optimized.",
+    "budgetRange": {
+      "min": 15000,
+      "max": 25000
+    },
+    "deadline": { "$date": "2026-09-15T23:59:59.000Z" },
+    "skillsRequired": ["Next.js", "React", "TailwindCSS", "Framer Motion", "SEO", "TypeScript"],
+    "status": "open",
+    "totalProposals": 10,
+    "createdAt": { "$date": "2026-08-05T00:10:00.000Z" },
+    "updatedAt": { "$date": "2026-08-05T00:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7284444d8dc074e978ae08" },
+    "clientId": { "$oid": "66b1a1111111111111111111" },
+    "title": "AI Chatbot Integration using Python & OpenAI API for Customer Support",
+    "description": "Integrate an intelligent AI chatbot into our web platform using Python FastAPI, OpenAI GPT-4 API, LangChain, and MongoDB vector store for automated customer query resolution.",
+    "budgetRange": {
+      "min": 18000,
+      "max": 30000
+    },
+    "deadline": { "$date": "2026-10-05T23:59:59.000Z" },
+    "skillsRequired": ["Python", "OpenAI API", "LangChain", "FastAPI", "MongoDB", "AI Chatbot"],
+    "status": "open",
+    "totalProposals": 9,
+    "createdAt": { "$date": "2026-08-05T00:10:00.000Z" },
+    "updatedAt": { "$date": "2026-08-05T00:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7284444d8dc074e978ae09" },
+    "clientId": { "$oid": "66b1a1111111111111111111" },
+    "title": "UI/UX Design & Brand Identity for SaaS Fintech Dashboard",
+    "description": "Creative UI/UX Designer needed to design clean, modern dashboard layouts, dark mode UI tokens, charts, and brand assets for a B2B SaaS Fintech platform in Figma.",
+    "budgetRange": {
+      "min": 15000,
+      "max": 22000
+    },
+    "deadline": { "$date": "2026-09-28T23:59:59.000Z" },
+    "skillsRequired": ["Figma", "UI/UX Design", "Design Systems", "Fintech UI", "Dashboard Design"],
+    "status": "open",
+    "totalProposals": 14,
+    "createdAt": { "$date": "2026-08-05T00:10:00.000Z" },
+    "updatedAt": { "$date": "2026-08-05T00:10:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7284444d8dc074e978ae10" },
+    "clientId": { "$oid": "66b1a1111111111111111111" },
+    "title": "Backend Node.js & Socket.io Developer for Real-time Notification System",
+    "description": "Looking for a backend Node.js developer to build a high-concurrency real-time notification microservice using Express, Socket.io, Redis, and MongoDB.",
+    "budgetRange": {
+      "min": 12000,
+      "max": 20000
+    },
+    "deadline": { "$date": "2026-09-18T23:59:59.000Z" },
+    "skillsRequired": ["Node.js", "Express", "Socket.io", "Redis", "MongoDB", "REST APIs"],
+    "status": "open",
+    "totalProposals": 4,
+    "createdAt": { "$date": "2026-08-05T00:10:00.000Z" },
+    "updatedAt": { "$date": "2026-08-05T00:10:00.000Z" }
+  }
+]

@@ -7,6 +7,7 @@ import { storeApi } from '../api/storeApi';
 import RazorpayCheckout from 'react-native-razorpay';
 import { useAuthStore } from '../store/authStore';
 import { formatCurrency } from '../utils/helpers';
+import { shareContent } from '../utils/shareHelper';
 
 const { width } = Dimensions.get('window');
 
@@ -50,11 +51,15 @@ const ProductDetailScreen = ({ route, navigation }: any) => {
             const orderResponse = await storeApi.createOrder(productId);
             const order = orderResponse.data;
 
+            if (!order?.id || !orderResponse.keyId) {
+                throw new Error('Could not start checkout. Please try again.');
+            }
+
             const options = {
                 description: product.description.substring(0, 50),
                 image: 'https://novaedgedigitallabs.tech/logo.png',
                 currency: order.currency,
-                key: 'rzp_test_dummy', // This should be from your env usually
+                key: orderResponse.keyId,
                 amount: order.amount,
                 name: 'NovaEdge Store',
                 order_id: order.id,
@@ -82,7 +87,14 @@ const ProductDetailScreen = ({ route, navigation }: any) => {
             });
         } catch (error: any) {
             console.error('Purchase error:', error);
-            Alert.alert('Error', error.response?.data?.message || 'Failed to initiate purchase');
+            if (error.response?.status === 401) {
+                Alert.alert('Session Expired', 'Your session has expired. Please log in again to complete your purchase.', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Login', onPress: () => navigation.navigate('Profile') }
+                ]);
+            } else {
+                Alert.alert('Error', error.response?.data?.message || 'Failed to initiate purchase');
+            }
         } finally {
             setBuying(false);
         }
@@ -121,7 +133,7 @@ const ProductDetailScreen = ({ route, navigation }: any) => {
                     <Ionicons name="arrow-back" size={24} color={COLORS.white} />
                 </TouchableOpacity>
                 <TouchableOpacity
-                    onPress={() => Share.share({ message: `Check out ${product.title} on NovaEdge: ${product.images[0]}` })}
+                    onPress={() => shareContent({ title: product.title, description: product.description, category: product.category || 'Digital Asset', type: 'Store Product' })}
                     style={styles.backBtn}
                 >
                     <Ionicons name="share-outline" size={22} color={COLORS.white} />

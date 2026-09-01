@@ -68,6 +68,29 @@ exports.getAllGigs = async (req, res) => {
     }
 };
 
+exports.getGigById = async (req, res) => {
+    try {
+        const gig = await Gig.findById(req.params.id).populate('freelancerId', 'name email');
+        if (!gig) {
+            return res.status(404).json({ success: false, message: 'Gig not found' });
+        }
+
+        // Real seller stats so the UI never has to invent a rating or a "level".
+        const profile = await FreelancerProfile.findOne({ userId: gig.freelancerId })
+            .select('rating totalReviews isVerified title');
+
+        res.status(200).json({
+            success: true,
+            data: { ...gig.toObject(), freelancerProfile: profile || null }
+        });
+    } catch (error) {
+        if (error.name === 'CastError') {
+            return res.status(404).json({ success: false, message: 'Gig not found' });
+        }
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 exports.updateGig = async (req, res) => {
     try {
         const gig = await Gig.findById(req.params.id);
@@ -258,6 +281,64 @@ exports.hireFreelancer = async (req, res) => {
     }
 };
 
+// Direct fixed-price gig purchase. Same escrow mechanics as hireFreelancer,
+// but the contract is anchored to a Gig instead of a Proposal/Project.
+exports.orderGig = async (req, res) => {
+    try {
+        const gig = await Gig.findById(req.params.id);
+
+        if (!gig || !gig.isActive) {
+            return res.status(404).json({ success: false, message: 'Gig not found or no longer available' });
+        }
+
+        if (gig.freelancerId.toString() === req.user.id.toString()) {
+            return res.status(400).json({ success: false, message: 'You cannot order your own gig' });
+        }
+
+        const amount = gig.price;
+        const platformCommission = amount * 0.15; // 15% commission
+        const freelancerPayout = amount - platformCommission;
+
+        const order = await razorpay.orders.create({
+            amount: Math.round(amount * 100), // in paise
+            currency: 'INR',
+            receipt: `gig_${Date.now()}`
+        });
+
+        const contract = await Contract.create({
+            gigId: gig._id,
+            clientId: req.user.id,
+            freelancerId: gig.freelancerId,
+            amount,
+            platformCommission,
+            freelancerPayout,
+            status: 'active',
+            escrowStatus: 'pending'
+        });
+
+        await EscrowTransaction.create({
+            contractId: contract._id,
+            amount,
+            platformFee: platformCommission,
+            freelancerAmount: freelancerPayout,
+            razorpayOrderId: order.id,
+            status: 'pending'
+        });
+
+        res.status(200).json({
+            success: true,
+            orderId: order.id,
+            amount: order.amount,
+            currency: order.currency,
+            keyId: process.env.RAZORPAY_KEY_ID,
+            contractId: contract._id,
+            deliveryDays: gig.deliveryDays
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 exports.verifyEscrowPayment = async (req, res) => {
     try {
         const { razorpayOrderId, razorpayPaymentId, razorpaySignature, contractId } = req.body;
@@ -273,11 +354,16 @@ exports.verifyEscrowPayment = async (req, res) => {
         }
 
         // Update Contract and Transaction
-        await Contract.findByIdAndUpdate(contractId, { escrowStatus: 'funded' });
+        const contract = await Contract.findByIdAndUpdate(contractId, { escrowStatus: 'funded' }, { new: true });
         await EscrowTransaction.findOneAndUpdate(
             { razorpayOrderId },
             { status: 'held', razorpayPaymentId }
         );
+
+        // Keep the gig's order count real — it is shown to buyers.
+        if (contract && contract.gigId) {
+            await Gig.findByIdAndUpdate(contract.gigId, { $inc: { totalOrders: 1 } });
+        }
 
         res.status(200).json({ success: true, message: 'Payment verified and funds held in escrow' });
     } catch (error) {

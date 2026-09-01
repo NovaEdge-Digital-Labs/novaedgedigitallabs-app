@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../constants/theme';
+import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../constants/colors';
 import courseApi, { Course } from '../api/courseApi';
 import { formatCurrency } from '../utils/helpers';
 import PrimaryButton from '../components/PrimaryButton';
@@ -48,6 +48,14 @@ const CourseFeedScreen = () => {
         fetchCourses();
     };
 
+    const [filter, setFilter] = useState<'All' | 'Free' | 'Paid'>('All');
+
+    const filteredCourses = courses.filter((course) => {
+        if (filter === 'Free') return course.price === 0;
+        if (filter === 'Paid') return course.price > 0;
+        return true;
+    });
+
     const renderCourseItem = ({ item }: { item: Course }) => (
         <TouchableOpacity
             style={styles.courseCard}
@@ -55,8 +63,20 @@ const CourseFeedScreen = () => {
             activeOpacity={0.9}
         >
             <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
-            <View style={styles.badge}>
-                <Text style={styles.badgeText}>{item.category}</Text>
+            <View style={styles.badgeRow}>
+                <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{item.category}</Text>
+                </View>
+                {item.price === 0 ? (
+                    <View style={styles.freeBadge}>
+                        <Text style={styles.freeBadgeText}>FREE</Text>
+                    </View>
+                ) : (
+                    <View style={styles.certBadge}>
+                        <Ionicons name="ribbon" size={10} color="#FFF" style={{ marginRight: 3 }} />
+                        <Text style={styles.certBadgeText}>Certificate</Text>
+                    </View>
+                )}
             </View>
             <View style={styles.courseInfo}>
                 <Text style={styles.courseTitle} numberOfLines={2}>{item.title}</Text>
@@ -75,8 +95,12 @@ const CourseFeedScreen = () => {
                 </View>
                 <View style={styles.footerRow}>
                     <View style={styles.priceContainer}>
-                        <Text style={styles.price}>{formatCurrency(item.price)}</Text>
-                        {item.originalPrice && item.originalPrice > item.price && (
+                        {item.price === 0 ? (
+                            <Text style={[styles.price, { color: COLORS.success || '#00FF9D' }]}>Free</Text>
+                        ) : (
+                            <Text style={styles.price}>{formatCurrency(item.price)}</Text>
+                        )}
+                        {item.originalPrice && item.originalPrice > item.price && item.price > 0 && (
                             <Text style={styles.originalPrice}>{formatCurrency(item.originalPrice)}</Text>
                         )}
                     </View>
@@ -97,9 +121,9 @@ const CourseFeedScreen = () => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <View>
+                <View style={{ flex: 1 }}>
                     <Text style={styles.headerTitle}>Explore Courses</Text>
-                    <Text style={styles.headerSubtitle}>Upskill with our mini tutorials</Text>
+                    <Text style={styles.headerSubtitle}>Job-ready skills — real projects ke saath</Text>
                 </View>
                 <TouchableOpacity
                     style={styles.myCoursesBtn}
@@ -109,8 +133,22 @@ const CourseFeedScreen = () => {
                 </TouchableOpacity>
             </View>
 
+            {/* Filter Chips */}
+            <View style={styles.filterRow}>
+                {(['All', 'Free', 'Paid'] as const).map((type) => (
+                    <TouchableOpacity
+                        key={type}
+                        style={[styles.filterChip, filter === type && styles.activeFilterChip]}
+                        onPress={() => setFilter(type)}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={[styles.filterText, filter === type && styles.activeFilterText]}>{type}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
             <FlatList
-                data={courses}
+                data={filteredCourses}
                 renderItem={renderCourseItem}
                 keyExtractor={(item) => item._id}
                 contentContainerStyle={styles.listContainer}
@@ -120,8 +158,8 @@ const CourseFeedScreen = () => {
                 }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="school-outline" size={64} color={COLORS.gray[400]} />
-                        <Text style={styles.emptyText}>No courses available yet.</Text>
+                        <Ionicons name="school-outline" size={64} color={COLORS.textMuted} />
+                        <Text style={styles.emptyText}>No courses found for "{filter}".</Text>
                     </View>
                 }
             />
@@ -162,7 +200,7 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: COLORS.gray[100],
+        backgroundColor: COLORS.backgroundSoft,
         justifyContent: 'center',
         alignItems: 'center',
         ...SHADOWS.small,
@@ -171,7 +209,7 @@ const styles = StyleSheet.create({
         padding: SPACING.lg,
     },
     courseCard: {
-        backgroundColor: COLORS.surface,
+        backgroundColor: COLORS.card,
         borderRadius: 16,
         marginBottom: SPACING.lg,
         overflow: 'hidden',
@@ -181,11 +219,43 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 180,
     },
-    badge: {
+    filterRow: {
+        flexDirection: 'row',
+        paddingHorizontal: SPACING.lg,
+        gap: 10,
+        marginBottom: 8,
+    },
+    filterChip: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: COLORS.backgroundSoft,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    activeFilterChip: {
+        backgroundColor: COLORS.primary,
+        borderColor: COLORS.primary,
+    },
+    filterText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: COLORS.textMuted,
+    },
+    activeFilterText: {
+        color: '#FFF',
+    },
+    badgeRow: {
         position: 'absolute',
         top: 12,
         left: 12,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        right: 12,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    badge: {
+        backgroundColor: 'rgba(0, 0, 0, 0.65)',
         paddingHorizontal: 10,
         paddingVertical: 5,
         borderRadius: 8,
@@ -194,6 +264,30 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 12,
         fontWeight: '600',
+    },
+    freeBadge: {
+        backgroundColor: COLORS.success || '#00FF9D',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
+    },
+    freeBadgeText: {
+        color: '#000000',
+        fontSize: 12,
+        fontWeight: '900',
+    },
+    certBadge: {
+        backgroundColor: 'rgba(145, 39, 255, 0.85)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    certBadgeText: {
+        color: '#FFF',
+        fontSize: 11,
+        fontWeight: '700',
     },
     courseInfo: {
         padding: SPACING.md,
@@ -239,7 +333,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         borderTopWidth: 1,
-        borderTopColor: COLORS.gray[100],
+        borderTopColor: COLORS.border,
         paddingTop: 12,
     },
     priceContainer: {
@@ -253,7 +347,7 @@ const styles = StyleSheet.create({
     },
     originalPrice: {
         fontSize: 14,
-        color: COLORS.gray[400],
+        color: COLORS.textMuted,
         textDecorationLine: 'line-through',
         marginLeft: 8,
     },

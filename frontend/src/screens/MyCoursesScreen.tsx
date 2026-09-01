@@ -11,18 +11,29 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
-import { COLORS, SPACING, SHADOWS } from '../constants/theme';
+import { COLORS, SPACING, SHADOWS } from '../constants/colors';
 import courseApi, { Course } from '../api/courseApi';
 import PrimaryButton from '../components/PrimaryButton';
+import CertificateModal from '../components/CertificateModal';
+import { useAuthStore } from '../store/authStore';
 
 const MyCoursesScreen = () => {
     const navigation = useNavigation<any>();
     const isFocused = useIsFocused();
+    const { user } = useAuthStore();
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [selectedCertCourse, setSelectedCertCourse] = useState<Course | null>(null);
+
+    useEffect(() => {
+        if (isFocused) {
+            fetchMyCourses();
+        }
+    }, [isFocused]);
 
     const fetchMyCourses = async () => {
+        setLoading(true);
         try {
             const response = await courseApi.getMyCourses();
             if (response.success) {
@@ -35,12 +46,6 @@ const MyCoursesScreen = () => {
             setRefreshing(false);
         }
     };
-
-    useEffect(() => {
-        if (isFocused) {
-            fetchMyCourses();
-        }
-    }, [isFocused]);
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -59,16 +64,26 @@ const MyCoursesScreen = () => {
                 <Text style={styles.instructorName}>By {item.instructor.name}</Text>
                 <View style={styles.progressContainer}>
                     <View style={styles.progressBar}>
-                        <View style={[styles.progressFill, { width: '30%' }]} />
+                        <View style={[styles.progressFill, { width: '100%' }]} />
                     </View>
-                    <Text style={styles.progressText}>30% Complete</Text>
+                    <Text style={styles.progressText}>Enrolled & Access Unlocked</Text>
                 </View>
-                <PrimaryButton
-                    title="Continue"
-                    onPress={() => navigation.navigate('CourseDetail', { courseId: item._id })}
-                    containerStyle={styles.continueBtn}
-                    textStyle={styles.continueBtnText}
-                />
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <PrimaryButton
+                        title="Continue"
+                        onPress={() => navigation.navigate('CourseDetail', { courseId: item._id })}
+                        containerStyle={[styles.continueBtn, { flex: 1 }]}
+                        textStyle={styles.continueBtnText}
+                    />
+                    <TouchableOpacity
+                        style={styles.certBtn}
+                        onPress={() => setSelectedCertCourse(item)}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="ribbon-outline" size={18} color="#FFD700" />
+                        <Text style={styles.certBtnText}>Certificate</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </TouchableOpacity>
     );
@@ -102,7 +117,7 @@ const MyCoursesScreen = () => {
                 }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="play-circle-outline" size={80} color={COLORS.gray[300]} />
+                        <Ionicons name="play-circle-outline" size={80} color={COLORS.textMuted} />
                         <Text style={styles.emptyTitle}>No courses yet</Text>
                         <Text style={styles.emptySubtitle}>Courses you enroll in will appear here.</Text>
                         <PrimaryButton
@@ -112,6 +127,12 @@ const MyCoursesScreen = () => {
                         />
                     </View>
                 }
+            />
+            <CertificateModal
+                visible={selectedCertCourse !== null}
+                onClose={() => setSelectedCertCourse(null)}
+                courseTitle={selectedCertCourse?.title || ''}
+                studentName={user?.name || 'Student'}
             />
         </View>
     );
@@ -135,7 +156,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.lg,
         paddingTop: 50,
         paddingBottom: SPACING.md,
-        backgroundColor: COLORS.surface,
+        backgroundColor: COLORS.card,
     },
     headerTitle: {
         fontSize: 20,
@@ -147,7 +168,7 @@ const styles = StyleSheet.create({
     },
     courseCard: {
         flexDirection: 'row',
-        backgroundColor: COLORS.surface,
+        backgroundColor: COLORS.card,
         borderRadius: 16,
         marginBottom: SPACING.md,
         padding: SPACING.sm,
@@ -178,7 +199,7 @@ const styles = StyleSheet.create({
     },
     progressBar: {
         height: 4,
-        backgroundColor: COLORS.gray[100],
+        backgroundColor: COLORS.border,
         borderRadius: 2,
         width: '100%',
     },
@@ -200,6 +221,24 @@ const styles = StyleSheet.create({
     continueBtnText: {
         fontSize: 12,
     },
+    certBtn: {
+        marginTop: 10,
+        height: 32,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255, 215, 0, 0.12)',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.3)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 10,
+        gap: 4,
+    },
+    certBtnText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#FFD700',
+    },
     emptyContainer: {
         alignItems: 'center',
         marginTop: 100,
@@ -216,10 +255,10 @@ const styles = StyleSheet.create({
         color: COLORS.textMuted,
         textAlign: 'center',
         marginTop: 8,
-        marginBottom: 24,
     },
     browseBtn: {
-        width: '100%',
+        marginTop: 24,
+        width: 200,
     }
 });
 

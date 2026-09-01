@@ -244,7 +244,11 @@ const ProfileScreen = ({ navigation }: any) => {
             >
                 <View style={styles.header}>
                     <View style={[styles.avatarContainer, COLORS.getGlow(COLORS.primary, 20, 0.4)]}>
-                        <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
+                        {user?.avatar ? (
+                            <Image source={{ uri: user.avatar }} style={styles.avatarImage} />
+                        ) : (
+                            <Text style={styles.avatarText}>{user?.name?.charAt(0)?.toUpperCase() || 'U'}</Text>
+                        )}
                     </View>
                     <Text style={styles.userName}>{user?.name || 'User Name'}</Text>
                     <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
@@ -330,13 +334,7 @@ const ProfileScreen = ({ navigation }: any) => {
                         onPress={() => navigation.navigate('EditProfile')}
                         color="#818cf8"
                     />
-                    <MenuItem
-                        icon="notifications-outline"
-                        title="Notifications"
-                        subtitle="Manage alerts and news"
-                        onPress={() => navigation.navigate('Notifications')}
-                        color="#f43f5e"
-                    />
+
                     <MenuItem
                         icon="download-outline"
                         title="My Purchases"
@@ -493,6 +491,12 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         borderWidth: 2,
         borderColor: COLORS.white + '30',
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: 110,
+        height: 110,
+        borderRadius: 55,
     },
     avatarText: {
         fontSize: 48,
@@ -653,6 +657,10 @@ const styles = StyleSheet.create({
         padding: 5,
         borderRadius: 6,
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        minWidth: 44,
+        minHeight: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     editFormContainer: {
         backgroundColor: 'rgba(0, 0, 0, 0.25)',

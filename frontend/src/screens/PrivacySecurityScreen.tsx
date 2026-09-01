@@ -33,9 +33,17 @@ const PrivacySecurityScreen = ({ navigation }: any) => {
         const loadSettings = async () => {
             try {
                 const saved = await AsyncStorage.getItem(PRIVACY_STORAGE_KEY);
+                let loadedSettings = defaultSettings;
                 if (saved) {
-                    setSettings(JSON.parse(saved));
+                    loadedSettings = JSON.parse(saved);
                 }
+                
+                // Override twoFactor with backend source of truth if available
+                if (user && typeof (user as any).twoFactorAuthEnabled !== 'undefined') {
+                    loadedSettings.twoFactor = (user as any).twoFactorAuthEnabled;
+                }
+                
+                setSettings(loadedSettings);
             } catch (err) {
                 console.error('Failed to load privacy settings:', err);
             } finally {
@@ -52,14 +60,22 @@ const PrivacySecurityScreen = ({ navigation }: any) => {
 
         try {
             await AsyncStorage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(updated));
+
+            if (key === 'twoFactor') {
+                await authApi.toggle2FA(value);
+            }
         } catch (err) {
             console.error('Failed to save privacy setting:', err);
+            Alert.alert('Error', 'Failed to save settings.');
+            // Revert on failure
+            setSettings(settings);
+            return;
         }
 
         if (key === 'biometric' && value) {
             Alert.alert('Biometric Login Enabled', 'Fingerprint / Face ID unlock preference saved.');
-        } else if (key === 'twoFactor' && value) {
-            Alert.alert('Two-Factor Auth Enabled', 'Extra verification step activated for logins.');
+        } else if (key === 'twoFactor') {
+            Alert.alert(value ? 'Two-Factor Auth Enabled' : 'Two-Factor Auth Disabled', value ? 'Extra verification step activated for logins.' : '2FA disabled.');
         }
     };
 
@@ -106,7 +122,7 @@ const PrivacySecurityScreen = ({ navigation }: any) => {
             const dataString = JSON.stringify(userDataExport, null, 2);
             await Share.share({
                 title: 'NovaEdge Account Data Export.json',
-                message: `NovaEdge Account Data Export:\n\n${dataString}`
+                message: `NovaEdge Account Data Export:\n\n${dataString}\n\nDownload the App: https://play.google.com/store/apps/details?id=in.novaedgedigitallabs.tech`
             });
         } catch (error) {
             Alert.alert('Export Requested', 'Your data export request has been logged and sent to your email.');

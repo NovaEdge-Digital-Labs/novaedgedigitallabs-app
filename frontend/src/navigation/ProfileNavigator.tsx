@@ -8,7 +8,6 @@ import SupportScreen from '../screens/SupportScreen';
 import AboutScreen from '../screens/AboutScreen';
 import ReferEarnScreen from '../screens/ReferEarnScreen';
 import PrivacySecurityScreen from '../screens/PrivacySecurityScreen';
-import NotificationsScreen from '../screens/NotificationsScreen';
 import ApiDashboardScreen from '../screens/ApiDashboardScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import AdminUsersScreen from '../screens/AdminUsersScreen';
@@ -45,7 +44,6 @@ const ProfileNavigator = () => {
             <Stack.Screen name="About" component={AboutScreen} />
             <Stack.Screen name="ReferEarn" component={ReferEarnScreen} />
             <Stack.Screen name="PrivacySecurity" component={PrivacySecurityScreen} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="ApiDashboard" component={ApiDashboardScreen} />
             <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
             <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />

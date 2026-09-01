@@ -4,8 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAppConfigStore } from '../store/appConfigStore';
 
 const AboutScreen = ({ navigation }: any) => {
+    const { config } = useAppConfigStore();
     const primaryGradient = COLORS.getGradient(COLORS.primaryGradient);
 
     const coreServices = [
@@ -18,16 +20,16 @@ const AboutScreen = ({ navigation }: any) => {
     const companyInfo = [
         { icon: 'calendar-outline', label: 'Founded', value: 'Est. 2025' },
         { icon: 'person-outline', label: 'Founder', value: 'Amit Kumar Raikwar' },
-        { icon: 'mail-outline', label: 'Email', value: 'contact@novaedgedigitallabs.tech', link: 'mailto:contact@novaedgedigitallabs.tech' },
+        { icon: 'mail-outline', label: 'Email', value: config?.supportEmail || 'contact@novaedgedigitallabs.tech', link: `mailto:${config?.supportEmail || 'contact@novaedgedigitallabs.tech'}` },
         { icon: 'call-outline', label: 'Phone', value: '+91-6391486456', link: 'tel:+916391486456' },
         { icon: 'document-text-outline', label: 'Udyam Reg.', value: 'UDYAM-MP-23-0241024' },
     ];
 
     const socialLinks = [
-        { icon: 'globe-outline', label: 'Portfolio', url: 'https://lnkd.in/dB3zXD9x' },
-        { icon: 'logo-github', label: 'GitHub', url: 'https://lnkd.in/dGSU4tCq' },
-        { icon: 'logo-linkedin', label: 'LinkedIn', url: 'https://linkedin.com/company/novaedge' },
-        { icon: 'logo-instagram', label: 'Instagram', url: 'https://instagram.com/novaedge' },
+        { icon: 'globe-outline', label: 'Portfolio', url: config?.socialLinks?.portfolio || 'https://novaedgedigitallabs.tech' },
+        { icon: 'logo-github', label: 'GitHub', url: config?.socialLinks?.github || 'https://github.com/novaedge' },
+        { icon: 'logo-linkedin', label: 'LinkedIn', url: config?.socialLinks?.linkedin || 'https://linkedin.com/company/novaedge' },
+        { icon: 'logo-instagram', label: 'Instagram', url: config?.socialLinks?.instagram || 'https://instagram.com/novaedge' },
     ];
 
     return (

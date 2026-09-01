@@ -113,7 +113,7 @@ const FeaturedPartners = ({ navigation }: any) => {
                         <Ionicons name="megaphone-outline" size={32} color={COLORS.primary} />
                     </View>
                     <Text style={styles.advertiseTitle}>Advertise Here</Text>
-                    <Text style={styles.advertiseSubtitle}>Reach 50,000+ local users in Indore</Text>
+                    <Text style={styles.advertiseSubtitle}>Get your business listed for local customers in Indore</Text>
                     <View style={styles.inquireBtn}>
                         <Text style={styles.inquireBtnText}>Inquire Now</Text>
                         <Ionicons name="arrow-forward" size={14} color={COLORS.white} />

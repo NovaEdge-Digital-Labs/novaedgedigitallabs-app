@@ -1,0 +1,278 @@
+[
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad01" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Build Full Stack MERN E-Commerce Web Application with Admin Panel",
+    "description": "I will develop a responsive, full-stack MERN (MongoDB, Express, React, Node.js) E-Commerce website complete with product catalog, shopping cart, Razorpay/Stripe payment gateway, user authentication, and an intuitive Admin Control Panel.",
+    "price": 14999,
+    "deliveryDays": 7,
+    "category": "MERN Stack",
+    "images": [
+      "https://images.unsplash.com/photo-1557821552-17105176677c?w=800"
+    ],
+    "features": [
+      "MERN Stack (MongoDB, Express.js, React, Node.js)",
+      "JWT Authentication & Role Management",
+      "Payment Gateway Integration (Razorpay/Stripe)",
+      "Admin Dashboard for Inventory & Order Tracking",
+      "SEO Friendly & Fully Responsive Layout"
+    ],
+    "isActive": true,
+    "totalOrders": 14,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad02" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Custom SaaS Web Application Development using MERN Stack & Next.js",
+    "description": "Custom MERN stack SaaS development tailored to your business needs. Includes user management, subscription billing, secure REST APIs, real-time analytics dashboard, and cloud deployment on Vercel/Render.",
+    "price": 24999,
+    "deliveryDays": 10,
+    "category": "MERN Stack",
+    "images": [
+      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800"
+    ],
+    "features": [
+      "Next.js & React Frontend with TailwindCSS",
+      "Node.js & Express RESTful API Backend",
+      "MongoDB Database Schema & Aggregation",
+      "Subscription Management & User Billing",
+      "Deployment & Post-launch Maintenance Support"
+    ],
+    "isActive": true,
+    "totalOrders": 9,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad03" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Python Web Scraping, Automation Scripts & Data Extraction Pipeline",
+    "description": "Custom Python automation scripts and web scrapers using BeautifulSoup, Selenium, and Scrapy. Extract data from dynamic websites, automate daily repetitive tasks, and export structured data into Excel, CSV, or SQL databases.",
+    "price": 4999,
+    "deliveryDays": 3,
+    "category": "Python",
+    "images": [
+      "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800"
+    ],
+    "features": [
+      "Web Scraping (Selenium, BeautifulSoup, Scrapy)",
+      "Bypass Captcha & Anti-bot Defenses",
+      "Export Data to CSV, JSON, Excel & PostgreSQL",
+      "Automated Scheduled Cron Jobs",
+      "Clean & Commented Python Code"
+    ],
+    "isActive": true,
+    "totalOrders": 28,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad04" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Python FastAPI & Django REST Backend API Development with AI Integration",
+    "description": "High-performance Python backend API development using FastAPI or Django REST Framework. Includes AI model integration (OpenAI API / HuggingFace), JWT authentication, Postgre/MongoDB setup, and Swagger UI documentation.",
+    "price": 12999,
+    "deliveryDays": 5,
+    "category": "Python",
+    "images": [
+      "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=800"
+    ],
+    "features": [
+      "FastAPI / Django REST Framework",
+      "OpenAI & Custom AI Model Integration",
+      "PostgreSQL / MongoDB Database Integration",
+      "Asynchronous Task Queue (Celery & Redis)",
+      "Docker Containerization & API Docs"
+    ],
+    "isActive": true,
+    "totalOrders": 11,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad05" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Enterprise Java Spring Boot Microservices Backend API Development",
+    "description": "Scalable enterprise backend services using Java, Spring Boot, Spring Security, Hibernate ORM, and PostgreSQL. Built with clean architecture, microservices design patterns, and unit tests.",
+    "price": 19999,
+    "deliveryDays": 8,
+    "category": "Java",
+    "images": [
+      "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800"
+    ],
+    "features": [
+      "Java 17 / 21 & Spring Boot 3 Framework",
+      "Spring Security with OAuth2 & JWT Tokens",
+      "JPA / Hibernate ORM with PostgreSQL/MySQL",
+      "Microservices Architecture & Kafka/RabbitMQ",
+      "JUnit & Mockito Automated Unit Testing"
+    ],
+    "isActive": true,
+    "totalOrders": 8,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad06" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Native Java Android Application Development with Firebase & REST API",
+    "description": "Custom native Android app development using Java & Android Studio. Features smooth UI design, offline database sync, Firebase Auth, Realtime Database/Firestore, and Push Notifications.",
+    "price": 15999,
+    "deliveryDays": 7,
+    "category": "Java",
+    "images": [
+      "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?w=800"
+    ],
+    "features": [
+      "Native Java Android Development (Android Studio)",
+      "Firebase Auth, Firestore & Cloud Messaging",
+      "Material Design 3 Components & Clean UI",
+      "RESTful API Integration & Room Database",
+      "Google Play Store Readiness Setup"
+    ],
+    "isActive": true,
+    "totalOrders": 12,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad07" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Modern Mobile & Web UI/UX Design in Figma with Interactive Prototype",
+    "description": "Complete UI/UX design for web and mobile apps using Figma. Includes user research, user journey flows, wireframes, pixel-perfect high-fidelity screens, clickable interactive prototypes, and design systems.",
+    "price": 8999,
+    "deliveryDays": 4,
+    "category": "UI/UX",
+    "images": [
+      "https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=800"
+    ],
+    "features": [
+      "User Flow Diagram & Low/High Fidelity Wireframes",
+      "Pixel-Perfect Mobile (iOS/Android) & Web Screens",
+      "Clickable Interactive Prototype in Figma",
+      "Complete Figma Design System & Component Library",
+      "Developer Handoff Assets & Exported SVG/PNG Icons"
+    ],
+    "isActive": true,
+    "totalOrders": 32,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad08" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Complete SaaS Website Redesign, Landing Page & Mobile UI/UX Audit",
+    "description": "Transform your website or SaaS product into a visually stunning, conversion-focused digital experience. Includes UX audit, modern aesthetic revamp, landing page layout, micro-interactions, and mobile responsiveness.",
+    "price": 9999,
+    "deliveryDays": 5,
+    "category": "UI/UX",
+    "images": [
+      "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=800"
+    ],
+    "features": [
+      "Comprehensive UX Audit & Usability Analysis",
+      "Modern Landing Page Design (High Converting)",
+      "Dark Mode & Light Mode Theme Specs",
+      "Micro-animations & Component Tokens",
+      "100% Custom Design File with Commercial Rights"
+    ],
+    "isActive": true,
+    "totalOrders": 19,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad09" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Real-Time Chat & Booking Web App using MERN Stack & Socket.io",
+    "description": "Build real-time web features like live chat, instant messaging, booking schedules, and notifications using Node.js, Express, Socket.io, React, and MongoDB.",
+    "price": 13999,
+    "deliveryDays": 6,
+    "category": "MERN Stack",
+    "images": [
+      "https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=800"
+    ],
+    "features": [
+      "Real-Time Messaging with Socket.io",
+      "MERN Stack (MongoDB, Express, React, Node)",
+      "Live Presence & Read Receipts",
+      "Calendar Slot Booking System",
+      "Push Notifications & Toast Alerts"
+    ],
+    "isActive": true,
+    "totalOrders": 15,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad10" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Python Desktop GUI Software Development using CustomTkinter / PySide6",
+    "description": "Build standalone cross-platform desktop applications (Windows/Mac/Linux) using Python, PySide6 (Qt) or CustomTkinter with sqlite/PostgreSQL database support and modern dark mode UI.",
+    "price": 7999,
+    "deliveryDays": 4,
+    "category": "Python",
+    "images": [
+      "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=800"
+    ],
+    "features": [
+      "Cross-Platform GUI App (Windows, macOS, Linux)",
+      "PySide6 / PyQt6 / CustomTkinter Framework",
+      "Local SQLite / Remote Database Sync",
+      "Executable Executable File (.exe / .dmg)",
+      "Modern Dark Mode Desktop Interface"
+    ],
+    "isActive": true,
+    "totalOrders": 22,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad11" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Interactive PowerBI & Tableau Business Intelligence Dashboard Development",
+    "description": "Professional Data Analysis & Interactive Business Intelligence (BI) Dashboard creation using Power BI, Tableau, and SQL. Transform raw data into executive KPIs, sales charts, and automated reporting systems.",
+    "price": 6999,
+    "deliveryDays": 4,
+    "category": "Data Analyst",
+    "images": [
+      "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800"
+    ],
+    "features": [
+      "Interactive PowerBI / Tableau Dashboards",
+      "Data Cleaning & Transformation (DAX & Power Query)",
+      "Complex SQL Queries & Database Connection",
+      "Key Performance Indicator (KPI) Tracking",
+      "Automated Scheduled Data Refresh Setup"
+    ],
+    "isActive": true,
+    "totalOrders": 25,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  },
+  {
+    "_id": { "$oid": "6a7283333d8dc074e978ad12" },
+    "freelancerId": { "$oid": "66b1a2222222222222222222" },
+    "title": "Python Data Analysis, Exploratory Data Analysis (EDA) & Machine Learning Insights",
+    "description": "In-depth Data Analytics, Statistical Analysis, Data Wrangling, and Predictive Modeling using Python (Pandas, NumPy, Seaborn, Scikit-learn). Includes interactive Jupyter Notebook and PDF Executive Summary.",
+    "price": 8999,
+    "deliveryDays": 5,
+    "category": "Data Analyst",
+    "images": [
+      "https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=800"
+    ],
+    "features": [
+      "Exploratory Data Analysis (EDA) in Jupyter Notebook",
+      "Data Cleaning & Preprocessing (Pandas, NumPy)",
+      "Statistical Insights & Visualizations (Seaborn, Matplotlib)",
+      "Predictive Machine Learning Forecasting",
+      "Comprehensive PDF Insights Executive Report"
+    ],
+    "isActive": true,
+    "totalOrders": 18,
+    "createdAt": { "$date": "2026-08-04T21:00:00.000Z" },
+    "updatedAt": { "$date": "2026-08-04T21:00:00.000Z" }
+  }
+]

@@ -5,6 +5,7 @@ import { FlashList } from '@shopify/flash-list';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import RecommendedTools from '../components/RecommendedTools';
+import { shareContent } from '../utils/shareHelper';
 
 const { width } = Dimensions.get('window');
 
@@ -49,9 +50,13 @@ const ToolsScreen: React.FC<any> = ({ navigation }) => {
                 </View>
                 <Text style={styles.toolDesc}>{item.desc}</Text>
             </View>
-            {item.badge !== 'Free' && (
-                <Ionicons name="lock-closed" size={16} color={COLORS.textMuted} style={styles.lockIcon} />
-            )}
+            <TouchableOpacity
+                style={styles.cardShareBtn}
+                onPress={() => shareContent({ title: item.name, description: item.desc, category: item.category, type: 'Developer Tool' })}
+                activeOpacity={0.7}
+            >
+                <Ionicons name="share-social-outline" size={18} color={COLORS.textMuted} />
+            </TouchableOpacity>
         </TouchableOpacity>
     );
 
@@ -211,8 +216,9 @@ const styles = StyleSheet.create({
         color: COLORS.textMuted,
         lineHeight: 18,
     },
-    lockIcon: {
-        marginLeft: 10,
+    cardShareBtn: {
+        padding: 8,
+        marginLeft: 8,
     },
 });
 

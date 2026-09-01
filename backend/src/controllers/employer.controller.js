@@ -65,10 +65,10 @@ exports.createJobOrder = async (req, res) => {
             return res.status(200).json({
                 success: true,
                 isFree: true,
-                orderId: `FREE_BUSINESS_${Date.now()}`,
+                orderId: null,
                 amount: 0,
                 currency: 'INR',
-                keyId: process.env.RAZORPAY_KEY_ID || 'dummy'
+                keyId: process.env.RAZORPAY_KEY_ID || null
             });
         }
 
@@ -94,15 +94,10 @@ exports.createJobOrder = async (req, res) => {
             keyId: process.env.RAZORPAY_KEY_ID
         });
     } catch (error) {
-        // Fallback for dev/test mode without razorpay keys
-        res.status(200).json({
-            success: true,
-            isFree: true,
-            orderId: `FREE_BUSINESS_${Date.now()}`,
-            amount: 0,
-            currency: 'INR',
-            keyId: 'dummy'
-        });
+        // Never fall back to a free order here — a Razorpay outage or a missing key
+        // would otherwise hand out paid listings for free.
+        console.error('Create job order error:', error);
+        res.status(502).json({ success: false, message: 'Could not reach the payment gateway. Please try again.' });
     }
 };
 
@@ -117,22 +112,23 @@ exports.publishJob = async (req, res) => {
 
         const user = await User.findById(req.user.id);
         const isBusinessUser = user && (user.plan === 'business' || user.plan === 'pro' || user.role === 'admin');
-        const isFreeOrder = !razorpayOrderId || razorpayOrderId.startsWith('FREE_BUSINESS_');
 
-        // Verify Signature if paying via Razorpay
-        if (!isBusinessUser && !isFreeOrder && razorpaySignature) {
-            try {
-                const body = razorpayOrderId + '|' + razorpayPaymentId;
-                const expectedSignature = crypto
-                    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-                    .update(body.toString())
-                    .digest('hex');
+        // Whether a listing is free is decided by the account's plan on the server —
+        // never by a client-supplied order id. Trusting a `FREE_BUSINESS_` prefix (or a
+        // missing id) let any caller publish a paid listing without paying.
+        if (!isBusinessUser) {
+            if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+                return res.status(402).json({ success: false, message: 'Payment is required to publish this listing.' });
+            }
 
-                if (expectedSignature !== razorpaySignature) {
-                    return res.status(400).json({ success: false, message: 'Payment verification failed' });
-                }
-            } catch (sigErr) {
-                console.log('Signature check skipped in dev mode');
+            const body = razorpayOrderId + '|' + razorpayPaymentId;
+            const expectedSignature = crypto
+                .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+                .update(body.toString())
+                .digest('hex');
+
+            if (expectedSignature !== razorpaySignature) {
+                return res.status(400).json({ success: false, message: 'Payment verification failed' });
             }
         }
 

@@ -2,10 +2,13 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authApi } from '../api/authApi';
 
+export type Persona = 'client' | 'freelancer' | 'student' | 'jobseeker' | 'employer';
+
 interface User {
     id: string;
     name: string;
     email: string;
+    avatar?: string;
     plan: 'free' | 'pro' | 'business';
     planExpiry?: string;
     isActive: boolean;
@@ -13,6 +16,10 @@ interface User {
     referralCode?: string;
     dailyLoginStreak?: number;
     isEmailVerified?: boolean;
+    role?: string;
+    // What the user came here to do — drives Home cards and Profile menu order.
+    // Empty array means "not asked yet" → onboarding picker shows.
+    personas?: Persona[];
 }
 
 interface AuthState {
@@ -26,6 +33,8 @@ interface AuthState {
     logout: () => Promise<void>;
     loadUser: () => Promise<void>;
     updateUser: (userData: Partial<User>) => void;
+    updateProfile: (nameOrData: string | Record<string, any>, avatar?: string) => Promise<any>;
+    savePersonas: (personas: Persona[]) => Promise<void>;
     setError: (error: string | null) => void;
     error: string | null;
 }
@@ -157,6 +166,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const currentUser = get().user;
         if (currentUser) {
             set({ user: { ...currentUser, ...userData } });
+        }
+    },
+
+    updateProfile: async (nameOrData: any, avatar?: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const payload = typeof nameOrData === 'object' ? nameOrData : { name: nameOrData, avatar };
+            const data = await authApi.updateProfile(payload);
+            if (data.user) {
+                set({ user: data.user, isLoading: false });
+            }
+            return data;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to update profile';
+            set({ isLoading: false, error: errorMessage });
+            throw err;
+        }
+    },
+
+    // Persist the onboarding picker's answer. Applied locally first so the UI
+    // re-routes immediately even if the request is slow; a failure is non-fatal
+    // because personas only affect presentation.
+    savePersonas: async (personas) => {
+        const currentUser = get().user;
+        if (currentUser) {
+            set({ user: { ...currentUser, personas } });
+        }
+        try {
+            await authApi.updateProfile({ personas });
+        } catch (err) {
+            console.error('Failed to persist personas:', err);
         }
     },
 }));

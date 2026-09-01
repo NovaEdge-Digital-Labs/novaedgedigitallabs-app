@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { shareContent } from '../utils/shareHelper';
+
 const SERVICES = [
     {
         id: 'web-development',
@@ -70,20 +72,30 @@ const ServicesScreen = () => {
                 ))}
             </View>
 
-            <TouchableOpacity
-                style={[styles.quoteButton, COLORS.getGlow(COLORS.primary, 15, 0)]}
-                onPress={() => navigation.navigate('LeadForm', { service: service.id })}
-                activeOpacity={0.8}
-            >
-                <LinearGradient
-                    colors={primaryGradient}
-                    style={[StyleSheet.absoluteFill, { borderRadius: 12 }]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                />
-                <Text style={styles.quoteButtonText}>Get Free Quote</Text>
-                <Ionicons name="arrow-forward" size={18} color="white" />
-            </TouchableOpacity>
+            <View style={styles.actionRow}>
+                <TouchableOpacity
+                    style={[styles.quoteButton, COLORS.getGlow(COLORS.primary, 15, 0)]}
+                    onPress={() => navigation.navigate('LeadForm', { service: service.id })}
+                    activeOpacity={0.8}
+                >
+                    <LinearGradient
+                        colors={primaryGradient}
+                        style={[StyleSheet.absoluteFill, { borderRadius: 12 }]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                    />
+                    <Text style={styles.quoteButtonText}>Get Free Quote</Text>
+                    <Ionicons name="arrow-forward" size={18} color="white" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.shareButton}
+                    onPress={() => shareContent({ title: service.title, description: service.description, type: 'Service' })}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="share-social-outline" size={20} color={COLORS.white} />
+                </TouchableOpacity>
+            </View>
         </View>
     );
 
@@ -192,7 +204,13 @@ const styles = StyleSheet.create({
         color: COLORS.textLight,
         marginLeft: 8,
     },
+    actionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
     quoteButton: {
+        flex: 1,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
@@ -200,11 +218,21 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         overflow: 'hidden',
     },
+    shareButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: COLORS.backgroundSoft || 'rgba(255, 255, 255, 0.08)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
     quoteButtonText: {
         color: 'white',
         fontWeight: 'bold',
-        fontSize: 17,
-        marginRight: 10,
+        fontSize: 16,
+        marginRight: 8,
     },
     contactCard: {
         backgroundColor: 'transparent',

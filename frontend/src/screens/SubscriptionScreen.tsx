@@ -6,15 +6,17 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { LinearGradient } from 'expo-linear-gradient';
+import RazorpayCheckout from 'react-native-razorpay';
+import { paymentApi } from '../api/paymentApi';
 
 const PLANS = [
     {
         name: 'Free',
         price: { monthly: 0, yearly: 0 },
         features: [
+            'Basic Job & Gig Browsing',
             '10 Image Compressions / day',
             '5 QR Codes / month',
-            'Basic GST Calculator',
             'Community Support',
         ],
         buttonText: 'Current Plan',
@@ -25,10 +27,10 @@ const PLANS = [
         name: 'Pro',
         price: { monthly: 149, yearly: 999 },
         features: [
-            'Unlimited Image Compression',
-            'Unlimited QR Codes',
-            'GST & EMI Calculators',
-            'Basic Invoice Generation',
+            'Featured Gig Placement on Marketplace',
+            'Unlimited Image Compression & QR Codes',
+            'GST, EMI & Developer Tools',
+            'Invoice & Proposal Generator',
             'Ad-free experience',
             'Priority Email Support',
         ],
@@ -41,12 +43,12 @@ const PLANS = [
         name: 'Business',
         price: { monthly: 349, yearly: 2499 },
         features: [
+            '🎉 Unlimited Premium Job Listings (₹2,999 each — 100% FREE)',
+            'Applicant Tracking & Hiring Dashboard',
             'Everything in Pro',
-            'Batch Invoice Generation',
-            'Custom Resume Builder',
-            'Developer Utility Tools',
-            'Dedicated Account Manager',
-            '24/7 Priority Support',
+            'Batch Invoice & Proposal Generation',
+            'Custom Resume & Portfolio Builder',
+            'Dedicated Hiring Support',
         ],
         buttonText: 'Get Business',
         isCurrent: false,
@@ -58,7 +60,80 @@ const SubscriptionScreen = () => {
     const navigation = useNavigation();
     const { user, updateUser } = useAuthStore();
     const [isYearly, setIsYearly] = useState(false);
+    const [processingPlan, setProcessingPlan] = useState<string | null>(null);
     const primaryGradient = COLORS.getGradient(COLORS.primaryGradient);
+
+    const startCheckout = async (planKey: 'pro' | 'business', planName: string) => {
+        if (!user) return;
+
+        const billingCycle = isYearly ? 'yearly' : 'monthly';
+        setProcessingPlan(planKey);
+
+        try {
+            // The server owns the price: it looks up PRICING[plan][billingCycle],
+            // creates the Razorpay order and records a pending Subscription.
+            const order = await paymentApi.createOrder(planKey, billingCycle);
+
+            if (!order?.orderId || !order?.keyId) {
+                throw new Error('Payment could not be initialised. Please try again.');
+            }
+
+            const options = {
+                description: `NovaEdge ${planName} — ${billingCycle}`,
+                image: 'https://novaedgedigitallabs.tech/logo.png',
+                currency: order.currency || 'INR',
+                key: order.keyId,
+                amount: order.amount,
+                name: 'NovaEdge Digital Labs',
+                order_id: order.orderId,
+                prefill: {
+                    email: user.email,
+                    contact: '',
+                    name: user.name
+                },
+                theme: { color: COLORS.primary }
+            };
+
+            const data: any = await RazorpayCheckout.open(options);
+
+            // Plan is granted only after the server verifies the signature.
+            const verified = await paymentApi.verifyPayment({
+                razorpayOrderId: data.razorpay_order_id,
+                razorpayPaymentId: data.razorpay_payment_id,
+                razorpaySignature: data.razorpay_signature,
+            });
+
+            if (!verified?.success) {
+                throw new Error(verified?.message || 'Payment verification failed.');
+            }
+
+            updateUser({ plan: planKey, planExpiry: verified.subscription?.endDate });
+            setProcessingPlan(null);
+            Alert.alert(
+                'You are on ' + planName,
+                `Payment received. Your ${planName} plan is active${isYearly ? ' for 12 months' : ' for 30 days'}.`,
+                [{ text: 'OK', onPress: () => navigation.goBack() }]
+            );
+        } catch (error: any) {
+            setProcessingPlan(null);
+
+            // RazorpayCheckout rejects with { code, description } when the user cancels.
+            if (error?.code || error?.description) {
+                Alert.alert('Payment Cancelled', error.description || 'The transaction was not completed.');
+                return;
+            }
+
+            if (error?.response?.status === 401) {
+                Alert.alert('Session Expired', 'Please log in again to upgrade your plan.');
+                return;
+            }
+
+            Alert.alert(
+                'Payment Error',
+                error?.response?.data?.message || error?.message || 'Something went wrong. You have not been charged.'
+            );
+        }
+    };
 
     const handlePlanSelect = (planName: string) => {
         const planKey = planName.toLowerCase() as 'free' | 'pro' | 'business';
@@ -68,32 +143,22 @@ const SubscriptionScreen = () => {
             return;
         }
 
+        if (planKey === 'free') {
+            Alert.alert('Free Plan', 'You are already able to use the free tier. Cancel a paid plan from Support if needed.');
+            return;
+        }
+
+        if (!user) {
+            Alert.alert('Login Required', 'Please log in to upgrade your plan.');
+            return;
+        }
+
         Alert.alert(
             'Upgrade Plan',
             `Confirm upgrade to ${planName} ${isYearly ? 'Yearly' : 'Monthly'} plan?`,
             [
                 { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Confirm',
-                    onPress: () => {
-                        // Mock Razorpay Flow
-                        Alert.alert(
-                            'Processing Payment',
-                            'Connecting to Razorpay...',
-                            [],
-                            { cancelable: false }
-                        );
-
-                        setTimeout(() => {
-                            updateUser({ plan: planKey });
-                            Alert.alert(
-                                'Success!',
-                                `Your plan has been updated to ${planName}.`,
-                                [{ text: 'OK', onPress: () => navigation.goBack() }]
-                            );
-                        }, 2000);
-                    }
-                }
+                { text: 'Pay Now', onPress: () => startCheckout(planKey, planName) }
             ]
         );
     };
@@ -102,6 +167,7 @@ const SubscriptionScreen = () => {
         const price = isYearly ? plan.price.yearly : plan.price.monthly;
         const isPro = plan.name === 'Pro';
         const isCurrentPlan = user?.plan === plan.name.toLowerCase();
+        const isProcessing = processingPlan === plan.name.toLowerCase();
 
         return (
             <View
@@ -145,12 +211,12 @@ const SubscriptionScreen = () => {
                         { backgroundColor: isCurrentPlan ? COLORS.backgroundSoft : plan.color },
                         !isCurrentPlan && COLORS.getGlow(plan.color, 15, 0.4)
                     ]}
-                    disabled={isCurrentPlan}
+                    disabled={isCurrentPlan || processingPlan !== null}
                     activeOpacity={0.7}
                     onPress={() => handlePlanSelect(plan.name)}
                 >
                     <Text style={[styles.planButtonText, { color: isCurrentPlan ? COLORS.textMuted : 'white' }]}>
-                        {isCurrentPlan ? 'Current Plan' : plan.buttonText}
+                        {isCurrentPlan ? 'Current Plan' : isProcessing ? 'Opening Razorpay…' : plan.buttonText}
                     </Text>
                 </TouchableOpacity>
             </View>

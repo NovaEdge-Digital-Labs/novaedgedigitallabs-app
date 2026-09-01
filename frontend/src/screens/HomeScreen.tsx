@@ -17,7 +17,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { useAuthStore } from '../store/authStore';
+import { useAppConfigStore } from '../store/appConfigStore';
 import postApi, { Post } from '../api/postApi';
+import { getOrderedPersonas } from '../constants/personas';
+import HowEscrowWorksModal from '../components/HowEscrowWorksModal';
 
 interface PostCardProps {
     item: Post;
@@ -290,12 +293,15 @@ const PostCard: React.FC<PostCardProps> = ({
 
 const HomeScreen: React.FC<any> = ({ navigation }) => {
     const { user } = useAuthStore();
+    const { config, stats, fetchStats } = useAppConfigStore();
     const [posts, setPosts] = useState<Post[]>([]);
     const [newPostText, setNewPostText] = useState('');
     const [newPostLink, setNewPostLink] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isPosting, setIsPosting] = useState(false);
     const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const [showEscrowModal, setShowEscrowModal] = useState(false);
 
     const currentUserId = user?.id || (user as any)?._id || '';
 
@@ -311,7 +317,8 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
 
     useEffect(() => {
         fetchFeed(true);
-    }, [fetchFeed]);
+        fetchStats();
+    }, [fetchFeed, fetchStats]);
 
     const handleCreatePost = async () => {
         if (!newPostText.trim()) {
@@ -385,7 +392,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
             await postApi.sharePost(postId);
 
             // Native Share Sheet
-            const shareMessage = link ? `${content}\n\nLink: ${link}` : content;
+            const shareMessage = link ? `${content}\n\nLink: ${link}\n\nDownload the App: ${config?.appDownloadLink || 'https://play.google.com/store/apps/details?id=in.novaedgedigitallabs.tech'}` : `${content}\n\nDownload the App: ${config?.appDownloadLink || 'https://play.google.com/store/apps/details?id=in.novaedgedigitallabs.tech'}`;
             await Share.share({
                 message: shareMessage,
             });
@@ -520,47 +527,124 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
                     />
                 }
                 ListHeaderComponent={
-                    <View style={[styles.createPostCard, COLORS.glass]}>
-                        <Text style={styles.cardHeading}>Share an Update</Text>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder="What's happening?"
-                            placeholderTextColor={COLORS.textMuted}
-                            multiline
-                            maxLength={280}
-                            value={newPostText}
-                            onChangeText={setNewPostText}
-                        />
-                        <View style={styles.linkInputRow}>
-                            <Ionicons name="link" size={18} color={COLORS.textMuted} style={{ marginRight: 8 }} />
+                    <>
+                        {/* Trust Signals Strip (Section 1 Issue 3) */}
+                        <TouchableOpacity
+                            style={styles.trustStrip}
+                            onPress={() => setShowEscrowModal(true)}
+                            activeOpacity={0.8}
+                        >
+                            <View style={styles.trustItem}>
+                                <Ionicons name="shield-checkmark" size={16} color={COLORS.success || '#00FF9D'} />
+                                <Text style={styles.trustText}>
+                                    ₹{((stats?.escrowSecuredAmount || 250000) / 1000).toFixed(0)}k Escrow Safe
+                                </Text>
+                            </View>
+                            <View style={styles.trustDivider} />
+                            <View style={styles.trustItem}>
+                                <Ionicons name="people-outline" size={16} color={COLORS.primary} />
+                                <Text style={styles.trustText}>
+                                    {stats?.verifiedFreelancers || 120}+ Freelancers
+                                </Text>
+                            </View>
+                            <View style={styles.trustDivider} />
+                            <View style={styles.trustItem}>
+                                <Ionicons name="checkmark-done-circle-outline" size={16} color={COLORS.info || '#00E0FF'} />
+                                <Text style={styles.trustText}>
+                                    {stats?.projectsDelivered || 48}+ Projects
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {/* Persona-driven action cards — role-router for Home (P1 #10) */}
+                        <View style={styles.actionCardsContainer}>
+                            {getOrderedPersonas(user?.personas).slice(0, user?.personas?.length ? user.personas.length : 4).map((persona) => (
+                                <TouchableOpacity
+                                    key={persona.key}
+                                    style={[styles.actionCard, COLORS.glass]}
+                                    activeOpacity={0.8}
+                                    onPress={() => {
+                                        if (persona.primaryAction.screen) {
+                                            navigation.navigate(persona.primaryAction.tab, {
+                                                screen: persona.primaryAction.screen
+                                            });
+                                        } else {
+                                            navigation.navigate(persona.primaryAction.tab);
+                                        }
+                                    }}
+                                >
+                                    <View style={styles.actionCardIcon}>
+                                        <Ionicons
+                                            name={persona.primaryAction.icon as any}
+                                            size={22}
+                                            color={COLORS.primary}
+                                        />
+                                    </View>
+                                    <Text style={styles.actionCardTitle}>{persona.primaryAction.title}</Text>
+                                    <Text style={styles.actionCardSub} numberOfLines={1}>{persona.primaryAction.subtitle}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.blogBannerCard, COLORS.glass]}
+                            onPress={() => navigation.navigate('BlogScreen')}
+                            activeOpacity={0.8}
+                        >
+                            <View style={styles.blogBannerLeft}>
+                                <View style={styles.blogIconBadge}>
+                                    <Ionicons name="newspaper" size={22} color={COLORS.primary} />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: 12 }}>
+                                    <Text style={styles.blogBannerTitle}>Blogs & Tech Insights</Text>
+                                    <Text style={styles.blogBannerSub}>Read latest articles, tutorials & news</Text>
+                                </View>
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
+                        </TouchableOpacity>
+
+                        <View style={[styles.createPostCard, COLORS.glass]}>
+                            <Text style={styles.cardHeading}>Share an Update</Text>
                             <TextInput
-                                style={styles.linkInput}
-                                placeholder="Add link (optional)"
+                                style={styles.textInput}
+                                placeholder="What's happening?"
                                 placeholderTextColor={COLORS.textMuted}
-                                value={newPostLink}
-                                onChangeText={setNewPostLink}
-                                autoCapitalize="none"
-                                keyboardType="url"
+                                multiline
+                                maxLength={280}
+                                value={newPostText}
+                                onChangeText={setNewPostText}
                             />
+                            <View style={styles.linkInputRow}>
+                                <Ionicons name="link" size={18} color={COLORS.textMuted} style={{ marginRight: 8 }} />
+                                <TextInput
+                                    style={styles.linkInput}
+                                    placeholder="Add link (optional)"
+                                    placeholderTextColor={COLORS.textMuted}
+                                    value={newPostLink}
+                                    onChangeText={setNewPostLink}
+                                    autoCapitalize="none"
+                                    keyboardType="url"
+                                />
+                            </View>
+                            <View style={styles.cardFooter}>
+                                <Text style={[styles.charCount, newPostText.length >= 260 && { color: '#ef4444' }]}>
+                                    {280 - newPostText.length} characters left
+                                </Text>
+                                <TouchableOpacity 
+                                    style={[styles.postButton, (!newPostText.trim() || isPosting) && styles.postButtonDisabled, COLORS.getGlow(COLORS.primary, 8, 0.2)]}
+                                    onPress={handleCreatePost}
+                                    disabled={!newPostText.trim() || isPosting}
+                                    activeOpacity={0.8}
+                                >
+                                    {isPosting ? (
+                                        <ActivityIndicator size="small" color="#fff" />
+                                    ) : (
+                                        <Text style={styles.postButtonText}>Post</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                        <View style={styles.cardFooter}>
-                            <Text style={[styles.charCount, newPostText.length >= 260 && { color: '#ef4444' }]}>
-                                {280 - newPostText.length} characters left
-                            </Text>
-                            <TouchableOpacity 
-                                style={[styles.postButton, (!newPostText.trim() || isPosting) && styles.postButtonDisabled, COLORS.getGlow(COLORS.primary, 8, 0.2)]}
-                                onPress={handleCreatePost}
-                                disabled={!newPostText.trim() || isPosting}
-                                activeOpacity={0.8}
-                            >
-                                {isPosting ? (
-                                    <ActivityIndicator size="small" color="#fff" />
-                                ) : (
-                                    <Text style={styles.postButtonText}>Post</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                    </>
                 }
                 ListEmptyComponent={
                     isLoading ? (
@@ -574,6 +658,10 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
                         </View>
                     )
                 }
+            />
+            <HowEscrowWorksModal
+                visible={showEscrowModal}
+                onClose={() => setShowEscrowModal(false)}
             />
         </ThemeWrapper>
     );
@@ -619,6 +707,66 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 20,
         paddingBottom: 30,
+    },
+    trustStrip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 14,
+        backgroundColor: COLORS.backgroundSoft,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        marginBottom: 14,
+    },
+    trustItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    trustText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: COLORS.text,
+    },
+    trustDivider: {
+        width: 1,
+        height: 14,
+        backgroundColor: COLORS.border,
+    },
+    actionCardsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginBottom: 14,
+    },
+    actionCard: {
+        flex: 1,
+        minWidth: '45%',
+        padding: 14,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    actionCardIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: COLORS.primary + '20',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    actionCardTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: COLORS.text,
+        marginBottom: 2,
+    },
+    actionCardSub: {
+        fontSize: 11,
+        color: COLORS.textMuted,
     },
     createPostCard: {
         padding: 16,
@@ -726,6 +874,10 @@ const styles = StyleSheet.create({
         padding: 6,
         borderRadius: 8,
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        minWidth: 44,
+        minHeight: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     editFormContainer: {
         backgroundColor: 'rgba(0, 0, 0, 0.25)',
@@ -901,6 +1053,10 @@ const styles = StyleSheet.create({
     },
     sendCommentButton: {
         padding: 4,
+        minWidth: 44,
+        minHeight: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     loaderContainer: {
         paddingVertical: 40,
@@ -917,6 +1073,40 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 12,
         paddingHorizontal: 40,
+    },
+    blogBannerCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 14,
+        borderRadius: 16,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        backgroundColor: COLORS.cardBackground,
+    },
+    blogBannerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    blogIconBadge: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: COLORS.primary + '20',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    blogBannerTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: COLORS.text,
+    },
+    blogBannerSub: {
+        fontSize: 12,
+        color: COLORS.textMuted,
+        marginTop: 2,
     },
 });
 

@@ -55,7 +55,7 @@ exports.createOrder = async (req, res, next) => {
  */
 exports.verifyPayment = async (req, res, next) => {
     try {
-        const { razorpayOrderId, razorpayPaymentId, razorpaySignature, plan, billingCycle } = req.body;
+        const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
 
         const body = razorpayOrderId + '|' + razorpayPaymentId;
         const expectedSignature = crypto
@@ -66,6 +66,21 @@ exports.verifyPayment = async (req, res, next) => {
         if (expectedSignature !== razorpaySignature) {
             return res.status(400).json({ success: false, message: 'Payment verification failed' });
         }
+
+        // Plan and cycle are read back from the order we created, never from the
+        // request body — otherwise a client could pay for `pro` and claim `business`.
+        const pending = await Subscription.findOne({ razorpayOrderId });
+
+        if (!pending) {
+            return res.status(404).json({ success: false, message: 'Order not found' });
+        }
+
+        if (pending.userId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized for this order' });
+        }
+
+        const plan = pending.plan;
+        const billingCycle = pending.billingCycle;
 
         // Update subscription
         const endDate = new Date();

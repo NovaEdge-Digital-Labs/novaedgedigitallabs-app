@@ -6,6 +6,7 @@ import ThemeWrapper from '../components/ThemeWrapper';
 import { storeApi } from '../api/storeApi';
 import { FlashList } from '@shopify/flash-list';
 import { formatCurrency } from '../utils/helpers';
+import { shareContent } from '../utils/shareHelper';
 
 const CATEGORIES = [
     { id: 'all', name: 'All', icon: 'grid-outline' },
@@ -55,6 +56,13 @@ const StoreScreen = ({ navigation }: any) => {
                 <View style={styles.categoryBadge}>
                     <Text style={styles.categoryBadgeText}>{item.category.toUpperCase()}</Text>
                 </View>
+                <TouchableOpacity
+                    style={styles.cardShareBtn}
+                    onPress={() => shareContent({ title: item.title, description: item.description, category: item.category, type: 'Digital Asset' })}
+                    activeOpacity={0.8}
+                >
+                    <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
+                </TouchableOpacity>
             </View>
             <View style={styles.productInfo}>
                 <Text style={styles.productTitle} numberOfLines={1}>{item.title}</Text>
@@ -208,6 +216,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6
     },
     categoryBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: 'bold' },
+    cardShareBtn: {
+        position: 'absolute', top: 10, right: 10,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        width: 28, height: 28, borderRadius: 14,
+        justifyContent: 'center', alignItems: 'center',
+    },
     productInfo: { padding: 12 },
     productTitle: { color: COLORS.white, fontWeight: 'bold', fontSize: 14, marginBottom: 8 },
     priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

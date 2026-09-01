@@ -1,20 +1,22 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import HomeNavigator from './HomeNavigator';
-import ProfileScreen from '../screens/ProfileScreen';
 import ProfileNavigator from './ProfileNavigator';
 import AuthNavigator from './AuthNavigator';
 import MarketplaceNavigator from './MarketplaceNavigator';
 import JobsNavigator from './JobsNavigator';
 import CourseNavigator from './CourseNavigator';
+import RolePickerScreen from '../screens/RolePickerScreen';
 import { COLORS } from '../constants/colors';
 import { useAuthStore } from '../store/authStore';
 
 import { useThemeStore } from '../store/themeStore';
 
 const Tab = createBottomTabNavigator();
+const RootStack = createNativeStackNavigator();
 
 const TabNavigator = () => {
     const { theme } = useThemeStore();
@@ -66,12 +68,33 @@ const TabNavigator = () => {
     );
 };
 
+/**
+ * Authenticated users who haven't picked personas yet see the onboarding
+ * picker as a full-screen overlay before they land on the main tabs.
+ * Once `savePersonas()` writes to the store, this component re-renders
+ * and the picker disappears — no manual navigation needed.
+ */
+const OnboardingGate = () => {
+    const hasPersonas = useAuthStore(
+        (s) => s.user?.personas && s.user.personas.length > 0
+    );
+
+    if (hasPersonas) return <TabNavigator />;
+
+    return (
+        <RootStack.Navigator screenOptions={{ headerShown: false }}>
+            <RootStack.Screen name="RolePicker" component={RolePickerScreen} />
+            <RootStack.Screen name="MainTabs" component={TabNavigator} />
+        </RootStack.Navigator>
+    );
+};
+
 const AppNavigator = () => {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
     return (
         <NavigationContainer>
-            {isAuthenticated ? <TabNavigator /> : <AuthNavigator />}
+            {isAuthenticated ? <OnboardingGate /> : <AuthNavigator />}
         </NavigationContainer>
     );
 };

@@ -12,12 +12,12 @@ const protect = (req, res, next) => {
             if (decoded.id && !decoded._id) req.user._id = decoded.id;
             return next();
         } catch (error) {
-            return res.status(401).json({ success: false, message: 'Not authorized, token failed' });
+            return res.status(401).json({ success: false, message: 'Session expired or invalid token. Please log in again.' });
         }
     }
 
     if (!token) {
-        return res.status(401).json({ success: false, message: 'Not authorized, no token' });
+        return res.status(401).json({ success: false, message: 'Authentication required. Please log in.' });
     }
 };
 

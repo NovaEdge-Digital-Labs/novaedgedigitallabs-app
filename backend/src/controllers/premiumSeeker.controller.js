@@ -1,11 +1,31 @@
 const PremiumJobSeeker = require('../models/PremiumJobSeeker.model');
+const PricingTier = require('../models/PricingTier.model');
 const razorpay = require('../config/razorpay');
 const crypto = require('crypto');
 
+const DEFAULT_PASS_PRICE = 499; // rupees — must match the PremiumUpgradeScreen fallback
+
+// Single source of truth for the pass price. The client reads the same tier via
+// GET /jobs/pricing, so the price shown and the price charged cannot drift apart.
+const resolvePassTier = async () => {
+    const tier = await PricingTier.findOne({
+        isActive: true,
+        $or: [{ category: 'seeker_membership' }, { tierId: 'ProSeeker' }]
+    });
+
+    return {
+        name: (tier && tier.name) || 'Premium Candidate Pass',
+        price: (tier && tier.price) || DEFAULT_PASS_PRICE,
+        durationDays: (tier && tier.durationDays) || 30
+    };
+};
+
 exports.createPremiumOrder = async (req, res) => {
     try {
+        const tier = await resolvePassTier();
+
         const options = {
-            amount: 199 * 100, // ₹199 in paise
+            amount: Math.round(tier.price * 100), // in paise
             currency: 'INR',
             receipt: `premium_${Date.now()}`
         };
@@ -15,6 +35,9 @@ exports.createPremiumOrder = async (req, res) => {
             success: true,
             orderId: order.id,
             amount: order.amount,
+            currency: order.currency,
+            price: tier.price,
+            name: tier.name,
             keyId: process.env.RAZORPAY_KEY_ID
         });
     } catch (error) {
@@ -36,8 +59,10 @@ exports.verifyPremium = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Payment verification failed' });
         }
 
+        const tier = await resolvePassTier();
+
         const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + 30);
+        expiryDate.setDate(expiryDate.getDate() + tier.durationDays);
 
         const premium = await PremiumJobSeeker.findOneAndUpdate(
             { userId: req.user.id },
@@ -60,9 +85,9 @@ exports.verifyPremium = async (req, res) => {
                     user: { name: user.name, email: user.email },
                     purchaseType: 'subscription',
                     itemDetails: {
-                        name: 'Premium Candidate Pass',
-                        price: 499,
-                        billingCycle: 'Monthly'
+                        name: tier.name,
+                        price: tier.price,
+                        billingCycle: `${tier.durationDays} days`
                     },
                     paymentDetails: {
                         orderId: razorpayOrderId || `PREMIUM_${Date.now()}`,

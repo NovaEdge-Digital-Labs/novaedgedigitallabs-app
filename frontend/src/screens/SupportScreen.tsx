@@ -3,23 +3,25 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Linking
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
+import { useAppConfigStore } from '../store/appConfigStore';
 
 const SupportScreen = ({ navigation, route }: any) => {
+    const { config } = useAppConfigStore();
     const title = route.params?.title || 'Support';
 
     const handleSupportAction = (type: 'email' | 'call' | 'guides' | 'api') => {
         switch (type) {
             case 'email':
-                Linking.openURL('mailto:contact@novaedgedigitallabs.tech');
+                Linking.openURL(`mailto:${config?.supportEmail || 'contact@novaedgedigitallabs.tech'}`);
                 break;
             case 'call':
                 Linking.openURL('tel:+916391486456');
                 break;
             case 'guides':
-                Linking.openURL('https://lnkd.in/dB3zXD9x'); // Portfolio as guide for now
+                Linking.openURL(config?.socialLinks?.portfolio || 'https://novaedgedigitallabs.tech');
                 break;
             case 'api':
-                Linking.openURL('https://lnkd.in/dGSU4tCq'); // GitHub as API ref for now
+                Linking.openURL(config?.socialLinks?.github || 'https://github.com/novaedge');
                 break;
         }
     };

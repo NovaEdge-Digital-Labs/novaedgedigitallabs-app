@@ -19,7 +19,7 @@ const ReferEarnScreen = ({ navigation }: any) => {
     const handleShare = async () => {
         try {
             await Share.share({
-                message: `Join NovaEdge Digital Labs and get premium tools for FREE! Use my referral code: ${REFERRAL_CODE}\n\nDownload now: https://novaedge.com/download`,
+                message: `Join NovaEdge Digital Labs and get premium tools for FREE! Use my referral code: ${REFERRAL_CODE}\n\nDownload now: https://play.google.com/store/apps/details?id=in.novaedgedigitallabs.tech`,
             });
         } catch (error) {
             // User cancelled share

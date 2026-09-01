@@ -5,6 +5,7 @@ const { protect } = require('../middleware/auth.middleware');
 
 // Public routes
 router.get('/gigs', marketplaceController.getAllGigs);
+router.get('/gigs/:id', marketplaceController.getGigById);
 router.get('/projects', marketplaceController.getAllProjects);
 router.get('/profile/:userId', marketplaceController.getFreelancerProfile);
 
@@ -24,6 +25,7 @@ router.post('/proposals', marketplaceController.submitProposal);
 router.get('/projects/:projectId/proposals', marketplaceController.getProjectProposals);
 
 router.post('/hire', marketplaceController.hireFreelancer);
+router.post('/gigs/:id/order', marketplaceController.orderGig);
 router.post('/verify-escrow', marketplaceController.verifyEscrowPayment);
 router.post('/submit-work', marketplaceController.submitWork);
 router.post('/release-escrow', marketplaceController.releaseEscrow);

@@ -55,6 +55,7 @@ const blogRoutes = require('./src/routes/blog.routes');
 const workspaceRoutes = require('./src/routes/workspace.routes');
 const postRoutes = require('./src/routes/post.routes');
 const databaseConceptsRoutes = require('./routes/databaseConceptsRoutes');
+const appConfigRoutes = require('./src/routes/appConfig.routes');
 const { toolsRateLimit, authRateLimit } = require('./src/middleware/rateLimit.middleware');
 
 app.use('/api/auth', authRateLimit, authRoutes);
@@ -77,6 +78,7 @@ app.use('/api/blogs', blogRoutes);
 app.use('/api/workspace', workspaceRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/db-lab', databaseConceptsRoutes);
+app.use('/api/config', appConfigRoutes);
 
 // Public Theme Endpoint for Mobile App & Web
 app.get('/api/theme', require('./src/controllers/admin.controller').getPublicTheme);
@@ -102,12 +104,12 @@ const syncBlogs = require('./src/utils/syncBlogs');
 
 // Run daily at midnight to sync blogs from RSS feed
 cron.schedule('0 0 * * *', () => {
-    console.log('Running daily blog sync from RSS...');
-    syncBlogs();
+    // console.log('Running daily blog sync from RSS...');
+    // syncBlogs();
 });
 
 // Run once on startup (Optional, but good to fetch immediately)
-setTimeout(syncBlogs, 5000); // Wait 5 seconds after DB connect
+// setTimeout(syncBlogs, 5000); // Wait 5 seconds after DB connect
 
 app.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);

@@ -33,9 +33,22 @@ axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
         if (error.response?.status === 401) {
-            // Clear token and potentially navigate to Login (handled in store/app logic)
             await AsyncStorage.removeItem('userToken');
-            // Notify store if needed, but App.tsx will handle the switch based on state
+            try {
+                const { useAuthStore } = require('../store/authStore');
+                if (useAuthStore?.getState) {
+                    useAuthStore.getState().logout();
+                }
+            } catch (e) {
+                console.error('Failed to trigger logout in interceptor:', e);
+            }
+
+            if (error.response?.data) {
+                const rawMsg = error.response.data.message;
+                if (!rawMsg || rawMsg.includes('token') || rawMsg.includes('Not authorized')) {
+                    error.response.data.message = 'Session expired. Please log in again.';
+                }
+            }
         }
         return Promise.reject(error);
     }

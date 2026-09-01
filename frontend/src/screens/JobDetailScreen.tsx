@@ -4,13 +4,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
+import { useAppConfigStore } from '../store/appConfigStore';
 import { marketplaceApi } from '../api/marketplaceApi';
 import PrimaryButton from '../components/PrimaryButton';
 import { formatCurrency } from '../utils/helpers';
 import { useAuthStore } from '../store/authStore';
 
 export const JobDetailScreen = ({ route, navigation }: any) => {
-    const { jobId } = route.params;
+    const { config } = useAppConfigStore();
+    const jobId = route.params?.id || route.params?.jobId;
     const [job, setJob] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isSaved, setIsSaved] = useState(false);
@@ -25,6 +27,7 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
     const [editMaxSalary, setEditMaxSalary] = useState('');
     const [editSkills, setEditSkills] = useState('');
     const [editExperience, setEditExperience] = useState('');
+    const [editCompanyName, setEditCompanyName] = useState('');
     const [editWebsiteUrl, setEditWebsiteUrl] = useState('');
     const [editDescription, setEditDescription] = useState('');
 
@@ -75,8 +78,8 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
 
     const handleShareJob = async () => {
         const shareTitle = job?.title || 'Job Opening';
-        const shareText = `🔥 ${job?.title || 'Job Opening'} at ${job?.companyId?.name || 'NovaEdge'}\nLocation: ${job?.location || 'Remote'}\nCheck out and apply now on NovaEdge Digital Labs!`;
-        const shareUrl = typeof window !== 'undefined' ? window.location.href : 'https://novaedgedigitallabs.tech';
+        const shareText = `🔥 ${job?.title || 'Job Opening'} at ${job?.companyId?.name || 'NovaEdge'}\nLocation: ${job?.location || 'Remote'}\nCheck out and apply now on NovaEdge Digital Labs!\n\nDownload the App: ${config?.appDownloadLink || 'https://play.google.com/store/apps/details?id=in.novaedgedigitallabs.tech'}`;
+        const shareUrl = (typeof window !== 'undefined' && window.location) ? window.location.href : (config?.websiteUrl || 'https://novaedgedigitallabs.tech');
 
         if (Platform.OS === 'web') {
             if (typeof navigator !== 'undefined' && (navigator as any).share) {
@@ -140,6 +143,7 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
         setEditMaxSalary(String(job.salaryRange?.max || ''));
         setEditSkills(Array.isArray(job.requiredSkills) ? job.requiredSkills.join(', ') : '');
         setEditExperience(job.experienceLevel || '');
+        setEditCompanyName(job.companyId?.name || '');
         setEditWebsiteUrl(job.websiteUrl || '');
         setEditDescription(job.description || '');
         setEditModalVisible(true);
@@ -159,8 +163,9 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
                 jobType: editJobType,
                 salaryRange: { min: Number(editMinSalary) || 0, max: Number(editMaxSalary) || 0 },
                 requiredSkills: editSkills ? editSkills.split(',').map((s) => s.trim()).filter(Boolean) : ['General'],
+                companyName: editCompanyName.trim() || 'NovaEdge',
                 experienceLevel: editExperience.trim() || '1-3 yrs',
-                websiteUrl: editWebsiteUrl.trim() || 'https://novaedgedigitallabs.tech',
+                websiteUrl: editWebsiteUrl.trim() || config?.websiteUrl || 'https://novaedgedigitallabs.tech',
                 description: editDescription.trim()
             };
 
@@ -294,20 +299,20 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
                     <Text style={styles.companyDesc}>{job.companyId?.description || 'Leading tech innovator.'}</Text>
                     <TouchableOpacity 
                         onPress={async () => {
-                            const rawUrl = job.websiteUrl || job.companyId?.website || 'https://novaedgedigitallabs.tech';
+                            const rawUrl = job.websiteUrl || job.companyId?.website || config?.websiteUrl || 'https://novaedgedigitallabs.tech';
                             let formattedUrl = rawUrl.trim();
                             if (!/^https?:\/\//i.test(formattedUrl)) {
                                 formattedUrl = 'https://' + formattedUrl;
                             }
                             try {
-                                const canOpen = await Linking.canOpenURL(formattedUrl);
-                                if (canOpen) {
+                                const supported = await Linking.canOpenURL(formattedUrl);
+                                if (supported) {
                                     await Linking.openURL(formattedUrl);
                                 } else {
-                                    await Linking.openURL('https://novaedgedigitallabs.tech');
+                                    await Linking.openURL(config?.websiteUrl || 'https://novaedgedigitallabs.tech');
                                 }
                             } catch (e) {
-                                Linking.openURL('https://novaedgedigitallabs.tech');
+                                Linking.openURL(config?.websiteUrl || 'https://novaedgedigitallabs.tech');
                             }
                         }} 
                         style={styles.websiteLink}
@@ -386,7 +391,7 @@ export const JobDetailScreen = ({ route, navigation }: any) => {
                             <TextInput style={styles.modalInput} value={editExperience} onChangeText={setEditExperience} placeholder="3-5 yrs" placeholderTextColor={COLORS.textMuted} />
 
                             <Text style={styles.inputLabel}>Website / Apply URL</Text>
-                            <TextInput style={styles.modalInput} value={editWebsiteUrl} onChangeText={setEditWebsiteUrl} placeholder="https://novaedgedigitallabs.tech" placeholderTextColor={COLORS.textMuted} autoCapitalize="none" keyboardType="url" />
+                            <TextInput style={styles.modalInput} value={editWebsiteUrl} onChangeText={setEditWebsiteUrl} placeholder={config?.websiteUrl || "https://novaedgedigitallabs.tech"} placeholderTextColor={COLORS.textMuted} autoCapitalize="none" keyboardType="url" />
 
                             <Text style={styles.inputLabel}>Job Description *</Text>
                             <TextInput style={[styles.modalInput, styles.modalTextArea]} value={editDescription} onChangeText={setEditDescription} multiline numberOfLines={5} placeholder="Job requirements..." placeholderTextColor={COLORS.textMuted} />

@@ -116,6 +116,14 @@ const ProposalScreen = ({ route, navigation }: any) => {
                     />
                 </View>
 
+                {/* Escrow trust badge — strongest differentiator, was invisible here */}
+                <View style={styles.escrowBadge}>
+                    <Ionicons name="shield-checkmark" size={18} color={COLORS.success} />
+                    <Text style={styles.escrowText}>
+                        Payment escrow me safe — client approve kare tabhi release hoga
+                    </Text>
+                </View>
+
                 <TouchableOpacity
                     style={[styles.submitButton, submitting && styles.disabledButton]}
                     onPress={handleSubmit}
@@ -210,6 +218,24 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    escrowBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 255, 157, 0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 255, 157, 0.2)',
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 16,
+    },
+    escrowText: {
+        color: COLORS.success,
+        fontSize: 13,
+        fontWeight: '600',
+        marginLeft: 10,
+        flex: 1,
+        lineHeight: 18,
     },
 });
 

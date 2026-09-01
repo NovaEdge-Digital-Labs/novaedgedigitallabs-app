@@ -210,6 +210,26 @@ exports.verifyOtp = async (req, res, next) => {
         user.isEmailVerified = true;
         user.emailOtp = undefined;
         user.emailOtpExpires = undefined;
+
+        // Gamification: Daily Login Bonus
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (!user.lastLoginDate || user.lastLoginDate < today) {
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (user.lastLoginDate && user.lastLoginDate >= yesterday && user.lastLoginDate < today) {
+                user.dailyLoginStreak += 1;
+            } else {
+                user.dailyLoginStreak = 1;
+            }
+
+            const bonus = Math.min(50, user.dailyLoginStreak * 5);
+            user.novaedgeCredits += (10 + bonus);
+            user.lastLoginDate = new Date();
+        }
+
         await user.save();
 
         const token = generateToken(user);
@@ -332,24 +352,28 @@ exports.login = async (req, res, next) => {
             });
         }
 
-        // Check if email is verified
-        if (!user.isEmailVerified) {
+        // Check if email is verified or 2FA is enabled
+        if (!user.isEmailVerified || user.twoFactorAuthEnabled) {
             const otp = generateOtp();
             user.emailOtp = otp;
             user.emailOtpExpires = Date.now() + 10 * 60 * 1000;
             await user.save();
 
+            const subject = user.twoFactorAuthEnabled ? 'Two-Factor Authentication OTP - NovaEdge Digital Labs' : 'Verify Your Email OTP - NovaEdge Digital Labs';
+            const title = user.twoFactorAuthEnabled ? 'Two-Factor Authentication' : 'Verify Your Email Address';
+            const messageText = user.twoFactorAuthEnabled ? 'Please enter the following 6-digit OTP code to complete your login:' : 'Please verify your email address to log in. Here is your 6-digit OTP code:';
+
             try {
                 await sendEmail({
                     email: user.email,
-                    subject: 'Verify Your Email OTP - NovaEdge Digital Labs',
-                    message: `Your Email Verification OTP is: ${otp}`,
+                    subject: subject,
+                    message: `Your OTP is: ${otp}`,
                     html: `
                         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; background-color: #06000F; color: #ffffff; border-radius: 16px; border: 1px solid rgba(145, 39, 255, 0.3);">
                             <h2 style="color: #c042ff; text-align: center;">NovaEdge Digital Labs</h2>
-                            <h3 style="text-align: center;">Verify Your Email Address</h3>
+                            <h3 style="text-align: center;">${title}</h3>
                             <p style="color: #94A3B8;">Hello ${user.name},</p>
-                            <p style="color: #94A3B8;">Please verify your email address to log in. Here is your 6-digit OTP code:</p>
+                            <p style="color: #94A3B8;">${messageText}</p>
                             <div style="padding: 16px; background: linear-gradient(135deg, #9127FF, #C042FF); color: #ffffff; font-size: 28px; font-weight: bold; letter-spacing: 8px; text-align: center; border-radius: 12px; margin: 24px 0;">
                                 ${otp}
                             </div>
@@ -365,7 +389,9 @@ exports.login = async (req, res, next) => {
                 success: false,
                 requiresOtp: true,
                 email: user.email,
-                message: 'Your email address is not verified yet. A 6-digit OTP code has been sent to your email.'
+                message: user.twoFactorAuthEnabled 
+                    ? 'Two-Factor Authentication is enabled. A 6-digit OTP code has been sent to your email.'
+                    : 'Your email address is not verified yet. A 6-digit OTP code has been sent to your email.'
             });
         }
 
@@ -609,6 +635,129 @@ exports.resetPassword = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: 'Password reset successful. You can now login with your new password.'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Update user profile (Name & Avatar Image)
+ * @route   PUT /api/auth/profile
+ * @access  Private
+ */
+exports.updateProfile = async (req, res, next) => {
+    try {
+        const { name, avatar, personas, bio, skills, hourlyRate, portfolioUrl } = req.body;
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        if (name && name.trim()) {
+            user.name = name.trim();
+        }
+
+        if (avatar !== undefined) {
+            user.avatar = avatar;
+        }
+
+        if (bio !== undefined) {
+            user.bio = bio;
+        }
+
+        if (Array.isArray(skills)) {
+            user.skills = skills.map(s => String(s).trim()).filter(Boolean);
+        }
+
+        if (hourlyRate !== undefined) {
+            user.hourlyRate = Number(hourlyRate) || 0;
+        }
+
+        if (portfolioUrl !== undefined) {
+            user.portfolioUrl = String(portfolioUrl).trim();
+        }
+
+        // Personas drive UI routing only. Whitelist explicitly so a client can't
+        // slip an arbitrary value (or 'admin') into the array.
+        if (Array.isArray(personas)) {
+            const allowed = ['client', 'freelancer', 'student', 'jobseeker', 'employer'];
+            user.personas = [...new Set(personas.filter((p) => allowed.includes(p)))];
+        }
+
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Profile updated successfully',
+            user: user.toPublicJSON()
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Toggle Two-Factor Authentication
+ * @route   POST /api/auth/toggle-2fa
+ * @access  Private
+ */
+exports.toggle2FA = async (req, res, next) => {
+    try {
+        const { enable } = req.body;
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        user.twoFactorAuthEnabled = Boolean(enable);
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Two-Factor Authentication ${user.twoFactorAuthEnabled ? 'enabled' : 'disabled'} successfully.`,
+            twoFactorAuthEnabled: user.twoFactorAuthEnabled
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Update Notification Preferences
+ * @route   PUT /api/auth/notifications
+ * @access  Private
+ */
+exports.updateNotificationPrefs = async (req, res, next) => {
+    try {
+        const { preferences } = req.body;
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        user.notificationPreferences = {
+            ...user.notificationPreferences.toObject(),
+            ...preferences
+        };
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Notification preferences updated successfully',
+            notificationPreferences: user.notificationPreferences
         });
     } catch (error) {
         next(error);

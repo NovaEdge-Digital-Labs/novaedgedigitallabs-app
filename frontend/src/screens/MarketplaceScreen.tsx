@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList, ActivityIndicator, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
@@ -16,11 +16,32 @@ const MarketplaceScreen = ({ navigation }: any) => {
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Debounce timer ref — cleared on every keystroke, only fires after 400ms idle
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Abort in-flight requests when a new search starts
+    const abortRef = useRef<AbortController | null>(null);
+
     useEffect(() => {
+        // Tab change: fetch immediately
         fetchData();
-    }, [activeTab, searchQuery]);
+    }, [activeTab]);
+
+    useEffect(() => {
+        // Search: debounce 400ms
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            fetchData();
+        }, 400);
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        };
+    }, [searchQuery]);
 
     const fetchData = async () => {
+        // Abort previous in-flight request
+        if (abortRef.current) abortRef.current.abort();
+        abortRef.current = new AbortController();
+
         setLoading(true);
         try {
             if (activeTab === 'gigs') {
@@ -30,7 +51,9 @@ const MarketplaceScreen = ({ navigation }: any) => {
                 const response = await marketplaceApi.getProjects({ search: searchQuery });
                 setData(response.data || []);
             }
-        } catch (error) {
+        } catch (error: any) {
+            // Don't clear data on abort (user is still typing)
+            if (error?.name === 'AbortError' || error?.code === 'ERR_CANCELED') return;
             console.error('Fetch error:', error);
             setData([]);
         } finally {
@@ -106,8 +129,10 @@ const MarketplaceScreen = ({ navigation }: any) => {
                     <View style={styles.cardFooter}>
                         <Text style={styles.price}>From {formatCurrency(item.price)}</Text>
                         <View style={styles.ratingContainer}>
-                            <Ionicons name="star" size={14} color="#FFD700" />
-                            <Text style={styles.ratingText}>4.8 (24)</Text>
+                            <Ionicons name="time-outline" size={14} color={COLORS.textMuted} />
+                            <Text style={styles.ratingText}>
+                                {item.deliveryDays} day{item.deliveryDays === 1 ? '' : 's'} delivery
+                            </Text>
                         </View>
                     </View>
                 </View>

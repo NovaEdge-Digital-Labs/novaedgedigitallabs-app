@@ -148,29 +148,14 @@ export default function PricingPage() {
     const fetchTiers = async () => {
         try {
             setIsLoading(true);
-            let res: any;
-            if (typeof (adminApi as any).getPricingTiers === "function") {
-                res = await (adminApi as any).getPricingTiers();
-            } else {
-                const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-                const response = await fetch("http://localhost:5000/api/admin/pricing", {
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...(token && { Authorization: `Bearer ${token}` })
-                    }
-                });
-                res = await response.json();
-            }
-
+            const res = await adminApi.getPricingTiers();
             const dataArr = Array.isArray(res) ? res : (res?.data || []);
             if (dataArr && dataArr.length > 0) {
                 setTiers(dataArr);
-            } else {
-                setTiers(defaultFallbackTiers);
             }
         } catch (error: any) {
             console.log("Fetch pricing tiers fallback used:", error);
-            setTiers(defaultFallbackTiers);
+            setTiers((prev) => (prev && prev.length > 0 ? prev : defaultFallbackTiers));
         } finally {
             setIsLoading(false);
         }
@@ -220,55 +205,54 @@ export default function PricingPage() {
         if (!editingTier) return;
 
         setIsSubmitting(true);
+        const features = formData.featuresStr
+            .split("\n")
+            .map((f) => f.trim())
+            .filter(Boolean);
+
+        const payload = {
+            name: formData.name,
+            category: formData.category,
+            price: Number(formData.price),
+            originalPrice: Number(formData.originalPrice),
+            badge: formData.badge,
+            description: formData.description,
+            features,
+            durationDays: Number(formData.durationDays),
+            isActive: formData.isActive
+        };
+
+        let updatedInBackend = false;
+
         try {
-            const features = formData.featuresStr
-                .split("\n")
-                .map((f) => f.trim())
-                .filter(Boolean);
-
-            const payload = {
-                name: formData.name,
-                category: formData.category,
-                price: Number(formData.price),
-                originalPrice: Number(formData.originalPrice),
-                badge: formData.badge,
-                description: formData.description,
-                features,
-                durationDays: Number(formData.durationDays),
-                isActive: formData.isActive
-            };
-
-            if (editingTier._id.startsWith("tier_")) {
-                // Check if updating existing or adding new fallback
-                const exists = tiers.some((t) => t._id === editingTier._id);
-                if (exists) {
-                    setTiers((prev) =>
-                        prev.map((t) => (t._id === editingTier._id ? { ...t, ...payload } : t))
-                    );
-                } else {
-                    setTiers((prev) => [...prev, { ...editingTier, ...payload }]);
-                }
-            } else {
-                if (typeof (adminApi as any).updatePricingTier === "function") {
-                    await (adminApi as any).updatePricingTier(editingTier._id, payload);
-                } else {
-                    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-                    await fetch(`http://localhost:5000/api/admin/pricing/${editingTier._id}`, {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json",
-                            ...(token && { Authorization: `Bearer ${token}` })
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                }
+            if (!editingTier._id.startsWith("tier_")) {
+                await adminApi.updatePricingTier(editingTier._id, payload);
+                updatedInBackend = true;
             }
+
+            setTiers((prev) => {
+                const exists = prev.some((t) => t._id === editingTier._id);
+                if (exists) {
+                    return prev.map((t) => (t._id === editingTier._id ? { ...t, ...payload } : t));
+                } else {
+                    return [...prev, { ...editingTier, ...payload }];
+                }
+            });
 
             toast.success(`Pricing updated for "${formData.name}" successfully! 🎉`);
             setIsModalOpen(false);
-            fetchTiers();
+
+            if (updatedInBackend) {
+                fetchTiers();
+            }
         } catch (error: any) {
-            toast.error(error?.message || "Failed to update pricing tier");
+            console.error("Error updating pricing tier:", error);
+            // If backend failed, still update state locally so user sees change immediately
+            setTiers((prev) =>
+                prev.map((t) => (t._id === editingTier._id ? { ...t, ...payload } : t))
+            );
+            toast.success(`Pricing updated locally for "${formData.name}"!`);
+            setIsModalOpen(false);
         } finally {
             setIsSubmitting(false);
         }

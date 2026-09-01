@@ -41,7 +41,7 @@ exports.createOrder = async (req, res) => {
             status: 'pending'
         });
 
-        res.status(200).json({ success: true, data: order });
+        res.status(200).json({ success: true, data: order, keyId: process.env.RAZORPAY_KEY_ID });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

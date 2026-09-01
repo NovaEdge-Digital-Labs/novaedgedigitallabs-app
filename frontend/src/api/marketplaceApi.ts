@@ -6,6 +6,10 @@ export const marketplaceApi = {
         const response = await axiosInstance.get('/marketplace/gigs', { params });
         return response.data;
     },
+    getGigById: async (id: string) => {
+        const response = await axiosInstance.get(`/marketplace/gigs/${id}`);
+        return response.data;
+    },
     createGig: async (gigData: any) => {
         const response = await axiosInstance.post('/marketplace/gigs', gigData);
         return response.data;
@@ -55,6 +59,11 @@ export const marketplaceApi = {
     },
     hireFreelancer: async (proposalId: string) => {
         const response = await axiosInstance.post('/marketplace/hire', { proposalId });
+        return response.data;
+    },
+    // Direct fixed-price gig purchase — funds go into escrow, same as hiring on a project.
+    orderGig: async (gigId: string) => {
+        const response = await axiosInstance.post(`/marketplace/gigs/${gigId}/order`);
         return response.data;
     },
     verifyEscrow: async (paymentData: any) => {
