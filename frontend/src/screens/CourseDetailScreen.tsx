@@ -8,16 +8,14 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Alert,
-    Dimensions,
-    Platform
+    Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../constants/colors';
+import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../constants/theme';
 import courseApi, { Course, Lecture } from '../api/courseApi';
 import { formatCurrency, getImageUrl } from '../utils/helpers';
-import { shareContent } from '../utils/shareHelper';
 import PrimaryButton from '../components/PrimaryButton';
 import RazorpayCheckout from 'react-native-razorpay';
 import { useAuthStore } from '../store/authStore';
@@ -66,23 +64,18 @@ const CourseDetailScreen = () => {
         try {
             const response = await courseApi.enrollInCourse(courseId);
             if (response.success) {
-                if (response.isFree) {
-                    Alert.alert('Enrolled! 🎉', 'You have successfully enrolled in this free course!');
-                    fetchCourseDetails();
-                    return;
-                }
-
                 const order = response.data;
+                const keyId = response.keyId;
 
-                if (!order?.id || !response.keyId) {
-                    throw new Error('Could not start checkout. Please try again.');
+                if (!order?.id || !keyId) {
+                    throw new Error('Could not start payment. Please try again shortly.');
                 }
 
                 const options = {
                     description: course?.title || 'Course Enrollment',
                     image: 'https://novaedgedigitallabs.tech/logo.png',
-                    currency: order.currency || 'INR',
-                    key: response.keyId,
+                    currency: 'INR',
+                    key: keyId,
                     amount: order.amount,
                     name: 'NovaEdge Digital Labs',
                     order_id: order.id,
@@ -112,14 +105,7 @@ const CourseDetailScreen = () => {
             }
         } catch (error: any) {
             console.error('Enrollment error:', error);
-            if (error.response?.status === 401) {
-                Alert.alert('Session Expired', 'Your session has expired. Please log in again to enroll.', [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Login', onPress: () => navigation.navigate('Profile') }
-                ]);
-            } else {
-                Alert.alert('Error', error.response?.data?.message || 'Failed to enroll');
-            }
+            Alert.alert('Error', error.response?.data?.message || 'Failed to enroll');
         } finally {
             setEnrolling(false);
         }
@@ -156,17 +142,6 @@ const CourseDetailScreen = () => {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 <View style={styles.videoContainer}>
                     <Image source={{ uri: course.thumbnail }} style={styles.heroImage} />
-                    <View style={styles.headerOverlay}>
-                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerCircleBtn}>
-                            <Ionicons name="arrow-back" size={22} color={COLORS.white} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => shareContent({ title: course.title, description: course.description, category: course.category || 'Academy Course', type: 'Course' })}
-                            style={styles.headerCircleBtn}
-                        >
-                            <Ionicons name="share-social-outline" size={22} color={COLORS.white} />
-                        </TouchableOpacity>
-                    </View>
                     <TouchableOpacity 
                         style={styles.playPreviewBtn}
                         onPress={() => {
@@ -192,17 +167,9 @@ const CourseDetailScreen = () => {
                     <Text style={styles.title}>{course.title}</Text>
 
                     <View style={styles.metaRow}>
-                        {course.enrolledCount > 0 && (
-                            <View style={styles.metaItem}>
-                                <Ionicons name="people-outline" size={16} color={COLORS.textMuted} />
-                                <Text style={styles.metaText}>
-                                    {course.enrolledCount} enrolled
-                                </Text>
-                            </View>
-                        )}
                         <View style={styles.metaItem}>
-                            <Ionicons name="play-circle-outline" size={16} color={COLORS.textMuted} />
-                            <Text style={styles.metaText}>{course.lectures.length} lectures</Text>
+                            <Ionicons name="star" size={16} color="#FFD700" />
+                            <Text style={styles.metaText}>{course.rating} (1.2k reviews)</Text>
                         </View>
                         <View style={styles.metaItem}>
                             <Ionicons name="time-outline" size={16} color={COLORS.textMuted} />
@@ -294,28 +261,9 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     videoContainer: {
-        width: width,
-        height: 250,
+        width: '100%',
+        height: 220,
         backgroundColor: '#000',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
-    },
-    headerOverlay: {
-        position: 'absolute',
-        top: Platform.OS === 'ios' ? 44 : 20,
-        left: 16,
-        right: 16,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        zIndex: 10,
-    },
-    headerCircleBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
         alignItems: 'center',
     },

@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
 import {
     View,
-    Text,
     StyleSheet,
-    TextInput,
-    TouchableOpacity,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    ActivityIndicator,
+    Pressable,
     Alert,
-    Linking
+    Linking,
 } from 'react-native';
-import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { COLORS, SPACING, RADIUS, withAlpha } from '../constants/colors';
 import { useAuthStore } from '../store/authStore';
 import ThemeWrapper from '../components/ThemeWrapper';
-import PrimaryButton from '../components/PrimaryButton';
+import { Text, Button, Input } from '../components/ui';
 import { CONFIG } from '../constants/config';
+
+type Errors = Partial<Record<'name' | 'email' | 'password' | 'confirmPassword', string>>;
 
 const RegisterScreen = () => {
     const navigation = useNavigation<any>();
@@ -30,23 +29,26 @@ const RegisterScreen = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [referralCode, setReferralCode] = useState('');
     const [loading, setLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
+    const [errors, setErrors] = useState<Errors>({});
+
+    const clear = (key: keyof Errors) => setErrors((e) => (e[key] ? { ...e, [key]: undefined } : e));
+
+    /** Inline, per-field errors replace the previous one-Alert-at-a-time flow. */
+    const validate = () => {
+        const next: Errors = {};
+        if (!name.trim()) next.name = 'Name is required';
+        if (!email.trim()) next.email = 'Email is required';
+        else if (!/^\S+@\S+\.\S+$/.test(email.trim())) next.email = 'Enter a valid email address';
+        if (!password) next.password = 'Password is required';
+        else if (password.length < 6) next.password = 'Use at least 6 characters';
+        if (!confirmPassword) next.confirmPassword = 'Confirm your password';
+        else if (password !== confirmPassword) next.confirmPassword = 'Passwords do not match';
+        setErrors(next);
+        return Object.keys(next).length === 0;
+    };
 
     const handleRegister = async () => {
-        if (!name || !email || !password || !confirmPassword) {
-            Alert.alert('Error', 'Please fill in all fields');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
-            return;
-        }
-
-        if (password.length < 6) {
-            Alert.alert('Error', 'Password must be at least 6 characters long');
-            return;
-        }
+        if (!validate()) return;
 
         setLoading(true);
         try {
@@ -62,127 +64,121 @@ const RegisterScreen = () => {
         }
     };
 
-
-
     return (
         <ThemeWrapper>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.flex}
             >
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                >
+                    <Pressable style={styles.backButton} onPress={() => navigation.goBack()} hitSlop={10}>
+                        <Ionicons name="chevron-back" size={20} color={COLORS.text} />
+                    </Pressable>
+
                     <View style={styles.header}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} activeOpacity={0.7}>
-                            <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-                        </TouchableOpacity>
-                        <View style={styles.logoWrapper}>
-                            <Text style={[styles.logoText, COLORS.getGlow(COLORS.primary, 15, 0)]}>NovaEdge</Text>
-                            <Text style={styles.brandSubtitle}>Digital Labs</Text>
-                        </View>
-                        <Text style={styles.title}>Create Account</Text>
-                        <Text style={styles.subtitle}>Join NovaEdge and start building today.</Text>
+                        <Text variant="eyebrow" tone="accent" style={styles.eyebrow}>
+                            NovaEdge Digital Labs
+                        </Text>
+                        <Text variant="display">Create account</Text>
+                        <Text variant="bodyLarge" tone="muted" style={styles.subtitle}>
+                            Join the studio and start building today.
+                        </Text>
                     </View>
 
                     <View style={styles.form}>
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="person-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Full Name"
-                                placeholderTextColor={COLORS.textMuted}
-                                value={name}
-                                onChangeText={setName}
-                                autoCapitalize="words"
-                            />
-                        </View>
+                        <Input
+                            label="Full name"
+                            icon="person-outline"
+                            placeholder="Ada Lovelace"
+                            value={name}
+                            onChangeText={(t) => { setName(t); clear('name'); }}
+                            error={errors.name}
+                            autoCapitalize="words"
+                            autoComplete="name"
+                        />
 
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="mail-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Email Address"
-                                placeholderTextColor={COLORS.textMuted}
-                                value={email}
-                                onChangeText={setEmail}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                            />
-                        </View>
+                        <Input
+                            label="Email"
+                            icon="mail-outline"
+                            placeholder="you@example.com"
+                            value={email}
+                            onChangeText={(t) => { setEmail(t); clear('email'); }}
+                            error={errors.email}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoComplete="email"
+                        />
 
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="lock-closed-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Password"
-                                placeholderTextColor={COLORS.textMuted}
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry={!showPassword}
-                            />
-                        </View>
+                        <Input
+                            label="Password"
+                            icon="lock-closed-outline"
+                            placeholder="At least 6 characters"
+                            value={password}
+                            onChangeText={(t) => { setPassword(t); clear('password'); }}
+                            error={errors.password}
+                            hint={!errors.password ? 'Minimum 6 characters' : undefined}
+                            password
+                            autoComplete="new-password"
+                        />
 
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Confirm Password"
-                                placeholderTextColor={COLORS.textMuted}
-                                value={confirmPassword}
-                                onChangeText={setConfirmPassword}
-                                secureTextEntry={!showPassword}
-                            />
-                            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} activeOpacity={0.7}>
-                                <Ionicons
-                                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                                    size={20}
-                                    color={COLORS.textMuted}
-                                />
-                            </TouchableOpacity>
-                        </View>
+                        <Input
+                            label="Confirm password"
+                            icon="shield-checkmark-outline"
+                            placeholder="Repeat your password"
+                            value={confirmPassword}
+                            onChangeText={(t) => { setConfirmPassword(t); clear('confirmPassword'); }}
+                            error={errors.confirmPassword}
+                            password
+                            autoComplete="new-password"
+                        />
 
-                        <View style={styles.inputContainer}>
-                            <Ionicons name="gift-outline" size={20} color={COLORS.textMuted} style={styles.inputIcon} />
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Referral Code (Optional)"
-                                placeholderTextColor={COLORS.textMuted}
-                                value={referralCode}
-                                onChangeText={setReferralCode}
-                                autoCapitalize="characters"
-                            />
-                        </View>
+                        <Input
+                            label="Referral code"
+                            icon="gift-outline"
+                            placeholder="Optional"
+                            value={referralCode}
+                            onChangeText={setReferralCode}
+                            autoCapitalize="characters"
+                        />
 
-                        <PrimaryButton
-                            title="Create Account"
+                        <Button
+                            title="Create account"
                             onPress={handleRegister}
                             loading={loading}
-                            style={styles.registerButton}
+                            size="lg"
+                            style={styles.submit}
                         />
 
                         <View style={styles.loginContainer}>
-                            <Text style={styles.loginText}>Already have an account? </Text>
-                            <TouchableOpacity onPress={() => navigation.navigate('Login')} activeOpacity={0.7}>
-                                <Text style={styles.loginLink}>Sign In</Text>
-                            </TouchableOpacity>
+                            <Text variant="body" tone="muted">Already have an account? </Text>
+                            <Pressable onPress={() => navigation.navigate('Login')} hitSlop={8}>
+                                <Text variant="bodyStrong" tone="accent">Sign in</Text>
+                            </Pressable>
                         </View>
                     </View>
 
                     <View style={styles.footer}>
-                        <Text style={styles.footerText}>By creating an account, you agree to our</Text>
+                        <Text variant="caption" tone="faint" center>
+                            By creating an account, you agree to our
+                        </Text>
                         <View style={styles.footerLinks}>
-                            <TouchableOpacity
-                                activeOpacity={0.7}
+                            <Pressable
+                                hitSlop={8}
                                 onPress={() => Linking.openURL(`${CONFIG.BASE_URL}/terms-and-conditions.html`)}
                             >
-                                <Text style={styles.footerLink}>Terms of Service</Text>
-                            </TouchableOpacity>
-                            <Text style={styles.footerText}> & </Text>
-                            <TouchableOpacity
-                                activeOpacity={0.7}
+                                <Text variant="caption" tone="accent">Terms of Service</Text>
+                            </Pressable>
+                            <Text variant="caption" tone="faint"> & </Text>
+                            <Pressable
+                                hitSlop={8}
                                 onPress={() => Linking.openURL(`${CONFIG.BASE_URL}/privacy-policy.html`)}
                             >
-                                <Text style={styles.footerLink}>Privacy Policy</Text>
-                            </TouchableOpacity>
+                                <Text variant="caption" tone="accent">Privacy Policy</Text>
+                            </Pressable>
                         </View>
                     </View>
                 </ScrollView>
@@ -197,116 +193,50 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        padding: 30,
-        justifyContent: 'center',
-    },
-    header: {
-        marginBottom: 35,
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.lg,
     },
     backButton: {
-        marginBottom: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 36,
+        height: 36,
+        borderRadius: RADIUS.pill,
+        alignItems: 'center',
         justifyContent: 'center',
-        alignItems: 'center',
+        backgroundColor: withAlpha(COLORS.white, 0.06),
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: COLORS.borderSubtle,
     },
-    logoWrapper: {
-        alignItems: 'center',
-        marginBottom: 20,
+    header: {
+        marginTop: SPACING.lg,
+        marginBottom: SPACING.xl,
     },
-    logoText: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: COLORS.white,
-        letterSpacing: -0.5,
-    },
-    brandSubtitle: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-        fontWeight: '600',
-        marginTop: -4,
-        letterSpacing: 1.5,
-        textTransform: 'uppercase',
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: COLORS.white,
-        marginBottom: 8,
+    eyebrow: {
+        marginBottom: SPACING.sm,
     },
     subtitle: {
-        fontSize: 16,
-        color: COLORS.textMuted,
+        marginTop: SPACING.sm,
+        maxWidth: 320,
     },
     form: {
         width: '100%',
     },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderWidth: 1,
-        borderColor: COLORS.border,
-        borderRadius: 12,
-        paddingHorizontal: 15,
-        marginBottom: 15,
-        height: 55,
-    },
-    inputIcon: {
-        marginRight: 10,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        color: COLORS.text,
-    },
-    registerButton: {
-        height: 55,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 10,
-        overflow: 'hidden',
-    },
-    registerButtonText: {
-        color: COLORS.white,
-        fontSize: 18,
-        fontWeight: 'bold',
+    submit: {
+        marginTop: SPACING.sm,
     },
     loginContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        marginTop: 25,
-    },
-    loginText: {
-        color: COLORS.textLight,
-        fontSize: 14,
-    },
-    loginLink: {
-        color: COLORS.accent,
-        fontSize: 14,
-        fontWeight: 'bold',
+        alignItems: 'center',
+        marginTop: SPACING.lg,
     },
     footer: {
-        marginTop: 40,
         alignItems: 'center',
-    },
-    footerText: {
-        fontSize: 12,
-        color: COLORS.textMuted,
+        marginTop: SPACING.xl,
     },
     footerLinks: {
         flexDirection: 'row',
-        marginTop: 5,
-    },
-    footerLink: {
-        fontSize: 12,
-        color: COLORS.accent,
-        textDecorationLine: 'underline',
+        alignItems: 'center',
+        marginTop: 4,
     },
 });
 

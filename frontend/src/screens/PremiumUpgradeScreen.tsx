@@ -51,21 +51,15 @@ const PremiumUpgradeScreen = ({ navigation }: any) => {
             const order = await marketplaceApi.createPremiumSeekerOrder();
 
             if (!order?.orderId || !order?.keyId) {
-                throw new Error('Could not start checkout. Please try again.');
-            }
-
-            // The server prices the pass from the same PricingTier the screen displays,
-            // and Razorpay charges the order amount — so the two can never diverge.
-            if (typeof order.price === 'number' && order.price !== passPrice) {
-                setPassPrice(order.price);
+                throw new Error('Could not start payment. Please try again shortly.');
             }
 
             const options = {
-                description: `${order.name || passTitle} Upgrade`,
+                description: `${passTitle} Upgrade`,
                 image: 'https://novaedgedigitallabs.tech/logo.png',
-                currency: order.currency || 'INR',
+                currency: 'INR',
                 key: order.keyId,
-                amount: order.amount,
+                amount: passPrice * 100,
                 name: 'NovaEdge Digital Labs',
                 order_id: order.orderId,
                 prefill: {
@@ -93,14 +87,7 @@ const PremiumUpgradeScreen = ({ navigation }: any) => {
             });
         } catch (error: any) {
             console.error('Upgrade error:', error);
-            if (error.response?.status === 401) {
-                Alert.alert('Session Expired', 'Your session has expired. Please log in again to upgrade.', [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Login', onPress: () => navigation.navigate('Profile') }
-                ]);
-            } else {
-                Alert.alert('Payment Error', error.response?.data?.message || error.message || 'Failed to initiate upgrade');
-            }
+            Alert.alert('Payment Error', error.message || 'Failed to initiate upgrade');
         } finally {
             setLoading(false);
         }
@@ -108,7 +95,7 @@ const PremiumUpgradeScreen = ({ navigation }: any) => {
 
     const benefits = [
         { icon: 'trending-up', title: 'Priority Rank Placement', desc: 'Your applications appear at the very top of recruiters candidate feeds.' },
-        { icon: 'flash-outline', title: 'Priority Candidate Boost', desc: 'Get a featured priority badge and top placement in candidate searches.' },
+        { icon: 'ribbon-outline', title: 'Verified Candidate Badge', desc: 'Get an exclusive glowing verified checkmark on your profile.' },
         { icon: 'notifications-outline', title: 'Early Access Alerts', desc: 'Get notified about high-paying job openings before non-pass users.' },
         { icon: 'eye-outline', title: 'Direct Employer Contact', desc: 'Allow recruiters to view your full profile and contact you directly.' }
     ];

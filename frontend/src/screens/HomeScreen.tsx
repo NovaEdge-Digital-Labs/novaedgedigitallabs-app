@@ -10,6 +10,7 @@ import {
     ActivityIndicator, 
     Linking, 
     Alert,
+    Pressable,
     RefreshControl,
     Share
 } from 'react-native';
@@ -17,10 +18,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { useAuthStore } from '../store/authStore';
-import { useAppConfigStore } from '../store/appConfigStore';
 import postApi, { Post } from '../api/postApi';
-import { getOrderedPersonas } from '../constants/personas';
-import HowEscrowWorksModal from '../components/HowEscrowWorksModal';
+import { Text as UIText, Card, Button, EmptyState, SkeletonCard } from '../components/ui';
+import { SPACING, RADIUS, withAlpha } from '../constants/colors';
 
 interface PostCardProps {
     item: Post;
@@ -293,15 +293,18 @@ const PostCard: React.FC<PostCardProps> = ({
 
 const HomeScreen: React.FC<any> = ({ navigation }) => {
     const { user } = useAuthStore();
-    const { config, stats, fetchStats } = useAppConfigStore();
     const [posts, setPosts] = useState<Post[]>([]);
     const [newPostText, setNewPostText] = useState('');
     const [newPostLink, setNewPostLink] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isPosting, setIsPosting] = useState(false);
-    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [composerFocus, setComposerFocus] = useState<'text' | 'link' | null>(null);
 
-    const [showEscrowModal, setShowEscrowModal] = useState(false);
+    const firstName = (user?.name || '').trim().split(' ')[0] || 'there';
+    const hour = new Date().getHours();
+    const greeting =
+        hour < 12 ? `Morning, ${firstName}` : hour < 18 ? `Afternoon, ${firstName}` : `Evening, ${firstName}`;
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const currentUserId = user?.id || (user as any)?._id || '';
 
@@ -317,8 +320,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
 
     useEffect(() => {
         fetchFeed(true);
-        fetchStats();
-    }, [fetchFeed, fetchStats]);
+    }, [fetchFeed]);
 
     const handleCreatePost = async () => {
         if (!newPostText.trim()) {
@@ -392,7 +394,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
             await postApi.sharePost(postId);
 
             // Native Share Sheet
-            const shareMessage = link ? `${content}\n\nLink: ${link}\n\nDownload the App: ${config?.appDownloadLink || 'https://play.google.com/store/apps/details?id=in.novaedgedigitallabs.tech'}` : `${content}\n\nDownload the App: ${config?.appDownloadLink || 'https://play.google.com/store/apps/details?id=in.novaedgedigitallabs.tech'}`;
+            const shareMessage = link ? `${content}\n\nLink: ${link}` : content;
             await Share.share({
                 message: shareMessage,
             });
@@ -484,17 +486,34 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.logoRow}>
-                    <Image source={require('../../assets/icon.png')} style={styles.headerIcon} />
-                    <View>
-                        <View style={styles.logoContainer}>
-                            <Text style={[styles.logoNova, COLORS.getGlow(COLORS.primary, 15, 0)]}>NovaEdge</Text>
-                        </View>
-                        <Text style={styles.subtitle}>Digital Labs</Text>
+                    <View style={styles.brandMark}>
+                        <Image source={require('../../assets/icon.png')} style={styles.headerIcon} />
+                    </View>
+                    <View style={styles.brandText}>
+                        <UIText variant="wordmark" style={styles.logoNova}>NovaEdge</UIText>
+                        <UIText variant="eyebrow" tone="accent">Digital Labs</UIText>
                     </View>
                 </View>
-                <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
-                    <Ionicons name="person-circle-outline" size={32} color={COLORS.text} />
-                </TouchableOpacity>
+
+                <Pressable
+                    onPress={() => navigation.navigate('Profile')}
+                    hitSlop={8}
+                    style={({ pressed }) => [styles.avatarButton, pressed && styles.avatarButtonPressed]}
+                    accessibilityLabel="Open profile"
+                >
+                    <UIText variant="bodyStrong" color={COLORS.white}>
+                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </UIText>
+                </Pressable>
+            </View>
+
+            <View style={styles.greeting}>
+                <UIText variant="display" numberOfLines={1}>
+                    {greeting}
+                </UIText>
+                <UIText variant="bodyLarge" tone="muted">
+                    Here's what the network is building.
+                </UIText>
             </View>
 
             {/* Main Content */}
@@ -527,141 +546,86 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
                     />
                 }
                 ListHeaderComponent={
-                    <>
-                        {/* Trust Signals Strip (Section 1 Issue 3) */}
-                        <TouchableOpacity
-                            style={styles.trustStrip}
-                            onPress={() => setShowEscrowModal(true)}
-                            activeOpacity={0.8}
-                        >
-                            <View style={styles.trustItem}>
-                                <Ionicons name="shield-checkmark" size={16} color={COLORS.success || '#00FF9D'} />
-                                <Text style={styles.trustText}>
-                                    ₹{((stats?.escrowSecuredAmount || 250000) / 1000).toFixed(0)}k Escrow Safe
-                                </Text>
+                    <Card style={styles.createPostCard}>
+                        <View style={styles.composerHeader}>
+                            <View style={styles.composerAvatar}>
+                                <UIText variant="bodyStrong" color={COLORS.white}>
+                                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                </UIText>
                             </View>
-                            <View style={styles.trustDivider} />
-                            <View style={styles.trustItem}>
-                                <Ionicons name="people-outline" size={16} color={COLORS.primary} />
-                                <Text style={styles.trustText}>
-                                    {stats?.verifiedFreelancers || 120}+ Freelancers
-                                </Text>
-                            </View>
-                            <View style={styles.trustDivider} />
-                            <View style={styles.trustItem}>
-                                <Ionicons name="checkmark-done-circle-outline" size={16} color={COLORS.info || '#00E0FF'} />
-                                <Text style={styles.trustText}>
-                                    {stats?.projectsDelivered || 48}+ Projects
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        {/* Persona-driven action cards — role-router for Home (P1 #10) */}
-                        <View style={styles.actionCardsContainer}>
-                            {getOrderedPersonas(user?.personas).slice(0, user?.personas?.length ? user.personas.length : 4).map((persona) => (
-                                <TouchableOpacity
-                                    key={persona.key}
-                                    style={[styles.actionCard, COLORS.glass]}
-                                    activeOpacity={0.8}
-                                    onPress={() => {
-                                        if (persona.primaryAction.screen) {
-                                            navigation.navigate(persona.primaryAction.tab, {
-                                                screen: persona.primaryAction.screen
-                                            });
-                                        } else {
-                                            navigation.navigate(persona.primaryAction.tab);
-                                        }
-                                    }}
-                                >
-                                    <View style={styles.actionCardIcon}>
-                                        <Ionicons
-                                            name={persona.primaryAction.icon as any}
-                                            size={22}
-                                            color={COLORS.primary}
-                                        />
-                                    </View>
-                                    <Text style={styles.actionCardTitle}>{persona.primaryAction.title}</Text>
-                                    <Text style={styles.actionCardSub} numberOfLines={1}>{persona.primaryAction.subtitle}</Text>
-                                </TouchableOpacity>
-                            ))}
+                            <UIText variant="h3">Share an update</UIText>
                         </View>
 
-                        <TouchableOpacity
-                            style={[styles.blogBannerCard, COLORS.glass]}
-                            onPress={() => navigation.navigate('BlogScreen')}
-                            activeOpacity={0.8}
-                        >
-                            <View style={styles.blogBannerLeft}>
-                                <View style={styles.blogIconBadge}>
-                                    <Ionicons name="newspaper" size={22} color={COLORS.primary} />
-                                </View>
-                                <View style={{ flex: 1, marginLeft: 12 }}>
-                                    <Text style={styles.blogBannerTitle}>Blogs & Tech Insights</Text>
-                                    <Text style={styles.blogBannerSub}>Read latest articles, tutorials & news</Text>
-                                </View>
-                            </View>
-                            <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
-                        </TouchableOpacity>
+                        <TextInput
+                            style={[styles.textInput, composerFocus === 'text' && styles.inputFocused]}
+                            placeholder="What are you working on?"
+                            placeholderTextColor={COLORS.textFaint}
+                            multiline
+                            maxLength={280}
+                            value={newPostText}
+                            onChangeText={setNewPostText}
+                            onFocus={() => setComposerFocus('text')}
+                            onBlur={() => setComposerFocus(null)}
+                        />
 
-                        <View style={[styles.createPostCard, COLORS.glass]}>
-                            <Text style={styles.cardHeading}>Share an Update</Text>
-                            <TextInput
-                                style={styles.textInput}
-                                placeholder="What's happening?"
-                                placeholderTextColor={COLORS.textMuted}
-                                multiline
-                                maxLength={280}
-                                value={newPostText}
-                                onChangeText={setNewPostText}
+                        <View style={[styles.linkInputRow, composerFocus === 'link' && styles.inputFocused]}>
+                            <Ionicons
+                                name="link"
+                                size={16}
+                                color={composerFocus === 'link' ? COLORS.accent : COLORS.textMuted}
                             />
-                            <View style={styles.linkInputRow}>
-                                <Ionicons name="link" size={18} color={COLORS.textMuted} style={{ marginRight: 8 }} />
-                                <TextInput
-                                    style={styles.linkInput}
-                                    placeholder="Add link (optional)"
-                                    placeholderTextColor={COLORS.textMuted}
-                                    value={newPostLink}
-                                    onChangeText={setNewPostLink}
-                                    autoCapitalize="none"
-                                    keyboardType="url"
-                                />
-                            </View>
-                            <View style={styles.cardFooter}>
-                                <Text style={[styles.charCount, newPostText.length >= 260 && { color: '#ef4444' }]}>
-                                    {280 - newPostText.length} characters left
-                                </Text>
-                                <TouchableOpacity 
-                                    style={[styles.postButton, (!newPostText.trim() || isPosting) && styles.postButtonDisabled, COLORS.getGlow(COLORS.primary, 8, 0.2)]}
-                                    onPress={handleCreatePost}
-                                    disabled={!newPostText.trim() || isPosting}
-                                    activeOpacity={0.8}
-                                >
-                                    {isPosting ? (
-                                        <ActivityIndicator size="small" color="#fff" />
-                                    ) : (
-                                        <Text style={styles.postButtonText}>Post</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
+                            <TextInput
+                                style={styles.linkInput}
+                                placeholder="Add a link (optional)"
+                                placeholderTextColor={COLORS.textFaint}
+                                value={newPostLink}
+                                onChangeText={setNewPostLink}
+                                onFocus={() => setComposerFocus('link')}
+                                onBlur={() => setComposerFocus(null)}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                keyboardType="url"
+                            />
+                            {newPostLink ? (
+                                <Pressable onPress={() => setNewPostLink('')} hitSlop={10}>
+                                    <Ionicons name="close-circle" size={16} color={COLORS.textMuted} />
+                                </Pressable>
+                            ) : null}
                         </View>
-                    </>
+
+                        <View style={styles.cardFooter}>
+                            <UIText
+                                variant="caption"
+                                tone={newPostText.length >= 260 ? 'error' : 'faint'}
+                            >
+                                {280 - newPostText.length} left
+                            </UIText>
+                            <Button
+                                title="Post"
+                                size="sm"
+                                fullWidth={false}
+                                loading={isPosting}
+                                disabled={!newPostText.trim()}
+                                onPress={handleCreatePost}
+                                icon={<Ionicons name="send" size={14} color={COLORS.white} />}
+                            />
+                        </View>
+                    </Card>
                 }
                 ListEmptyComponent={
                     isLoading ? (
-                        <View style={styles.loaderContainer}>
-                            <ActivityIndicator size="large" color={COLORS.primary} />
+                        <View>
+                            <SkeletonCard lines={3} />
+                            <SkeletonCard lines={2} />
                         </View>
                     ) : (
-                        <View style={styles.emptyContainer}>
-                            <Ionicons name="chatbubble-ellipses-outline" size={48} color={COLORS.textMuted} />
-                            <Text style={styles.emptyText}>No posts yet. Be the first to share an update!</Text>
-                        </View>
+                        <EmptyState
+                            icon="chatbubble-ellipses-outline"
+                            title="No updates yet"
+                            message="Be the first to share what you're building."
+                        />
                     )
                 }
-            />
-            <HowEscrowWorksModal
-                visible={showEscrowModal}
-                onClose={() => setShowEscrowModal(false)}
             />
         </ThemeWrapper>
     );
@@ -672,161 +636,66 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 20,
-        backgroundColor: 'transparent',
+        paddingHorizontal: SPACING.md,
+        paddingTop: SPACING.sm,
+        paddingBottom: SPACING.md,
     },
     logoRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     headerIcon: {
-        width: 38,
-        height: 38,
+        width: 26,
+        height: 26,
         resizeMode: 'contain',
-        marginRight: 10,
-    },
-    logoContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
     },
     logoNova: {
-        fontSize: 28,
-        fontWeight: '900',
-        color: COLORS.white,
-        letterSpacing: -0.5,
-    },
-    subtitle: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-        fontWeight: '600',
-        marginTop: -4,
-        letterSpacing: 1,
-        textTransform: 'uppercase',
+        marginBottom: 1,
     },
     scrollContent: {
         paddingHorizontal: 20,
         paddingBottom: 30,
     },
-    trustStrip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-around',
-        paddingVertical: 10,
-        paddingHorizontal: 12,
-        borderRadius: 14,
-        backgroundColor: COLORS.backgroundSoft,
-        borderWidth: 1,
-        borderColor: COLORS.border,
-        marginBottom: 14,
-    },
-    trustItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    trustText: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: COLORS.text,
-    },
-    trustDivider: {
-        width: 1,
-        height: 14,
-        backgroundColor: COLORS.border,
-    },
-    actionCardsContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-        marginBottom: 14,
-    },
-    actionCard: {
-        flex: 1,
-        minWidth: '45%',
-        padding: 14,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-    actionCardIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        backgroundColor: COLORS.primary + '20',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    actionCardTitle: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: COLORS.text,
-        marginBottom: 2,
-    },
-    actionCardSub: {
-        fontSize: 11,
-        color: COLORS.textMuted,
-    },
     createPostCard: {
-        padding: 16,
-        borderRadius: 20,
-        marginBottom: 20,
-    },
-    cardHeading: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: COLORS.white,
-        marginBottom: 12,
+        marginBottom: SPACING.md,
     },
     textInput: {
-        minHeight: 80,
-        color: COLORS.white,
-        fontSize: 15,
+        minHeight: 84,
+        maxHeight: 160,
+        borderRadius: RADIUS.md,
+        borderWidth: 1,
+        borderColor: COLORS.borderSubtle,
+        backgroundColor: withAlpha(COLORS.white, 0.05),
+        paddingHorizontal: SPACING.md - 2,
+        paddingTop: 12,
+        paddingBottom: 12,
+        color: COLORS.text,
         textAlignVertical: 'top',
-        marginBottom: 12,
-        padding: 8,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 12,
+        fontSize: 15,
+        lineHeight: 21,
     },
     linkInputRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 12,
-        paddingHorizontal: 12,
-        height: 40,
-        marginBottom: 15,
+        marginTop: SPACING.sm,
+        height: 44,
+        borderRadius: RADIUS.md,
+        borderWidth: 1,
+        borderColor: COLORS.borderSubtle,
+        backgroundColor: withAlpha(COLORS.white, 0.05),
+        paddingHorizontal: SPACING.md - 2,
     },
     linkInput: {
         flex: 1,
-        color: COLORS.white,
+        marginHorizontal: SPACING.sm,
+        color: COLORS.text,
         fontSize: 14,
     },
     cardFooter: {
         flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    charCount: {
-        color: COLORS.textMuted,
-        fontSize: 12,
-    },
-    postButton: {
-        backgroundColor: COLORS.primary,
-        paddingHorizontal: 24,
-        paddingVertical: 10,
-        borderRadius: 18,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    postButtonDisabled: {
-        opacity: 0.5,
-    },
-    postButtonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        fontSize: 14,
+        marginTop: SPACING.md,
     },
     postCard: {
         padding: 16,
@@ -874,10 +743,6 @@ const styles = StyleSheet.create({
         padding: 6,
         borderRadius: 8,
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        minWidth: 44,
-        minHeight: 44,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     editFormContainer: {
         backgroundColor: 'rgba(0, 0, 0, 0.25)',
@@ -1053,60 +918,57 @@ const styles = StyleSheet.create({
     },
     sendCommentButton: {
         padding: 4,
-        minWidth: 44,
-        minHeight: 44,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
-    loaderContainer: {
-        paddingVertical: 40,
-        alignItems: 'center',
-    },
-    emptyContainer: {
-        paddingVertical: 60,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    emptyText: {
-        color: COLORS.textMuted,
-        fontSize: 14,
-        textAlign: 'center',
-        marginTop: 12,
-        paddingHorizontal: 40,
-    },
-    blogBannerCard: {
+
+    composerHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 14,
-        borderRadius: 16,
-        marginBottom: 12,
+        marginBottom: SPACING.md,
+    },
+    composerAvatar: {
+        width: 32,
+        height: 32,
+        borderRadius: RADIUS.pill,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: COLORS.primary,
+        marginRight: SPACING.sm + 2,
+    },
+    inputFocused: {
+        borderColor: COLORS.primary,
+        backgroundColor: withAlpha(COLORS.primary, 0.08),
+    },
+
+    brandMark: {
+        width: 40,
+        height: 40,
+        borderRadius: RADIUS.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: withAlpha(COLORS.primary, 0.14),
         borderWidth: 1,
-        borderColor: COLORS.border,
-        backgroundColor: COLORS.cardBackground,
+        borderColor: withAlpha(COLORS.primary, 0.32),
+        marginRight: SPACING.sm + 2,
     },
-    blogBannerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    blogIconBadge: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: COLORS.primary + '20',
+    brandText: {
         justifyContent: 'center',
+    },
+    avatarButton: {
+        width: 38,
+        height: 38,
+        borderRadius: RADIUS.pill,
         alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: COLORS.primary,
+        borderWidth: 1,
+        borderColor: withAlpha(COLORS.white, 0.22),
     },
-    blogBannerTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: COLORS.text,
+    avatarButtonPressed: {
+        opacity: 0.75,
     },
-    blogBannerSub: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-        marginTop: 2,
+    greeting: {
+        paddingHorizontal: SPACING.md,
+        paddingBottom: SPACING.md,
     },
 });
 

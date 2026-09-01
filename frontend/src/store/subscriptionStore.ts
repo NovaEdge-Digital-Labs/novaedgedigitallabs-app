@@ -1,18 +1,21 @@
 import { create } from 'zustand';
 import { paymentApi } from '../api/paymentApi';
 import RazorpayCheckout from 'react-native-razorpay';
-import { CONFIG } from '../constants/config';
 import { useAuthStore } from './authStore';
 
+type Plan = 'free' | 'pro' | 'business';
+
 interface SubscriptionState {
-    currentPlan: 'free' | 'pro' | 'business';
+    currentPlan: Plan;
     planExpiry: Date | null;
     isLoadingPayment: boolean;
     paymentError: string | null;
-    initPayment: (plan: string, billingCycle: string) => Promise<void>;
-    verifyPayment: (paymentData: any) => Promise<void>;
+    initPayment: (plan: Exclude<Plan, 'free'>, billingCycle: 'monthly' | 'yearly') => Promise<boolean>;
     cancelSubscription: () => Promise<void>;
 }
+
+const messageFor = (error: any, fallback: string) =>
+    error?.response?.data?.message || error?.description || error?.message || fallback;
 
 export const useSubscriptionStore = create<SubscriptionState>((set) => ({
     currentPlan: 'free',
@@ -20,92 +23,96 @@ export const useSubscriptionStore = create<SubscriptionState>((set) => ({
     isLoadingPayment: false,
     paymentError: null,
 
+    /**
+     * Full checkout round trip. Returns true only once the backend has
+     * confirmed the payment — the caller should not report success on its own.
+     */
     initPayment: async (plan, billingCycle) => {
         set({ isLoadingPayment: true, paymentError: null });
+
         try {
-            // 1. Create order on backend
-            const orderResponse = await paymentApi.createOrder(plan, billingCycle);
-            const { id: order_id, amount, currency } = orderResponse.order;
+            // 1. Create the order. Amount, currency and the publishable key all
+            //    come from the server; nothing about price is decided here.
+            const order = await paymentApi.createOrder(plan, billingCycle);
+
+            if (!order?.orderId || !order?.keyId) {
+                throw new Error('Could not start payment. Please try again shortly.');
+            }
 
             const user = useAuthStore.getState().user;
 
-            // 2. Open Razorpay Checkout
-            var options = {
-                description: `Upgrade to ${plan.toUpperCase()}`,
-                image: 'https://novaedgedigitallabs.tech/logo.png', // Replace with your actual logo URL
-                currency: currency,
-                key: 'YOUR_RAZORPAY_KEY', // Need to pass this from backend or config, ideally backend returns it or it's public key
-                amount: amount,
-                name: 'NovaEdge',
-                order_id: order_id,
+            // 2. Hand off to Razorpay checkout.
+            const data: any = await RazorpayCheckout.open({
+                key: order.keyId,
+                order_id: order.orderId,
+                amount: order.amount,
+                currency: order.currency,
+                name: 'NovaEdge Digital Labs',
+                description: `${plan.toUpperCase()} · ${billingCycle}`,
+                image: 'https://novaedgedigitallabs.tech/logo.png',
                 prefill: {
                     email: user?.email || '',
                     contact: '',
-                    name: user?.name || ''
+                    name: user?.name || '',
                 },
-                theme: { color: '#f97316' } // COLORS.primary
-            };
-
-            const data = await RazorpayCheckout.open(options);
-
-            // 3. Verify payment with backend
-            await useSubscriptionStore.getState().verifyPayment({
-                razorpay_payment_id: data.razorpay_payment_id,
-                razorpay_order_id: data.razorpay_order_id,
-                razorpay_signature: data.razorpay_signature,
-                plan,
-                billingCycle
+                theme: { color: '#6E56CF' },
             });
 
-        } catch (error: any) {
-            set({
-                isLoadingPayment: false,
-                paymentError: error.description || error.message || 'Payment failed or cancelled'
+            // 3. Verify. Only the Razorpay fields go up — the server resolves
+            //    which plan was bought from the order it stored.
+            const result = await paymentApi.verifyPayment({
+                razorpayOrderId: data.razorpay_order_id,
+                razorpayPaymentId: data.razorpay_payment_id,
+                razorpaySignature: data.razorpay_signature,
             });
-        }
-    },
 
-    verifyPayment: async (paymentData) => {
-        try {
-            const verificationResult = await paymentApi.verifyPayment(paymentData);
+            if (!result?.success) {
+                throw new Error(result?.message || 'Payment verification failed');
+            }
 
-            // Update auth store with new plan
-            const user = useAuthStore.getState().user;
-            if (user) {
-                useAuthStore.getState().updateUser({
-                    plan: paymentData.plan as any,
-                    planExpiry: verificationResult.planExpiry
-                });
+            // 4. Trust the server's answer for what was actually activated.
+            const activated: Plan = result.subscription?.plan ?? plan;
+            const expiry = result.subscription?.endDate ?? null;
+
+            if (useAuthStore.getState().user) {
+                useAuthStore.getState().updateUser({ plan: activated, planExpiry: expiry });
             }
 
             set({
-                currentPlan: paymentData.plan as any,
-                isLoadingPayment: false
+                currentPlan: activated,
+                planExpiry: expiry ? new Date(expiry) : null,
+                isLoadingPayment: false,
             });
+
+            return true;
         } catch (error: any) {
+            // Razorpay reports user-cancelled checkout as an error too.
+            const cancelled = error?.code === 0 || /cancel/i.test(String(error?.description || ''));
             set({
                 isLoadingPayment: false,
-                paymentError: error.message || 'Payment verification failed'
+                paymentError: cancelled ? null : messageFor(error, 'Payment failed'),
             });
-            throw error;
+            return false;
         }
     },
 
     cancelSubscription: async () => {
-        // Implement cancel logic via API
-        set({ isLoadingPayment: true });
+        set({ isLoadingPayment: true, paymentError: null });
         try {
-            // const response = await paymentApi.cancelSubscription();
-            // Mocking for now
-            setTimeout(() => {
-                const user = useAuthStore.getState().user;
-                if (user) {
-                    useAuthStore.getState().updateUser({ plan: 'free' });
-                }
-                set({ currentPlan: 'free', isLoadingPayment: false });
-            }, 1000);
+            // Previously mocked with a setTimeout that flipped the local plan to
+            // 'free' without telling the server.
+            await paymentApi.cancelSubscription();
+
+            // Access continues until planExpiry, so the plan is not cleared here.
+            set({ isLoadingPayment: false });
         } catch (error: any) {
-            set({ isLoadingPayment: false, paymentError: error.message });
+            set({
+                isLoadingPayment: false,
+                paymentError: messageFor(error, 'Could not cancel subscription'),
+            });
+            throw error;
         }
-    }
+    },
 }));
+
+export default useSubscriptionStore;

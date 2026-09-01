@@ -37,20 +37,20 @@ const platformConfigSchema = new mongoose.Schema({
         default: 'dark'
     },
     themeConfig: {
-        preset: { type: String, default: 'purple-cyber' },
-        primary: { type: String, default: '#9127FF' },
-        primaryDark: { type: String, default: '#7B00FF' },
-        secondary: { type: String, default: '#120025' },
-        background: { type: String, default: '#06000F' },
-        accent: { type: String, default: '#C042FF' },
-        glow: { type: String, default: '#9127FF' },
-        primaryGradient: { type: String, default: 'linear-gradient(135deg, #9127FF, #C042FF)' },
-        backgroundGradient: { type: String, default: 'radial-gradient(circle at top left, #2D006D, #06000F)' },
-        text: { type: String, default: '#FFFFFF' },
-        textLight: { type: String, default: '#E0E0FF' },
-        textMuted: { type: String, default: '#A080FF' },
-        card: { type: String, default: 'rgba(255, 255, 255, 0.03)' },
-        border: { type: String, default: 'rgba(145, 39, 255, 0.2)' }
+        preset: { type: String, default: 'nova-slate' },
+        primary: { type: String, default: '#6E56CF' },
+        primaryDark: { type: String, default: '#5B45B0' },
+        secondary: { type: String, default: '#1A1D23' },
+        background: { type: String, default: '#0A0B0D' },
+        accent: { type: String, default: '#9E8CFC' },
+        glow: { type: String, default: '#6E56CF' },
+        primaryGradient: { type: String, default: 'linear-gradient(135deg, #6E56CF, #5B45B0)' },
+        backgroundGradient: { type: String, default: 'linear-gradient(180deg, #0C0D11, #0A0B0D)' },
+        text: { type: String, default: '#EDEEF0' },
+        textLight: { type: String, default: '#B4B8BF' },
+        textMuted: { type: String, default: '#8B909A' },
+        card: { type: String, default: '#101216' },
+        border: { type: String, default: 'rgba(255, 255, 255, 0.09)' }
     },
     allowedDomains: [{
         type: String

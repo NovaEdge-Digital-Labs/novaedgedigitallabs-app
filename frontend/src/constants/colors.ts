@@ -1,5 +1,21 @@
 import theme from './theme.json';
 import { useThemeStore } from '../store/themeStore';
+import { TYPOGRAPHY as TYPE_SCALE, FONTS } from './typography';
+
+/** Turn a #rrggbb (or #rgb) token into an rgba() string at the given alpha. */
+export const withAlpha = (color: string, alpha: number): string => {
+    if (!color || typeof color !== 'string') return `rgba(255,255,255,${alpha})`;
+    if (color.startsWith('rgba')) return color.replace(/[\d.]+\)$/, `${alpha})`);
+    if (color.startsWith('rgb(')) return color.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`);
+    if (!color.startsWith('#')) return color;
+
+    let hex = color.slice(1);
+    if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+    if (hex.length !== 6) return color;
+
+    const num = parseInt(hex, 16);
+    return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+};
 
 // Dynamic Proxy so COLORS.primary, COLORS.background, etc. always return the active theme
 export const COLORS: any = new Proxy({ ...theme }, {
@@ -18,16 +34,39 @@ export const COLORS: any = new Proxy({ ...theme }, {
         if (prop === 'textLight') return target.textLight;
         if (prop === 'textWhite') return target.white;
 
+        /**
+         * Legacy token for screens not yet migrated to <Card>. Now resolves to
+         * the same flat surface as `panel` so mixed screens stay consistent.
+         */
         if (prop === 'glass') {
             const currentTheme = useThemeStore.getState()?.theme || target;
-            const opacity = currentTheme.effects?.glassOpacity ?? target.effects?.glassOpacity ?? 0.04;
-            const borderOpacity = currentTheme.effects?.glassBorderOpacity ?? target.effects?.glassBorderOpacity ?? 0.15;
             return {
-                backgroundColor: `rgba(255, 255, 255, ${opacity})`,
+                backgroundColor: currentTheme.card ?? target.card,
                 borderWidth: 1,
-                borderColor: `rgba(255, 255, 255, ${borderOpacity})`,
+                borderColor: currentTheme.borderSubtle ?? target.borderSubtle,
             };
         }
+
+        /** Elevated surface: solid fill one step lighter than the page. */
+        if (prop === 'panel') {
+            const currentTheme = useThemeStore.getState()?.theme || target;
+            return {
+                backgroundColor: currentTheme.card ?? target.card,
+                borderWidth: 1,
+                borderColor: currentTheme.border ?? target.border,
+            };
+        }
+
+        if (prop === 'panelSubtle') {
+            const currentTheme = useThemeStore.getState()?.theme || target;
+            return {
+                backgroundColor: currentTheme.card ?? target.card,
+                borderWidth: 1,
+                borderColor: currentTheme.borderSubtle ?? target.borderSubtle,
+            };
+        }
+
+        if (prop === 'withAlpha') return withAlpha;
 
         if (prop === 'getGradient') {
             return (gradientString: string): [string, string, ...string[]] => {
@@ -44,6 +83,13 @@ export const COLORS: any = new Proxy({ ...theme }, {
         return target[prop];
     }
 });
+
+export const RADIUS = {
+    sm: theme.geometry.radiusSmall,
+    md: theme.geometry.radiusMedium,
+    lg: theme.geometry.radiusLarge,
+    pill: theme.geometry.radiusPill,
+};
 
 export const SPACING = {
     xs: theme.geometry.spacingSmall / 2,
@@ -76,14 +122,17 @@ export const SHADOWS = {
         shadowRadius: 16,
         elevation: 8,
     },
+    /** Restrained lift under primary CTAs. No coloured bloom. */
+    glow: {
+        shadowColor: theme.black,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 4,
+    },
 };
 
-export const TYPOGRAPHY = {
-    h1: { fontSize: 32, fontWeight: '800' as const },
-    h2: { fontSize: 24, fontWeight: '700' as const },
-    h3: { fontSize: 18, fontWeight: '600' as const },
-    body: { fontSize: 14, fontWeight: '400' as const },
-    caption: { fontSize: 12, fontWeight: '400' as const },
-};
+export { FONTS };
+export const TYPOGRAPHY = TYPE_SCALE;
 
 export type AppTheme = typeof theme;

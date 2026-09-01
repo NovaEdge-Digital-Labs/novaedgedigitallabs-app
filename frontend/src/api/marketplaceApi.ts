@@ -6,10 +6,6 @@ export const marketplaceApi = {
         const response = await axiosInstance.get('/marketplace/gigs', { params });
         return response.data;
     },
-    getGigById: async (id: string) => {
-        const response = await axiosInstance.get(`/marketplace/gigs/${id}`);
-        return response.data;
-    },
     createGig: async (gigData: any) => {
         const response = await axiosInstance.post('/marketplace/gigs', gigData);
         return response.data;
@@ -61,13 +57,17 @@ export const marketplaceApi = {
         const response = await axiosInstance.post('/marketplace/hire', { proposalId });
         return response.data;
     },
-    // Direct fixed-price gig purchase — funds go into escrow, same as hiring on a project.
-    orderGig: async (gigId: string) => {
-        const response = await axiosInstance.post(`/marketplace/gigs/${gigId}/order`);
-        return response.data;
-    },
-    verifyEscrow: async (paymentData: any) => {
-        const response = await axiosInstance.post('/marketplace/verify-escrow', paymentData);
+    /**
+     * `contractId` is intentionally not part of this payload. The server
+     * resolves the contract from the escrow transaction the order was created
+     * for; sending one let a caller fund a contract they hadn't paid for.
+     */
+    verifyEscrow: async (payment: {
+        razorpayOrderId: string;
+        razorpayPaymentId: string;
+        razorpaySignature: string;
+    }) => {
+        const response = await axiosInstance.post('/marketplace/verify-escrow', payment);
         return response.data;
     },
 

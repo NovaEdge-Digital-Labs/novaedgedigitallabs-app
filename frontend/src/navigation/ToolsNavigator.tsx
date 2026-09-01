@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { nativeStackScreenOptions } from './screenOptions';
 import ToolsScreen from '../screens/ToolsScreen';
 import RecommendedToolsScreen from '../screens/RecommendedToolsScreen';
 import QRGenerator from '../tools/QRGenerator';
@@ -15,7 +16,7 @@ const Stack = createNativeStackNavigator();
 
 const ToolsNavigator = () => {
     return (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Navigator screenOptions={nativeStackScreenOptions}>
             <Stack.Screen name="ToolsList" component={ToolsScreen} />
             <Stack.Screen name="RecommendedTools" component={RecommendedToolsScreen} />
             <Stack.Screen name="QRGenerator" component={QRGenerator} />

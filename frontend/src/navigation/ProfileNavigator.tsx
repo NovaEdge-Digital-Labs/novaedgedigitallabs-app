@@ -1,5 +1,6 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import { stackScreenOptions } from './screenOptions';
 import ProfileScreen from '../screens/ProfileScreen';
 import SubscriptionScreen from '../screens/SubscriptionScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
@@ -27,10 +28,7 @@ const Stack = createStackNavigator();
 const ProfileNavigator = () => {
     return (
         <Stack.Navigator
-            screenOptions={{
-                headerShown: false,
-                cardStyle: { backgroundColor: COLORS.background },
-            }}
+            screenOptions={stackScreenOptions}
         >
             <Stack.Screen name="ProfileMain" component={ProfileScreen} />
             <Stack.Screen name="Store" component={StoreNavigator} />

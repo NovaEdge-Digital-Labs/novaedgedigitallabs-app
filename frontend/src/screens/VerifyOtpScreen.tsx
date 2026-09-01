@@ -1,11 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import {
+    View,
+    StyleSheet,
+    TextInput,
+    Pressable,
+    Alert,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/colors';
+import { COLORS, SPACING, RADIUS, withAlpha } from '../constants/colors';
+import { TYPOGRAPHY } from '../constants/typography';
 import ThemeWrapper from '../components/ThemeWrapper';
-import PrimaryButton from '../components/PrimaryButton';
+import { Text, Button, TopBar } from '../components/ui';
 import { authApi } from '../api/authApi';
 import { useAuthStore } from '../store/authStore';
+
+const OTP_LENGTH = 6;
 
 const VerifyOtpScreen = ({ route, navigation }: any) => {
     const email = route?.params?.email || '';
@@ -13,38 +25,47 @@ const VerifyOtpScreen = ({ route, navigation }: any) => {
     const [loading, setLoading] = useState(false);
     const [resendLoading, setResendLoading] = useState(false);
     const [timer, setTimer] = useState(60);
+    const [focused, setFocused] = useState(true);
+    const inputRef = useRef<TextInput>(null);
     const setAuth = useAuthStore((state) => state.setAuth);
 
     useEffect(() => {
-        let interval: any = null;
-        if (timer > 0) {
-            interval = setInterval(() => setTimer((t) => t - 1), 1000);
-        } else if (interval) {
-            clearInterval(interval);
-        }
+        if (timer <= 0) return;
+        const interval = setInterval(() => setTimer((t) => t - 1), 1000);
         return () => clearInterval(interval);
     }, [timer]);
 
-    const handleVerify = async () => {
-        if (!otp || otp.trim().length < 6) {
-            Alert.alert('Invalid OTP', 'Please enter the complete 6-digit OTP code sent to your email.');
+    const submit = async (code: string) => {
+        if (code.length < OTP_LENGTH) {
+            Alert.alert('Invalid OTP', `Enter the complete ${OTP_LENGTH}-digit code sent to your email.`);
             return;
         }
 
         setLoading(true);
         try {
-            const res = await authApi.verifyOtp(email, otp.trim());
+            const res = await authApi.verifyOtp(email, code);
             if (res.success) {
                 if (res.token && res.user) {
                     await setAuth(res.user, res.token);
                 }
-                Alert.alert('Email Verified! 🎉', res.message || 'Your email address has been verified successfully.');
+                Alert.alert('Email verified', res.message || 'Your email address has been verified.');
             }
         } catch (error: any) {
             const msg = error?.response?.data?.message || error?.message || 'Invalid or expired OTP code.';
             Alert.alert('Verification Failed', msg);
+            setOtp('');
         } finally {
             setLoading(false);
+        }
+    };
+
+    /** Auto-submits on the sixth digit so the button is a fallback, not a step. */
+    const handleChange = (raw: string) => {
+        const digits = raw.replace(/[^0-9]/g, '').slice(0, OTP_LENGTH);
+        setOtp(digits);
+        if (digits.length === OTP_LENGTH) {
+            inputRef.current?.blur();
+            submit(digits);
         }
     };
 
@@ -55,7 +76,8 @@ const VerifyOtpScreen = ({ route, navigation }: any) => {
             const res = await authApi.resendOtp(email);
             if (res.success) {
                 setTimer(60);
-                Alert.alert('OTP Resent', res.message || 'A new 6-digit OTP has been sent to your email address.');
+                setOtp('');
+                Alert.alert('OTP resent', res.message || 'A new code has been sent to your email address.');
             }
         } catch (error: any) {
             const msg = error?.response?.data?.message || 'Failed to resend OTP code.';
@@ -67,171 +89,165 @@ const VerifyOtpScreen = ({ route, navigation }: any) => {
 
     return (
         <ThemeWrapper>
-            <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={24} color={COLORS.white} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Verify Email</Text>
-                <View style={{ width: 36 }} />
-            </View>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                style={styles.flex}
+            >
+                <TopBar title="Verify email" showBack onBack={() => navigation.goBack()} />
 
-            <View style={styles.content}>
-                {/* Icon Banner */}
-                <View style={styles.iconCircle}>
-                    <Ionicons name="mail-unread" size={42} color={COLORS.accent || '#C042FF'} />
-                </View>
+                <View style={styles.content}>
+                    <View style={styles.iconCircle}>
+                        <Ionicons name="mail-unread-outline" size={30} color={COLORS.accent} />
+                    </View>
 
-                <Text style={styles.title}>Enter 6-Digit OTP</Text>
-                <Text style={styles.subtitle}>
-                    We have sent a 6-digit verification code to:
-                    {'\n'}
-                    <Text style={styles.emailText}>{email || 'your registered email'}</Text>
-                </Text>
+                    <Text variant="h1" center>Enter your code</Text>
+                    <Text variant="body" tone="muted" center style={styles.subtitle}>
+                        We sent a {OTP_LENGTH}-digit verification code to
+                    </Text>
+                    <Text variant="bodyStrong" tone="accent" center style={styles.email} numberOfLines={1}>
+                        {email || 'your registered email'}
+                    </Text>
 
-                {/* OTP Input Field */}
-                <View style={styles.inputCard}>
-                    <Ionicons name="key-outline" size={22} color="#94A3B8" style={{ marginRight: 10 }} />
+                    {/* Segmented boxes over one hidden field, so paste and SMS
+                        autofill still deliver the whole code at once. */}
+                    <Pressable style={styles.boxRow} onPress={() => inputRef.current?.focus()}>
+                        {Array.from({ length: OTP_LENGTH }).map((_, i) => {
+                            const char = otp[i];
+                            const isCursor = focused && i === otp.length;
+                            return (
+                                <View
+                                    key={i}
+                                    style={[
+                                        styles.box,
+                                        char ? styles.boxFilled : null,
+                                        isCursor ? styles.boxActive : null,
+                                    ]}
+                                >
+                                    <Text variant="h2">{char ?? ''}</Text>
+                                </View>
+                            );
+                        })}
+                    </Pressable>
+
                     <TextInput
-                        style={styles.otpInput}
-                        placeholder="1 2 3 4 5 6"
-                        placeholderTextColor="#64748B"
+                        ref={inputRef}
+                        style={styles.hiddenInput}
                         value={otp}
-                        onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, '').slice(0, 6))}
+                        onChangeText={handleChange}
+                        onFocus={() => setFocused(true)}
+                        onBlur={() => setFocused(false)}
                         keyboardType="number-pad"
-                        maxLength={6}
+                        textContentType="oneTimeCode"
+                        autoComplete="one-time-code"
+                        maxLength={OTP_LENGTH}
                         autoFocus
+                        caretHidden
                     />
-                </View>
 
-                {/* Verify Button */}
-                <PrimaryButton
-                    title="Verify Email & Continue"
-                    onPress={handleVerify}
-                    loading={loading}
-                    style={styles.verifyBtn}
-                />
+                    <Button
+                        title="Verify & continue"
+                        onPress={() => submit(otp)}
+                        loading={loading}
+                        disabled={otp.length < OTP_LENGTH}
+                        size="lg"
+                        style={styles.verifyBtn}
+                    />
 
-                {/* Resend OTP Section */}
-                <View style={styles.resendRow}>
-                    <Text style={styles.resendText}>Didn't receive the OTP code?</Text>
-                    <TouchableOpacity
-                        onPress={handleResend}
-                        disabled={timer > 0 || resendLoading}
-                        style={{ opacity: timer > 0 ? 0.5 : 1 }}
-                    >
+                    <View style={styles.resendRow}>
+                        <Text variant="body" tone="muted">Didn't get the code?</Text>
                         {resendLoading ? (
-                            <ActivityIndicator size="small" color={COLORS.primary} style={{ marginLeft: 6 }} />
+                            <ActivityIndicator size="small" color={COLORS.primary} style={styles.resendSpinner} />
                         ) : (
-                            <Text style={styles.resendBtnText}>
-                                {timer > 0 ? ` Resend in ${timer}s` : ' Resend OTP'}
-                            </Text>
+                            <Pressable onPress={handleResend} disabled={timer > 0} hitSlop={8}>
+                                <Text
+                                    variant="bodyStrong"
+                                    tone={timer > 0 ? 'faint' : 'accent'}
+                                    style={styles.resendLabel}
+                                >
+                                    {timer > 0 ? `Resend in ${timer}s` : 'Resend OTP'}
+                                </Text>
+                            </Pressable>
                         )}
-                    </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
-        </View>
-    </ThemeWrapper>
+            </KeyboardAvoidingView>
+        </ThemeWrapper>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
+    flex: {
         flex: 1,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingTop: 50,
-        paddingBottom: 15,
-    },
-    backBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: COLORS.white,
     },
     content: {
-        paddingHorizontal: 24,
-        paddingTop: 30,
+        flex: 1,
         alignItems: 'center',
+        paddingHorizontal: SPACING.lg,
+        paddingTop: SPACING.xl,
     },
     iconCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: 'rgba(145, 39, 255, 0.12)',
-        borderWidth: 1,
-        borderColor: 'rgba(192, 66, 255, 0.3)',
-        justifyContent: 'center',
+        width: 68,
+        height: 68,
+        borderRadius: RADIUS.pill,
         alignItems: 'center',
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: COLORS.white,
-        marginBottom: 8,
-        textAlign: 'center',
+        justifyContent: 'center',
+        backgroundColor: withAlpha(COLORS.primary, 0.12),
+        borderWidth: 1,
+        borderColor: withAlpha(COLORS.primary, 0.3),
+        marginBottom: SPACING.lg,
     },
     subtitle: {
-        fontSize: 14,
-        color: COLORS.textMuted,
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: 30,
+        marginTop: SPACING.sm,
     },
-    emailText: {
-        color: COLORS.accent || '#C042FF',
-        fontWeight: 'bold',
+    email: {
+        marginTop: 2,
+        maxWidth: '100%',
     },
-    inputCard: {
-        width: '100%',
+    boxRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderWidth: 1,
-        borderColor: 'rgba(145, 39, 255, 0.3)',
-        borderRadius: 16,
-        paddingHorizontal: 16,
-        height: 56,
-        marginBottom: 24,
+        justifyContent: 'center',
+        marginTop: SPACING.xl,
+        marginBottom: SPACING.lg,
     },
-    otpInput: {
-        flex: 1,
-        color: COLORS.white,
-        fontSize: 22,
-        fontWeight: 'bold',
-        letterSpacing: 8,
+    box: {
+        width: 46,
+        height: 56,
+        marginHorizontal: 4,
+        borderRadius: RADIUS.md,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: withAlpha(COLORS.white, 0.05),
+        borderWidth: 1,
+        borderColor: COLORS.borderSubtle,
+    },
+    boxFilled: {
+        borderColor: withAlpha(COLORS.primary, 0.5),
+        backgroundColor: withAlpha(COLORS.primary, 0.1),
+    },
+    boxActive: {
+        borderColor: COLORS.primary,
+        backgroundColor: withAlpha(COLORS.primary, 0.14),
+    },
+    hiddenInput: {
+        position: 'absolute',
+        opacity: 0,
+        height: 1,
+        width: 1,
+        ...TYPOGRAPHY.body,
     },
     verifyBtn: {
-        width: '100%',
-        height: 54,
-        borderRadius: 16,
-        marginBottom: 24,
+        marginTop: SPACING.sm,
     },
     resendRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginTop: SPACING.lg,
     },
-    resendText: {
-        color: COLORS.textMuted,
-        fontSize: 13,
+    resendLabel: {
+        marginLeft: 6,
     },
-    resendBtnText: {
-        color: COLORS.accent || '#C042FF',
-        fontSize: 13,
-        fontWeight: 'bold',
+    resendSpinner: {
+        marginLeft: 8,
     },
 });
 

@@ -1,23 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import {
     View,
-    Text,
     StyleSheet,
     FlatList,
     Image,
-    TouchableOpacity,
-    ActivityIndicator,
     RefreshControl,
-    Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../constants/colors';
+import { COLORS, SPACING, RADIUS, withAlpha } from '../constants/colors';
+import ThemeWrapper from '../components/ThemeWrapper';
+import { Text, Card, Badge, Button, EmptyState, SkeletonCard, TopBar } from '../components/ui';
 import courseApi, { Course } from '../api/courseApi';
 import { formatCurrency } from '../utils/helpers';
-import PrimaryButton from '../components/PrimaryButton';
-
-const { width } = Dimensions.get('window');
 
 const CourseFeedScreen = () => {
     const navigation = useNavigation<any>();
@@ -48,321 +43,181 @@ const CourseFeedScreen = () => {
         fetchCourses();
     };
 
-    const [filter, setFilter] = useState<'All' | 'Free' | 'Paid'>('All');
+    const renderCourseItem = ({ item }: { item: Course }) => {
+        const avatar =
+            item.instructor.avatar ||
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(item.instructor.name)}&background=ac4bff&color=fff`;
+        const discounted = item.originalPrice && item.originalPrice > item.price;
 
-    const filteredCourses = courses.filter((course) => {
-        if (filter === 'Free') return course.price === 0;
-        if (filter === 'Paid') return course.price > 0;
-        return true;
-    });
-
-    const renderCourseItem = ({ item }: { item: Course }) => (
-        <TouchableOpacity
-            style={styles.courseCard}
-            onPress={() => navigation.navigate('CourseDetail', { courseId: item._id })}
-            activeOpacity={0.9}
-        >
-            <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
-            <View style={styles.badgeRow}>
-                <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{item.category}</Text>
-                </View>
-                {item.price === 0 ? (
-                    <View style={styles.freeBadge}>
-                        <Text style={styles.freeBadgeText}>FREE</Text>
-                    </View>
-                ) : (
-                    <View style={styles.certBadge}>
-                        <Ionicons name="ribbon" size={10} color="#FFF" style={{ marginRight: 3 }} />
-                        <Text style={styles.certBadgeText}>Certificate</Text>
-                    </View>
-                )}
-            </View>
-            <View style={styles.courseInfo}>
-                <Text style={styles.courseTitle} numberOfLines={2}>{item.title}</Text>
-                <View style={styles.instructorRow}>
-                    <View style={styles.instructorProfile}>
-                        <Image 
-                            source={{ uri: item.instructor.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(item.instructor.name) + '&background=random&color=fff' }} 
-                            style={styles.instructorAvatarSmall} 
-                        />
-                        <Text style={styles.instructorName}>By {item.instructor.name}</Text>
-                    </View>
-                    <View style={styles.ratingRow}>
-                        <Ionicons name="star" size={14} color="#FFD700" />
-                        <Text style={styles.ratingText}>{item.rating}</Text>
-                    </View>
-                </View>
-                <View style={styles.footerRow}>
-                    <View style={styles.priceContainer}>
-                        {item.price === 0 ? (
-                            <Text style={[styles.price, { color: COLORS.success || '#00FF9D' }]}>Free</Text>
-                        ) : (
-                            <Text style={styles.price}>{formatCurrency(item.price)}</Text>
-                        )}
-                        {item.originalPrice && item.originalPrice > item.price && item.price > 0 && (
-                            <Text style={styles.originalPrice}>{formatCurrency(item.originalPrice)}</Text>
-                        )}
-                    </View>
-                    <Text style={styles.enrolledText}>{item.enrolledCount} enrolled</Text>
-                </View>
-            </View>
-        </TouchableOpacity>
-    );
-
-    if (loading && !refreshing) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-            </View>
+            <Card
+                padded={false}
+                onPress={() => navigation.navigate('CourseDetail', { courseId: item._id })}
+                style={styles.courseCard}
+            >
+                <View>
+                    <Image source={{ uri: item.thumbnail }} style={styles.thumbnail} />
+                    {item.category ? (
+                        <Badge label={item.category} tone="primary" style={styles.badge} />
+                    ) : null}
+                </View>
+
+                <View style={styles.courseInfo}>
+                    <Text variant="bodyStrong" numberOfLines={2}>{item.title}</Text>
+
+                    <View style={styles.instructorRow}>
+                        <View style={styles.instructorProfile}>
+                            <Image source={{ uri: avatar }} style={styles.instructorAvatarSmall} />
+                            <Text variant="caption" tone="muted" numberOfLines={1} style={styles.instructorName}>
+                                {item.instructor.name}
+                            </Text>
+                        </View>
+                        {item.rating ? (
+                            <View style={styles.ratingRow}>
+                                <Ionicons name="star" size={13} color="#fcbb00" />
+                                <Text variant="caption" tone="muted" style={styles.ratingText}>
+                                    {item.rating}
+                                </Text>
+                            </View>
+                        ) : null}
+                    </View>
+
+                    <View style={styles.footerRow}>
+                        <View style={styles.priceContainer}>
+                            <Text variant="bodyStrong" tone="success">{formatCurrency(item.price)}</Text>
+                            {discounted ? (
+                                <Text variant="caption" tone="faint" style={styles.originalPrice}>
+                                    {formatCurrency(item.originalPrice as number)}
+                                </Text>
+                            ) : null}
+                        </View>
+                        <Text variant="caption" tone="muted">
+                            {item.enrolledCount || 0} enrolled
+                        </Text>
+                    </View>
+                </View>
+            </Card>
         );
-    }
+    };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.headerTitle}>Explore Courses</Text>
-                    <Text style={styles.headerSubtitle}>Job-ready skills — real projects ke saath</Text>
-                </View>
-                <TouchableOpacity
-                    style={styles.myCoursesBtn}
-                    onPress={() => navigation.navigate('MyCourses')}
-                >
-                    <Ionicons name="play-circle-outline" size={24} color={COLORS.primary} />
-                </TouchableOpacity>
-            </View>
-
-            {/* Filter Chips */}
-            <View style={styles.filterRow}>
-                {(['All', 'Free', 'Paid'] as const).map((type) => (
-                    <TouchableOpacity
-                        key={type}
-                        style={[styles.filterChip, filter === type && styles.activeFilterChip]}
-                        onPress={() => setFilter(type)}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={[styles.filterText, filter === type && styles.activeFilterText]}>{type}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-
-            <FlatList
-                data={filteredCourses}
-                renderItem={renderCourseItem}
-                keyExtractor={(item) => item._id}
-                contentContainerStyle={styles.listContainer}
-                showsVerticalScrollIndicator={false}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
-                }
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Ionicons name="school-outline" size={64} color={COLORS.textMuted} />
-                        <Text style={styles.emptyText}>No courses found for "{filter}".</Text>
-                    </View>
+        <ThemeWrapper>
+            <TopBar
+                large
+                title="Academy"
+                subtitle="Upskill with short, focused courses"
+                showBack={false}
+                right={
+                    <Button
+                        title="My courses"
+                        size="sm"
+                        variant="secondary"
+                        fullWidth={false}
+                        icon={<Ionicons name="play-circle-outline" size={16} color={COLORS.text} />}
+                        onPress={() => navigation.navigate('MyCourses')}
+                    />
                 }
             />
-        </View>
+
+            {loading && !refreshing ? (
+                <View style={styles.listContainer}>
+                    <SkeletonCard lines={3} />
+                    <SkeletonCard lines={3} />
+                    <SkeletonCard lines={3} />
+                </View>
+            ) : (
+                <FlatList
+                    data={courses}
+                    renderItem={renderCourseItem}
+                    keyExtractor={(item) => item._id}
+                    contentContainerStyle={styles.listContainer}
+                    showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={COLORS.primary}
+                            colors={[COLORS.primary]}
+                        />
+                    }
+                    ListEmptyComponent={
+                        <EmptyState
+                            icon="school-outline"
+                            title="No courses yet"
+                            message="New tutorials land here as the team publishes them."
+                        />
+                    }
+                />
+            )}
+        </ThemeWrapper>
     );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: COLORS.background,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: COLORS.background,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: SPACING.lg,
-        paddingTop: SPACING.xl,
-        paddingBottom: SPACING.md,
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: COLORS.text,
-    },
-    headerSubtitle: {
-        fontSize: 14,
-        color: COLORS.textMuted,
-        marginTop: 4,
-    },
-    myCoursesBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: COLORS.backgroundSoft,
-        justifyContent: 'center',
-        alignItems: 'center',
-        ...SHADOWS.small,
-    },
     listContainer: {
-        padding: SPACING.lg,
+        paddingHorizontal: SPACING.md,
+        paddingBottom: SPACING.lg,
     },
     courseCard: {
-        backgroundColor: COLORS.card,
-        borderRadius: 16,
-        marginBottom: SPACING.lg,
-        overflow: 'hidden',
-        ...SHADOWS.medium,
+        marginBottom: SPACING.sm + 4,
     },
     thumbnail: {
         width: '100%',
-        height: 180,
-    },
-    filterRow: {
-        flexDirection: 'row',
-        paddingHorizontal: SPACING.lg,
-        gap: 10,
-        marginBottom: 8,
-    },
-    filterChip: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: COLORS.backgroundSoft,
-        borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-    activeFilterChip: {
-        backgroundColor: COLORS.primary,
-        borderColor: COLORS.primary,
-    },
-    filterText: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: COLORS.textMuted,
-    },
-    activeFilterText: {
-        color: '#FFF',
-    },
-    badgeRow: {
-        position: 'absolute',
-        top: 12,
-        left: 12,
-        right: 12,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        height: 168,
+        backgroundColor: withAlpha(COLORS.white, 0.05),
     },
     badge: {
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 8,
-    },
-    badgeText: {
-        color: '#FFF',
-        fontSize: 12,
-        fontWeight: '600',
-    },
-    freeBadge: {
-        backgroundColor: COLORS.success || '#00FF9D',
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 8,
-    },
-    freeBadgeText: {
-        color: '#000000',
-        fontSize: 12,
-        fontWeight: '900',
-    },
-    certBadge: {
-        backgroundColor: 'rgba(145, 39, 255, 0.85)',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    certBadgeText: {
-        color: '#FFF',
-        fontSize: 11,
-        fontWeight: '700',
+        position: 'absolute',
+        top: SPACING.sm,
+        left: SPACING.sm,
     },
     courseInfo: {
         padding: SPACING.md,
     },
-    courseTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: COLORS.text,
-        marginBottom: 8,
-    },
     instructorRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        justifyContent: 'space-between',
+        marginTop: SPACING.sm,
     },
     instructorProfile: {
         flexDirection: 'row',
         alignItems: 'center',
+        flex: 1,
+        paddingRight: SPACING.sm,
     },
     instructorAvatarSmall: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        marginRight: 8,
+        width: 22,
+        height: 22,
+        borderRadius: RADIUS.pill,
+        marginRight: SPACING.sm,
     },
     instructorName: {
-        fontSize: 14,
-        color: COLORS.textSecondary,
+        flex: 1,
     },
     ratingRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
     ratingText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: COLORS.text,
         marginLeft: 4,
     },
     footerRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: SPACING.md,
+        paddingTop: SPACING.sm + 2,
         borderTopWidth: 1,
-        borderTopColor: COLORS.border,
-        paddingTop: 12,
+        borderTopColor: COLORS.divider,
     },
     priceContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
-    },
-    price: {
-        fontSize: 20,
-        fontWeight: '800',
-        color: COLORS.primary,
+        alignItems: 'baseline',
     },
     originalPrice: {
-        fontSize: 14,
-        color: COLORS.textMuted,
+        marginLeft: 6,
         textDecorationLine: 'line-through',
-        marginLeft: 8,
-    },
-    enrolledText: {
-        fontSize: 12,
-        color: COLORS.textMuted,
-    },
-    emptyContainer: {
-        alignItems: 'center',
-        marginTop: 100,
-    },
-    emptyText: {
-        fontSize: 16,
-        color: COLORS.textSecondary,
-        marginTop: SPACING.md,
     },
 });
 
