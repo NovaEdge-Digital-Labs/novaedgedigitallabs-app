@@ -151,21 +151,27 @@ const AdminUsersScreen = ({ navigation }: any) => {
                             </View>
 
                             <Text style={styles.label}>Plan</Text>
-                            <View style={styles.toggleRow}>
+                            <View style={styles.toggleGrid}>
                                 <TouchableOpacity 
-                                    style={[styles.toggleBtn, editPlan === 'free' && styles.toggleActive]}
+                                    style={[styles.toggleBtn, styles.toggleGridItem, editPlan === 'free' && styles.toggleActive]}
                                     onPress={() => setEditPlan('free')}
                                 >
                                     <Text style={styles.toggleText}>FREE</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity 
-                                    style={[styles.toggleBtn, editPlan === 'pro' && styles.toggleActive]}
+                                    style={[styles.toggleBtn, styles.toggleGridItem, editPlan === 'student' && styles.toggleActive]}
+                                    onPress={() => setEditPlan('student')}
+                                >
+                                    <Text style={styles.toggleText}>STUDENT</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={[styles.toggleBtn, styles.toggleGridItem, editPlan === 'pro' && styles.toggleActive]}
                                     onPress={() => setEditPlan('pro')}
                                 >
                                     <Text style={styles.toggleText}>PRO</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity 
-                                    style={[styles.toggleBtn, editPlan === 'business' && styles.toggleActive]}
+                                    style={[styles.toggleBtn, styles.toggleGridItem, editPlan === 'business' && styles.toggleActive]}
                                     onPress={() => setEditPlan('business')}
                                 >
                                     <Text style={styles.toggleText}>BUSINESS</Text>
