@@ -375,6 +375,15 @@ export const adminApi = {
             body: JSON.stringify(data)
         }),
     deleteGig: (id: string) => request(`/admin/work/gigs/${id}`, { method: 'DELETE' }),
+    getPricingTiers: async () => {
+        return request("/admin/pricing");
+    },
+    updatePricingTier: async (id: string, data: Record<string, unknown>) => {
+        return request(`/admin/pricing/${id}`, {
+            method: "PUT",
+            body: JSON.stringify(data),
+        });
+    },
 };
 
 export const dbLabApi = {
@@ -525,15 +534,6 @@ export const dbLabApi = {
                 ]
             };
         }
-    },
-    getPricingTiers: async () => {
-        return request("/admin/pricing");
-    },
-    updatePricingTier: async (id: string, data: Record<string, unknown>) => {
-        return request(`/admin/pricing/${id}`, {
-            method: "PUT",
-            body: JSON.stringify(data),
-        });
-    },
+    }
 };
 
