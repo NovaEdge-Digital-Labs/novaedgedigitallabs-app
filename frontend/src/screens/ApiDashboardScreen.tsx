@@ -76,8 +76,7 @@ const ApiDashboardScreen = ({ navigation }: any) => {
                     }
                 }
             ]
- 
- 
+        );
     };
 
     const handleUpgrade = async () => {
