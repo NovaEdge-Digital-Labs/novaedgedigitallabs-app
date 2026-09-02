@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, View, StyleSheet, TouchableOpacity } from 'react-native';
 import { COLORS, SPACING, RADIUS } from '../../constants/colors';
 import { Text as UIText } from './Text';
-import { Button } from './Button';
+import Button from './Button';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Platform } from 'react-native';
