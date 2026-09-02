@@ -164,6 +164,7 @@ const ProfileScreen = ({ navigation }: any) => {
     const [isPostsLoading, setIsPostsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [deletePostId, setDeletePostId] = useState<string | null>(null);
+    const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
     const fetchUserPosts = useCallback(async (showLoader = true) => {
         if (showLoader) setIsPostsLoading(true);
@@ -218,20 +219,12 @@ const ProfileScreen = ({ navigation }: any) => {
     };
 
     const handleLogout = () => {
-        if (Platform.OS === 'web') {
-            if (window.confirm('Are you sure you want to log out?')) {
-                logout();
-            }
-        } else {
-            Alert.alert(
-                'Logout',
-                'Are you sure you want to log out?',
-                [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Logout', style: 'destructive', onPress: logout },
-                ]
-            );
-        }
+        setIsLogoutModalVisible(true);
+    };
+
+    const confirmLogout = () => {
+        setIsLogoutModalVisible(false);
+        logout();
     };
 
     /**
@@ -520,6 +513,16 @@ const ProfileScreen = ({ navigation }: any) => {
                     isDestructive={true}
                     onConfirm={confirmDeletePost}
                     onCancel={() => setDeletePostId(null)}
+                />
+
+                <ConfirmModal
+                    visible={isLogoutModalVisible}
+                    title="Log out"
+                    message="Are you sure you want to log out?"
+                    confirmText="Logout"
+                    isDestructive={true}
+                    onConfirm={confirmLogout}
+                    onCancel={() => setIsLogoutModalVisible(false)}
                 />
             </Screen>
         </ThemeWrapper>
