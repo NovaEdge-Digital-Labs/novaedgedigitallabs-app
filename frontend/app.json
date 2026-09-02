@@ -45,7 +45,9 @@
           "savePhotosPermission": "Allow NovaEdge to save images to your gallery.",
           "isAccessMediaLocationEnabled": false
         }
-      ]
+      ],
+      "expo-sharing",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

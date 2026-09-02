@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "887258933178",
+    "project_id": "novaedgedigitallabs-app",
+    "storage_bucket": "novaedgedigitallabs-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:887258933178:android:761718109089b3bd7e1f83",
+        "android_client_info": {
+          "package_name": "in.novaedgedigitallabs.tech"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsbzQiCeW4G6rX2VU-MCPG9HxPtu56AYs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
