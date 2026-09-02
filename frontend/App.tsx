@@ -22,6 +22,9 @@ import ThemeWrapper from './src/components/ThemeWrapper';
 import AnimatedSplash from './src/components/AnimatedSplash';
 import { applyWebStyleReset } from './src/utils/webStyleReset';
 import { syncPushToken } from './src/utils/pushNotifications';
+import * as WebBrowser from 'expo-web-browser';
+
+WebBrowser.maybeCompleteAuthSession();
 
 // Prevent the native splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
