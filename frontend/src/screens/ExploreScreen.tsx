@@ -102,6 +102,13 @@ const GROUPS: Group[] = [
                 tint: '#4CC38A',
                 tab: 'Academy',
             },
+            {
+                label: 'Blogs',
+                description: 'Read the latest tech articles and news',
+                icon: 'newspaper',
+                tint: '#00A2C7',
+                route: 'BlogScreen',
+            },
         ],
     },
     {

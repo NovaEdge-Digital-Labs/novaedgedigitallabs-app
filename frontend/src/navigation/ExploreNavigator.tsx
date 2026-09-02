@@ -9,6 +9,8 @@ import MyWorkspaceScreen from '../screens/MyWorkspaceScreen';
 import ApiDashboardScreen from '../screens/ApiDashboardScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import AdminUsersScreen from '../screens/AdminUsersScreen';
+import BlogScreen from '../screens/BlogScreen';
+import BlogDetailScreen from '../screens/BlogDetailScreen';
 import { COLORS } from '../constants/colors';
 
 const Stack = createStackNavigator();
@@ -29,6 +31,8 @@ const ExploreNavigator = () => (
         <Stack.Screen name="ApiDashboard" component={ApiDashboardScreen} />
         <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
         <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
+        <Stack.Screen name="BlogScreen" component={BlogScreen} />
+        <Stack.Screen name="BlogDetailScreen" component={BlogDetailScreen} />
     </Stack.Navigator>
 );
 
