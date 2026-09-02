@@ -82,12 +82,15 @@ const ApiDashboardScreen = ({ navigation }: any) => {
 
     const handleUpgrade = async () => {
         setUpgrading(true);
+        const price = stats?.proPlanPrice || 499;
+        const quota = stats?.proPlanQuota || 50000;
+        
         try {
             // 1. Create order
             const order = await developerApi.createSubscriptionOrder({
                 plan: 'pro',
-                amount: 499,
-                quota: 50000
+                amount: price,
+                quota: quota
             });
 
             // 2. Open Web Checkout
@@ -108,7 +111,7 @@ const ApiDashboardScreen = ({ navigation }: any) => {
                         razorpay_order_id: order_id || order.orderId,
                         razorpay_payment_id: payment_id,
                         razorpay_signature: signature,
-                        quotaToAdd: 50000
+                        quotaToAdd: quota
                     });
 
                     if (verifyRes.success) {
@@ -344,13 +347,13 @@ print(response.json())`,
                         <View style={styles.planCard}>
                             <View style={styles.planHeader}>
                                 <Text style={styles.planName}>Pro Developer</Text>
-                                <Text style={styles.planPrice}>₹499</Text>
+                                <Text style={styles.planPrice}>₹{stats?.proPlanPrice || 499}</Text>
                             </View>
                             <Text style={styles.planDesc}>Best for growing apps and businesses.</Text>
                             
                             <View style={styles.planFeature}>
                                 <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
-                                <Text style={styles.featureText}>+50,000 extra API calls instantly</Text>
+                                <Text style={styles.featureText}>+{stats?.proPlanQuota?.toLocaleString() || '50,000'} extra API calls instantly</Text>
                             </View>
                             <View style={styles.planFeature}>
                                 <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
@@ -366,7 +369,7 @@ print(response.json())`,
                                 onPress={handleUpgrade}
                                 disabled={upgrading}
                             >
-                                {upgrading ? <ActivityIndicator color="#000" /> : <Text style={styles.payBtnText}>Pay ₹499 via Razorpay</Text>}
+                                {upgrading ? <ActivityIndicator color="#000" /> : <Text style={styles.payBtnText}>Pay ₹{stats?.proPlanPrice || 499} via Razorpay</Text>}
                             </TouchableOpacity>
                         </View>
                         

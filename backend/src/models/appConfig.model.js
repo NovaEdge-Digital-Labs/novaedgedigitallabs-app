@@ -38,6 +38,14 @@ const appConfigSchema = new mongoose.Schema({
     referralMessage: {
         type: String,
         default: 'Join NovaEdge Digital Labs and get premium tools for FREE! Use my referral code: {CODE}\n\nDownload now: {LINK}'
+    },
+    apiProPlanPrice: {
+        type: Number,
+        default: 499
+    },
+    apiProPlanQuota: {
+        type: Number,
+        default: 50000
     }
 }, {
     timestamps: true

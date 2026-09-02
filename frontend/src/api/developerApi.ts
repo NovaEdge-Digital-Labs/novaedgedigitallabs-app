@@ -8,6 +8,8 @@ export interface ApiUsageStats {
         _id: string; // endpoint
         count: number;
     }[];
+    proPlanPrice?: number;
+    proPlanQuota?: number;
 }
 
 export interface ApiCallLog {

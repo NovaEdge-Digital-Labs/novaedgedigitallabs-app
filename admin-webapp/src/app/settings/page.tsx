@@ -36,7 +36,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-type SettingsTab = "General" | "Security" | "Notifications" | "Team Members" | "Cloud Sync" | "API Keys" | "Database" | "Appearance";
+type SettingsTab = "General" | "Security" | "Notifications" | "Team Members" | "Cloud Sync" | "API Keys" | "Database" | "Appearance" | "API Monetization";
 
 export default function SettingsPage() {
     const router = useRouter();
@@ -59,7 +59,9 @@ export default function SettingsPage() {
         enable2FA: true,
         strongPassword: true,
         sessionTimeout: false,
-        ipWhitelisting: false
+        ipWhitelisting: false,
+        apiProPlanPrice: 499,
+        apiProPlanQuota: 50000
     });
 
     useEffect(() => {
@@ -185,6 +187,7 @@ export default function SettingsPage() {
         { name: "API Keys", icon: Key },
         { name: "Database", icon: Database },
         { name: "Appearance", icon: Palette },
+        { name: "API Monetization", icon: Activity },
     ];
 
     if (loading) {
@@ -947,6 +950,54 @@ export default function SettingsPage() {
                                             </button>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case "API Monetization":
+                return (
+                    <div className="space-y-6">
+                        <div className="glass-panel p-6 rounded-2xl">
+                            <h2 className="text-lg font-bold mb-2 italic text-primary/80">API Pricing Configuration</h2>
+                            <p className="text-sm text-muted-foreground mb-6">Manage the price and quota limits for the Developer Pro API Plan. Changes take effect instantly in the mobile app.</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                        <Activity className="w-4 h-4 text-primary" />
+                                        Pro Plan Price (₹)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={config.apiProPlanPrice || 499}
+                                        onChange={(e) => updateField("apiProPlanPrice", Number(e.target.value))}
+                                        className="w-full bg-neutral-900 border border-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
+                                    />
+                                    <p className="text-xs text-muted-foreground mt-1">Amount in INR (e.g., 499)</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                        <Database className="w-4 h-4 text-primary" />
+                                        Pro Plan Quota (Calls)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={config.apiProPlanQuota || 50000}
+                                        onChange={(e) => updateField("apiProPlanQuota", Number(e.target.value))}
+                                        className="w-full bg-neutral-900 border border-border rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono"
+                                    />
+                                    <p className="text-xs text-muted-foreground mt-1">Number of API calls allocated</p>
+                                </div>
+                            </div>
+                            
+                            <div className="mt-8 p-4 bg-primary/10 border border-primary/20 rounded-xl flex gap-3">
+                                <Shield className="w-5 h-5 text-primary flex-shrink-0" />
+                                <div>
+                                    <h4 className="text-sm font-bold text-primary mb-1">Secure Checkout</h4>
+                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                        The Razorpay checkout automatically uses these server-side values. This prevents malicious actors from spoofing prices on the frontend app.
+                                    </p>
                                 </div>
                             </div>
                         </div>
