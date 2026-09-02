@@ -16,9 +16,13 @@ interface User {
     role?: 'user' | 'admin' | string;
     novaedgeCredits?: number;
     referralCode?: string;
+    referralStats?: {
+        totalReferrals: number;
+        pending: number;
+        rewards: number;
+    };
     dailyLoginStreak?: number;
     isEmailVerified?: boolean;
-    role?: string;
     // What the user came here to do — drives Home cards and Profile menu order.
     // Empty array means "not asked yet" → onboarding picker shows.
     personas?: Persona[];

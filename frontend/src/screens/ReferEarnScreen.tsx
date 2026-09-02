@@ -6,9 +6,12 @@ import ThemeWrapper from '../components/ThemeWrapper';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 
-const REFERRAL_CODE = 'NOVA2026';
+import { useAuthStore } from '../store/authStore';
 
 const ReferEarnScreen = ({ navigation }: any) => {
+    const { user } = useAuthStore();
+    const REFERRAL_CODE = user?.referralCode || 'NOVA2026';
+    const stats = user?.referralStats || { totalReferrals: 0, pending: 0, rewards: 0 };
     const primaryGradient = COLORS.getGradient(COLORS.primaryGradient);
 
     const handleCopyCode = async () => {
@@ -110,17 +113,17 @@ const ReferEarnScreen = ({ navigation }: any) => {
                 {/* Stats */}
                 <View style={[styles.statsCard, COLORS.getGlow(COLORS.accent, 10, 0.1)]}>
                     <View style={styles.statBox}>
-                        <Text style={styles.statValue}>0</Text>
+                        <Text style={styles.statValue}>{stats.totalReferrals}</Text>
                         <Text style={styles.statLabel}>Referrals</Text>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statBox}>
-                        <Text style={styles.statValue}>0</Text>
+                        <Text style={styles.statValue}>{stats.pending}</Text>
                         <Text style={styles.statLabel}>Pending</Text>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statBox}>
-                        <Text style={styles.statValue}>0</Text>
+                        <Text style={styles.statValue}>{stats.rewards}</Text>
                         <Text style={styles.statLabel}>Rewards</Text>
                     </View>
                 </View>

@@ -452,9 +452,21 @@ exports.getMe = async (req, res, next) => {
             });
         }
 
+        const referralsCount = await User.countDocuments({ referredBy: user._id });
+        const pendingRewards = 0; // Customize this based on your logic if needed
+        const totalRewards = Math.floor(referralsCount / 3) + Math.floor(referralsCount / 5) + Math.floor(referralsCount / 10) + (referralsCount > 0 ? 1 : 0); 
+        // Mock reward calculation based on tiers: 1, 3, 5, 10 friends. We can just keep it simple for now or fetch actual rewards if there's a Reward collection.
+
+        const publicData = user.toPublicJSON();
+        publicData.referralStats = {
+            totalReferrals: referralsCount,
+            pending: pendingRewards,
+            rewards: totalRewards
+        };
+
         res.status(200).json({
             success: true,
-            data: user.toPublicJSON()
+            data: publicData
         });
     } catch (error) {
         next(error);
