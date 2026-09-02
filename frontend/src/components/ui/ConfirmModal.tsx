@@ -52,19 +52,22 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                     <UIText variant="body" tone="secondary" style={styles.message}>{message}</UIText>
                     
                     <View style={styles.buttonRow}>
-                        <Button
-                            title={cancelText}
-                            variant="ghost"
-                            onPress={onCancel}
-                            style={styles.button}
-                            textStyle={{ color: COLORS.textMuted }}
-                        />
-                        <Button
-                            title={confirmText}
-                            variant={isDestructive ? 'primary' : 'primary'}
-                            onPress={onConfirm}
-                            style={[styles.button, isDestructive && { backgroundColor: COLORS.error, borderColor: COLORS.error }]}
-                        />
+                        <View style={styles.button}>
+                            <Button
+                                title={cancelText}
+                                variant="ghost"
+                                onPress={onCancel}
+                                textStyle={{ color: COLORS.textMuted }}
+                            />
+                        </View>
+                        <View style={styles.button}>
+                            <Button
+                                title={confirmText}
+                                variant={isDestructive ? 'primary' : 'primary'}
+                                onPress={onConfirm}
+                                style={isDestructive ? { backgroundColor: COLORS.error, borderColor: COLORS.error } : {}}
+                            />
+                        </View>
                     </View>
                 </View>
             </View>
