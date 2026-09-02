@@ -546,11 +546,11 @@ export default function SettingsPage() {
                                                 </button>
                                                 <button 
                                                     onClick={async () => {
-                                                        if(confirm("Are you sure you want to revoke this key?")) {
+                                                        if(confirm("Are you sure you want to delete this key permanently?")) {
                                                             try {
                                                                 const res = await adminApi.revokeApiKey(key._id);
                                                                 if(res.success) {
-                                                                    toast.success("Key revoked");
+                                                                    toast.success("Key deleted permanently");
                                                                     fetchApiKeys();
                                                                 }
                                                             } catch (e: unknown) {

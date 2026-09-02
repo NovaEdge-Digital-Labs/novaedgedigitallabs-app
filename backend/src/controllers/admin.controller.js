@@ -551,12 +551,11 @@ exports.revokeAdminApiKey = async (req, res, next) => {
             });
         }
 
-        key.isActive = false;
-        await key.save();
+        await key.deleteOne();
 
         res.status(200).json({
             success: true,
-            message: 'API Key revoked successfully'
+            message: 'API Key deleted successfully'
         });
     } catch (error) {
         next(error);
