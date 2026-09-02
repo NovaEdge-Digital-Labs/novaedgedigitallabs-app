@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { COLORS } from '../constants/colors';
+import { CONFIG } from '../constants/config';
 import ThemeWrapper from '../components/ThemeWrapper';
 import developerApi, { ApiUsageStats, ApiCallLog } from '../api/developerApi';
 
@@ -94,7 +95,7 @@ const ApiDashboardScreen = ({ navigation }: any) => {
 
             // 2. Open Web Checkout
             const redirectUrl = Linking.createURL('payment-success');
-            const checkoutUrl = `https://novaedgedigitallabs.tech/api/v1/developer/checkout/${order.orderId}`;
+            const checkoutUrl = `${CONFIG.API_URL}/developer/checkout/${order.orderId}?redirectUrl=${encodeURIComponent(redirectUrl)}`;
             
             const result = await WebBrowser.openAuthSessionAsync(checkoutUrl, redirectUrl);
             

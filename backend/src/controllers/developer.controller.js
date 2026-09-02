@@ -121,7 +121,7 @@ const crypto = require('crypto');
  */
 exports.createSubscriptionOrder = async (req, res, next) => {
     try {
-        const config = await AppConfig.findOne();
+        const config = await PlatformConfig.findOne().sort({ createdAt: -1 });
         const price = config ? config.apiProPlanPrice : 499;
         
         // Amount should be in paise
@@ -152,8 +152,10 @@ exports.createSubscriptionOrder = async (req, res, next) => {
 exports.renderCheckout = async (req, res, next) => {
     try {
         const { orderId } = req.params;
-        const config = await AppConfig.findOne();
+        const config = await PlatformConfig.findOne().sort({ createdAt: -1 });
         const price = config ? config.apiProPlanPrice : 499;
+
+        const redirectUrl = req.query.redirectUrl || 'novaedge://payment-success';
 
         const html = `
         <!DOCTYPE html>
@@ -176,7 +178,9 @@ exports.renderCheckout = async (req, res, next) => {
                     "order_id": "${orderId}",
                     "handler": function (response){
                         // Redirect back to app with payment details
-                        window.location.href = "novaedge://payment-success?payment_id=" + response.razorpay_payment_id + "&order_id=" + response.razorpay_order_id + "&signature=" + response.razorpay_signature;
+                        var baseRedirect = "${redirectUrl}";
+                        var separator = baseRedirect.indexOf('?') !== -1 ? '&' : '?';
+                        window.location.href = baseRedirect + separator + "payment_id=" + response.razorpay_payment_id + "&order_id=" + response.razorpay_order_id + "&signature=" + response.razorpay_signature;
                     },
                     "theme": {
                         "color": "#8B7CF6"
