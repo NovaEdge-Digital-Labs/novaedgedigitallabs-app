@@ -1,7 +1,7 @@
 const ApiKey = require('../models/ApiKey.model');
 const ApiCallLog = require('../models/ApiCallLog.model');
 const User = require('../models/User.model');
-const AppConfig = require('../models/appConfig.model');
+const PlatformConfig = require('../models/PlatformConfig.model');
 
 /**
  * @desc    Get current API key for the user
@@ -81,7 +81,7 @@ exports.getApiUsageStats = async (req, res, next) => {
             timestamp: { $gte: startOfMonth, $lte: endOfMonth }
         });
         
-        const config = await AppConfig.findOne();
+        const config = await PlatformConfig.findOne().sort({ createdAt: -1 });
 
         const stats = {
             monthlyCalls: currentMonthCalls,
@@ -208,7 +208,7 @@ exports.verifyPayment = async (req, res, next) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
         
-        const config = await AppConfig.findOne();
+        const config = await PlatformConfig.findOne().sort({ createdAt: -1 });
         const quotaToAdd = config ? config.apiProPlanQuota : 50000;
         
         const sign = razorpay_order_id + "|" + razorpay_payment_id;

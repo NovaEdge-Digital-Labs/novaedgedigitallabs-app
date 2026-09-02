@@ -59,6 +59,14 @@ const platformConfigSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    apiProPlanPrice: {
+        type: Number,
+        default: 499
+    },
+    apiProPlanQuota: {
+        type: Number,
+        default: 50000
+    },
     lastUpdatedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
