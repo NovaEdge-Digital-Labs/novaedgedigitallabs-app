@@ -35,6 +35,7 @@ interface AuthState {
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<any>;
     register: (name: string, email: string, password: string, referralCode?: string) => Promise<any>;
+    googleLogin: (idToken: string, referralCode?: string) => Promise<any>;
     setAuth: (user: User, token: string) => Promise<void>;
     logout: () => Promise<void>;
     loadUser: () => Promise<void>;
@@ -118,6 +119,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
             console.error(`[AuthStore] Registration error: ${errorMessage}`, err);
+            set({
+                isLoading: false,
+                error: errorMessage
+            });
+            throw err;
+        }
+    },
+
+    googleLogin: async (idToken, referralCode) => {
+        set({ isLoading: true, error: null });
+        console.log(`[AuthStore] Attempting Google login`);
+        try {
+            const data = await authApi.googleLogin(idToken, referralCode);
+            const { user, token } = data;
+            if (token) {
+                await AsyncStorage.setItem('userToken', token);
+                set({
+                    user,
+                    token,
+                    isAuthenticated: true,
+                    isLoading: false
+                });
+            }
+            return data;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || 'Google authentication failed';
+            console.error(`[AuthStore] Google Login error: ${errorMessage}`, err);
             set({
                 isLoading: false,
                 error: errorMessage

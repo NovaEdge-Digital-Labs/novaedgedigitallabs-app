@@ -11,6 +11,11 @@ export const authApi = {
         return response.data;
     },
 
+    googleLogin: async (idToken: string, referralCode?: string) => {
+        const response = await axiosInstance.post('/auth/google', { idToken, referralCode });
+        return response.data;
+    },
+
     verifyOtp: async (email: string, otp: string) => {
         const response = await axiosInstance.post('/auth/verify-otp', { email, otp });
         return response.data;

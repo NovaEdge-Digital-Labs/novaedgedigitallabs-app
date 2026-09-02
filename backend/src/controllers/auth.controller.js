@@ -4,6 +4,8 @@ const User = require('../models/User.model');
 const ToolUsage = require('../models/ToolUsage.model');
 const Subscription = require('../models/Subscription.model');
 const sendEmail = require('../utils/sendEmail');
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Generate JWT Token
 const generateToken = (user) => {
@@ -773,5 +775,95 @@ exports.updateNotificationPrefs = async (req, res, next) => {
         });
     } catch (error) {
         next(error);
+    }
+};
+
+/**
+ * @desc    Google Sign-in/Signup
+ * @route   POST /api/auth/google
+ * @access  Public
+ */
+exports.googleLogin = async (req, res, next) => {
+    try {
+        const { idToken, referralCode } = req.body;
+
+        if (!idToken) {
+            return res.status(400).json({ success: false, message: 'Google ID Token is required' });
+        }
+
+        // Verify Google token
+        const ticket = await googleClient.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+
+        if (!payload || !payload.email) {
+            return res.status(400).json({ success: false, message: 'Invalid Google token' });
+        }
+
+        const { email, name, picture } = payload;
+
+        // Check if user exists
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            // Register new user via Google
+            
+            // Handle Referral
+            let referredBy = null;
+            let initialCredits = 0;
+            if (referralCode) {
+                const referrer = await User.findOne({ referralCode });
+                if (referrer) {
+                    referredBy = referrer._id;
+                    initialCredits = 50;
+                    referrer.novaedgeCredits += 50;
+                    await referrer.save();
+                }
+            }
+
+            // Generate unique referral code for new user
+            const newReferralCode = name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '') + crypto.randomBytes(3).toString('hex').toUpperCase();
+
+            // Create user
+            user = await User.create({
+                name,
+                email,
+                password: crypto.randomBytes(16).toString('hex'), // dummy password
+                avatar: picture,
+                isEmailVerified: true, // Google emails are already verified
+                referredBy,
+                referralCode: newReferralCode,
+                novaedgeCredits: initialCredits,
+                provider: 'google'
+            });
+
+            // Initialize Tool Usage limit
+            await ToolUsage.create({ userId: user._id });
+
+            // Send welcome email asynchronously
+            const sendWelcomeEmail = require('../utils/sendWelcomeEmail');
+            sendWelcomeEmail(user).catch(err => console.error("Welcome email failed:", err));
+        } else {
+            // Update avatar if missing
+            if (!user.avatar && picture) {
+                user.avatar = picture;
+                await user.save();
+            }
+        }
+
+        // Generate Token
+        const token = generateToken(user);
+
+        res.status(200).json({
+            success: true,
+            token,
+            user: user.toPublicJSON()
+        });
+
+    } catch (error) {
+        console.error("Google Auth Error:", error);
+        res.status(401).json({ success: false, message: 'Google authentication failed' });
     }
 };

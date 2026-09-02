@@ -11,8 +11,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 import { COLORS, SPACING, RADIUS, withAlpha } from '../constants/colors';
 import { useAuthStore } from '../store/authStore';
+
+WebBrowser.maybeCompleteAuthSession();
 import ThemeWrapper from '../components/ThemeWrapper';
 import { Text, Button, Input } from '../components/ui';
 import { CONFIG } from '../constants/config';
@@ -22,6 +26,33 @@ type Errors = Partial<Record<'name' | 'email' | 'password' | 'confirmPassword', 
 const RegisterScreen = () => {
     const navigation = useNavigation<any>();
     const register = useAuthStore((state) => state.register);
+    const googleLogin = useAuthStore((state) => state.googleLogin);
+
+    const [request, response, promptAsync] = Google.useAuthRequest({
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'web-client-id.apps.googleusercontent.com',
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 'android-client-id.apps.googleusercontent.com',
+    });
+
+    React.useEffect(() => {
+        if (response?.type === 'success') {
+            const { id_token } = response.params;
+            if (id_token) {
+                handleGoogleSignup(id_token);
+            }
+        }
+    }, [response]);
+
+    const handleGoogleSignup = async (idToken: string) => {
+        setLoading(true);
+        try {
+            // Note: We can pass the referralCode from the input if the user filled it before clicking Google!
+            await googleLogin(idToken, referralCode);
+        } catch (error: any) {
+            Alert.alert('Google Signup Failed', error.message || 'Authentication failed');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -153,6 +184,21 @@ const RegisterScreen = () => {
                             style={styles.submit}
                         />
 
+                        <View style={styles.dividerContainer}>
+                            <View style={styles.dividerLine} />
+                            <Text variant="caption" tone="muted" style={styles.dividerText}>OR</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        <Pressable 
+                            style={styles.googleButton} 
+                            onPress={() => promptAsync()} 
+                            disabled={!request || loading}
+                        >
+                            <Ionicons name="logo-google" size={20} color={COLORS.text} style={styles.googleIcon} />
+                            <Text variant="bodyStrong">Continue with Google</Text>
+                        </Pressable>
+
                         <View style={styles.loginContainer}>
                             <Text variant="body" tone="muted">Already have an account? </Text>
                             <Pressable onPress={() => navigation.navigate('Login')} hitSlop={8}>
@@ -236,7 +282,36 @@ const styles = StyleSheet.create({
     footerLinks: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 4,
+        justifyContent: 'center',
+        marginTop: SPACING.xs,
+    },
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: SPACING.xl,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: COLORS.border,
+    },
+    dividerText: {
+        marginHorizontal: SPACING.md,
+    },
+    googleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: COLORS.surface,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderRadius: RADIUS.lg,
+        paddingVertical: SPACING.md,
+        paddingHorizontal: SPACING.xl,
+        marginBottom: SPACING.xl,
+    },
+    googleIcon: {
+        marginRight: SPACING.sm,
     },
 });
 
