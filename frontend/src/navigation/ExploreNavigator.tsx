@@ -32,7 +32,7 @@ const ExploreNavigator = () => (
         <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
         <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
         <Stack.Screen name="BlogScreen" component={BlogScreen} />
-        <Stack.Screen name="BlogDetailScreen" component={BlogDetailScreen} />
+        <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
     </Stack.Navigator>
 );
 
