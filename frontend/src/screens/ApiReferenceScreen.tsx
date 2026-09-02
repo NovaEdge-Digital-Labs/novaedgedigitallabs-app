@@ -31,6 +31,60 @@ const endpoints = [
         description: 'Calculate monthly loan EMI and total interest payable.',
         requestBody: `{\n  "principal": 500000,\n  "rate": 8.5,\n  "tenure": 5,\n  "tenureType": "years"\n}`,
         response: `{\n  "success": true,\n  "data": {\n    "emi": 10258.27,\n    "totalInterest": 115496.20,\n    "totalAmount": 615496.20\n  }\n}`
+    },
+    {
+        id: 'generate-invoice',
+        method: 'POST',
+        path: '/api/v1/tools/generate-invoice',
+        title: 'Generate Invoice',
+        description: 'Generate a professional PDF invoice from provided details.',
+        requestBody: `{\n  "invoiceNumber": "INV-001",\n  "clientName": "Acme Corp",\n  "amount": 5000\n}`,
+        response: `{\n  "success": true,\n  "pdfUrl": "https://..."\n}`
+    },
+    {
+        id: 'compress-image',
+        method: 'POST',
+        path: '/api/v1/tools/compress-image',
+        title: 'Compress Image',
+        description: 'Compress an image file to reduce its size. Requires multipart/form-data.',
+        requestBody: `Form Data:\n  image: (file object)`,
+        response: `{\n  "success": true,\n  "originalSize": 1024000,\n  "compressedSize": 256000,\n  "url": "https://..."\n}`
+    },
+    {
+        id: 'get-jobs',
+        method: 'GET',
+        path: '/api/v1/jobs',
+        title: 'Get Jobs',
+        description: 'Fetch the latest active job postings.',
+        requestBody: `No body required`,
+        response: `{\n  "success": true,\n  "count": 10,\n  "data": [...]\n}`
+    },
+    {
+        id: 'get-academy',
+        method: 'GET',
+        path: '/api/v1/academy',
+        title: 'Get Courses',
+        description: 'Fetch available academy courses.',
+        requestBody: `No body required`,
+        response: `{\n  "success": true,\n  "count": 5,\n  "data": [...]\n}`
+    },
+    {
+        id: 'get-marketplace',
+        method: 'GET',
+        path: '/api/v1/marketplace',
+        title: 'Get Gigs',
+        description: 'Fetch freelance gigs from the marketplace.',
+        requestBody: `No body required`,
+        response: `{\n  "success": true,\n  "count": 12,\n  "data": [...]\n}`
+    },
+    {
+        id: 'get-store',
+        method: 'GET',
+        path: '/api/v1/store',
+        title: 'Get Digital Products',
+        description: 'Fetch digital products available in the store.',
+        requestBody: `No body required`,
+        response: `{\n  "success": true,\n  "count": 8,\n  "data": [...]\n}`
     }
 ];
 
