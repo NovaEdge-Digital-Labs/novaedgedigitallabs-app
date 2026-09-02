@@ -213,6 +213,8 @@ export interface PlatformConfig {
     strongPassword: boolean;
     sessionTimeout: boolean;
     ipWhitelisting: boolean;
+    apiProPlanPrice?: number;
+    apiProPlanQuota?: number;
     [key: string]: string | number | boolean | object | undefined;
 }
 
