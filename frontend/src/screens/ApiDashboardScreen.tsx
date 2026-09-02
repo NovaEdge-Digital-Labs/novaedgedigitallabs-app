@@ -9,9 +9,12 @@ import {
     Alert,
     Clipboard,
     FlatList,
-    Dimensions
+    Dimensions,
+    Modal
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import developerApi, { ApiUsageStats, ApiCallLog } from '../api/developerApi';
@@ -25,6 +28,8 @@ const ApiDashboardScreen = ({ navigation }: any) => {
     const [history, setHistory] = useState<ApiCallLog[]>([]);
     const [activeTab, setActiveTab] = useState('usage'); // usage, history, snippets
     const [snippetLang, setSnippetLang] = useState('js');
+    const [showUpgrade, setShowUpgrade] = useState(false);
+    const [upgrading, setUpgrading] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -71,7 +76,59 @@ const ApiDashboardScreen = ({ navigation }: any) => {
                     }
                 }
             ]
-        );
+ 
+ 
+    };
+
+    const handleUpgrade = async () => {
+        setUpgrading(true);
+        try {
+            // 1. Create order
+            const order = await developerApi.createSubscriptionOrder({
+                plan: 'pro',
+                amount: 499,
+                quota: 50000
+            });
+
+            // 2. Open Web Checkout
+            const redirectUrl = Linking.createURL('payment-success');
+            const checkoutUrl = `https://novaedgedigitallabs.tech/api/v1/developer/checkout/${order.orderId}`;
+            
+            const result = await WebBrowser.openAuthSessionAsync(checkoutUrl, redirectUrl);
+            
+            if (result.type === 'success' && result.url) {
+                // Parse params from deep link: novaedge://payment-success?payment_id=...&order_id=...&signature=...
+                const urlObj = new URL(result.url);
+                const payment_id = urlObj.searchParams.get('payment_id');
+                const order_id = urlObj.searchParams.get('order_id');
+                const signature = urlObj.searchParams.get('signature');
+
+                if (payment_id && signature) {
+                    const verifyRes = await developerApi.verifyPayment({
+                        razorpay_order_id: order_id || order.orderId,
+                        razorpay_payment_id: payment_id,
+                        razorpay_signature: signature,
+                        quotaToAdd: 50000
+                    });
+
+                    if (verifyRes.success) {
+                        Alert.alert('Success', 'API Quota Upgraded!');
+                        setShowUpgrade(false);
+                        fetchData(); // Refresh stats
+                    } else {
+                        Alert.alert('Failed', verifyRes.message || 'Payment verification failed');
+                    }
+                }
+            } else {
+                // User cancelled or closed browser
+                Alert.alert('Payment Cancelled', 'You closed the checkout.');
+            }
+        } catch (error: any) {
+            console.error('Upgrade Error:', error);
+            Alert.alert('Error', error.response?.data?.message || 'Failed to initialize payment');
+        } finally {
+            setUpgrading(false);
+        }
     };
 
     const renderUsage = () => {
@@ -81,7 +138,12 @@ const ApiDashboardScreen = ({ navigation }: any) => {
         return (
             <View style={styles.tabContent}>
                 <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Monthly Quota</Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                        <Text style={styles.cardTitle}>Monthly Quota</Text>
+                        <TouchableOpacity style={styles.upgradeBtnSmall} onPress={() => setShowUpgrade(true)}>
+                            <Text style={styles.upgradeBtnSmallText}>UPGRADE</Text>
+                        </TouchableOpacity>
+                    </View>
                     <View style={styles.progressBarContainer}>
                         <View style={[styles.progressBar, { width: `${Math.min(percentage, 100)}%` }]} />
                     </View>
@@ -109,7 +171,7 @@ const ApiDashboardScreen = ({ navigation }: any) => {
                     </View>
                 ))}
             </View>
-        );
+ 
     };
 
     const renderHistory = () => (
@@ -205,7 +267,7 @@ print(response.json())`,
                     <Text style={styles.copySnippetText}>Copy Code</Text>
                 </TouchableOpacity>
             </View>
-        );
+ 
     };
 
     if (loading) {
@@ -215,7 +277,7 @@ print(response.json())`,
                     <ActivityIndicator size="large" color={COLORS.primary} />
                 </View>
             </ThemeWrapper>
-        );
+ 
     }
 
     return (
@@ -271,7 +333,49 @@ print(response.json())`,
                     <Text style={styles.docsBtnText}>View Full API Documentation</Text>
                     <Ionicons name="chevron-forward" size={16} color={COLORS.white} />
                 </TouchableOpacity>
-            </ScrollView>
+
+
+
+            <Modal visible={showUpgrade} animationType="slide" transparent>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Upgrade API Plan</Text>
+                        
+                        <View style={styles.planCard}>
+                            <View style={styles.planHeader}>
+                                <Text style={styles.planName}>Pro Developer</Text>
+                                <Text style={styles.planPrice}>₹499</Text>
+                            </View>
+                            <Text style={styles.planDesc}>Best for growing apps and businesses.</Text>
+                            
+                            <View style={styles.planFeature}>
+                                <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
+                                <Text style={styles.featureText}>+50,000 extra API calls instantly</Text>
+                            </View>
+                            <View style={styles.planFeature}>
+                                <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
+                                <Text style={styles.featureText}>Premium priority support</Text>
+                            </View>
+                            <View style={styles.planFeature}>
+                                <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
+                                <Text style={styles.featureText}>Access to all endpoints</Text>
+                            </View>
+
+                            <TouchableOpacity 
+                                style={[styles.payBtn, upgrading && { opacity: 0.7 }]} 
+                                onPress={handleUpgrade}
+                                disabled={upgrading}
+                            >
+                                {upgrading ? <ActivityIndicator color="#000" /> : <Text style={styles.payBtnText}>Pay ₹499 via Razorpay</Text>}
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <TouchableOpacity style={styles.closeModalBtn} onPress={() => setShowUpgrade(false)}>
+                            <Text style={styles.closeModalText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </ThemeWrapper>
     );
 };
@@ -386,6 +490,98 @@ const styles = StyleSheet.create({
         borderRadius: 16,
     },
     docsBtnText: { flex: 1, color: 'white', fontWeight: 'bold', fontSize: 15, marginLeft: 12 },
+    upgradeBtnSmall: {
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+    },
+    upgradeBtnSmallText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold',
+        letterSpacing: 0.5,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: COLORS.panel,
+        borderRadius: 20,
+        padding: 24,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    modalTitle: {
+        color: 'white',
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        textAlign: 'center',
+    },
+    planCard: {
+        backgroundColor: COLORS.backgroundSoft,
+        borderRadius: 16,
+        padding: 20,
+        borderWidth: 1,
+        borderColor: COLORS.primary,
+        marginBottom: 20,
+    },
+    planHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    planName: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    planPrice: {
+        color: COLORS.primary,
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    planDesc: {
+        color: COLORS.textMuted,
+        fontSize: 14,
+        marginBottom: 20,
+    },
+    planFeature: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    featureText: {
+        color: 'white',
+        fontSize: 14,
+        marginLeft: 10,
+    },
+    payBtn: {
+        backgroundColor: COLORS.primary,
+        padding: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 20,
+    },
+    payBtnText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    closeModalBtn: {
+        padding: 15,
+        alignItems: 'center',
+    },
+    closeModalText: {
+        color: COLORS.textMuted,
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
 });
 
 export default ApiDashboardScreen;
