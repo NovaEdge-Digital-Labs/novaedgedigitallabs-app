@@ -306,6 +306,10 @@ export const adminApi = {
         method: 'POST',
         body: JSON.stringify(data)
     }),
+    updateApiKey: (id: string, data: { monthlyLimit: number }) => request(`/admin/api-keys/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    }),
     revokeApiKey: (id: string) => request(`/admin/api-keys/${id}`, { method: 'DELETE' }),
 
     // Services management

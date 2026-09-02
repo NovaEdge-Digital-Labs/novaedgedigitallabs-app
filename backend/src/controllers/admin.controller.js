@@ -563,6 +563,39 @@ exports.revokeAdminApiKey = async (req, res, next) => {
     }
 };
 
+/**
+ * @desc    Update API Key (e.g. increase/decrease monthly limit)
+ * @route   PUT /api/admin/api-keys/:id
+ * @access  Private/Admin
+ */
+exports.updateAdminApiKey = async (req, res, next) => {
+    try {
+        const { monthlyLimit } = req.body;
+        const key = await ApiKey.findById(req.params.id);
+
+        if (!key) {
+            return res.status(404).json({
+                success: false,
+                message: 'API Key not found'
+            });
+        }
+
+        if (monthlyLimit !== undefined) {
+            key.monthlyLimit = monthlyLimit;
+        }
+
+        await key.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'API Key updated successfully',
+            apiKey: key
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // ==========================================
 // SERVICES MANAGEMENT
 // ==========================================

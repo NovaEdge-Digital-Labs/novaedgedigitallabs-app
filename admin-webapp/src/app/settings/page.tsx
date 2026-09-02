@@ -16,6 +16,7 @@ import {
     Save,
     RotateCcw,
     Plus,
+    Minus,
     Lock,
     Mail,
     Smartphone,
@@ -566,7 +567,33 @@ export default function SettingsPage() {
                                             
                                             <div className="flex items-center justify-between mt-3 px-1">
                                                 <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
-                                                    <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> {key.monthlyCalls}/{key.monthlyLimit} calls</span>
+                                                    <span className="flex items-center gap-1">
+                                                        <Activity className="w-3 h-3" /> {key.monthlyCalls}/{key.monthlyLimit} calls
+                                                        <div className="flex items-center gap-0.5 ml-1">
+                                                            <button 
+                                                                onClick={async () => {
+                                                                    const newLimit = key.monthlyLimit + 1000;
+                                                                    try {
+                                                                        const res = await adminApi.updateApiKey(key._id, { monthlyLimit: newLimit });
+                                                                        if(res.success) fetchApiKeys();
+                                                                    } catch(e) {}
+                                                                }}
+                                                                className="p-0.5 hover:bg-primary/20 rounded text-primary transition-all"
+                                                                title="Increase Quota"
+                                                            ><Plus className="w-3 h-3" /></button>
+                                                            <button 
+                                                                onClick={async () => {
+                                                                    const newLimit = Math.max(0, key.monthlyLimit - 1000);
+                                                                    try {
+                                                                        const res = await adminApi.updateApiKey(key._id, { monthlyLimit: newLimit });
+                                                                        if(res.success) fetchApiKeys();
+                                                                    } catch(e) {}
+                                                                }}
+                                                                className="p-0.5 hover:bg-red-500/20 rounded text-red-500 transition-all"
+                                                                title="Decrease Quota"
+                                                            ><Minus className="w-3 h-3" /></button>
+                                                        </div>
+                                                    </span>
                                                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Created {new Date(key.createdAt).toLocaleDateString()}</span>
                                                 </div>
                                                 <Link href={`/analytics?key=${key._id}`} className="text-[10px] font-bold text-primary hover:underline">View Analytics</Link>

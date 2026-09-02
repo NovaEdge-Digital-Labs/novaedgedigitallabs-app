@@ -17,6 +17,7 @@ const {
     getAdminApiKeys,
     createAdminApiKey,
     revokeAdminApiKey,
+    updateAdminApiKey,
     getAdminServices,
     createService,
     updateService,
@@ -68,6 +69,7 @@ router.delete('/products/:id', deleteProduct);
 // API Key management
 router.get('/api-keys', getAdminApiKeys);
 router.post('/api-keys', createAdminApiKey);
+router.put('/api-keys/:id', updateAdminApiKey);
 router.delete('/api-keys/:id', revokeAdminApiKey);
 
 // Service management
