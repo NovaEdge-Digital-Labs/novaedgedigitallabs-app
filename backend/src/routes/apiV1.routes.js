@@ -7,6 +7,12 @@ const {
     calculateEMI,
     generateInvoice
 } = require('../controllers/tools.controller');
+const {
+    getJobs,
+    getCourses,
+    getGigs,
+    getProducts
+} = require('../controllers/apiV1.controller');
 const apiKeyAuth = require('../middleware/apiKeyAuth.middleware');
 const upload = require('../config/multer');
 
@@ -18,5 +24,11 @@ router.post('/tools/generate-qr', generateQR);
 router.post('/tools/calculate-gst', calculateGST);
 router.post('/tools/calculate-emi', calculateEMI);
 router.post('/tools/generate-invoice', generateInvoice);
+
+// Data Endpoints
+router.get('/jobs', getJobs);
+router.get('/academy', getCourses);
+router.get('/marketplace', getGigs);
+router.get('/store', getProducts);
 
 module.exports = router;
