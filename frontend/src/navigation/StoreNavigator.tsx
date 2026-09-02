@@ -17,7 +17,6 @@ const StoreNavigator = () => {
             screenOptions={{
                 ...stackScreenOptions,
                 headerShown: false,
-                animationEnabled: true,
             }}
         >
             <Stack.Screen name="StoreMain" component={StoreScreen} />

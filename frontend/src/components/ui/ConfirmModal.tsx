@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
         width: '100%',
         maxWidth: 340,
         backgroundColor: COLORS.surface,
-        borderRadius: RADIUS.xl,
+        borderRadius: RADIUS.lg,
         padding: SPACING.xl,
         alignItems: 'center',
         borderWidth: 1,

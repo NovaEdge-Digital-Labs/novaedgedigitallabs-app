@@ -18,6 +18,14 @@ export const marketplaceApi = {
         const response = await axiosInstance.delete(`/marketplace/gigs/${id}`);
         return response.data;
     },
+    getGigById: async (id: string) => {
+        const response = await axiosInstance.get(`/marketplace/gigs/${id}`);
+        return response.data;
+    },
+    orderGig: async (id: string) => {
+        const response = await axiosInstance.post(`/marketplace/gigs/${id}/order`);
+        return response.data;
+    },
 
     // Projects
     getProjects: async (params?: { search?: string }) => {
@@ -66,6 +74,7 @@ export const marketplaceApi = {
         razorpayOrderId: string;
         razorpayPaymentId: string;
         razorpaySignature: string;
+        contractId?: string;
     }) => {
         const response = await axiosInstance.post('/marketplace/verify-escrow', payment);
         return response.data;

@@ -77,7 +77,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
                                 </View>
 
                                 <View style={styles.sealBadge}>
-                                    <Ionicons name="checkmark-seal" size={32} color="#FFD700" />
+                                    <Ionicons name="shield-checkmark" size={32} color="#FFD700" />
                                     <Text style={styles.sealText}>VERIFIED</Text>
                                 </View>
 
