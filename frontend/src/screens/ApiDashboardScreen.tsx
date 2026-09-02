@@ -173,7 +173,7 @@ const ApiDashboardScreen = ({ navigation }: any) => {
                     </View>
                 ))}
             </View>
- 
+        );
     };
 
     const renderHistory = () => (
@@ -269,7 +269,7 @@ print(response.json())`,
                     <Text style={styles.copySnippetText}>Copy Code</Text>
                 </TouchableOpacity>
             </View>
- 
+        );
     };
 
     if (loading) {
@@ -279,7 +279,7 @@ print(response.json())`,
                     <ActivityIndicator size="large" color={COLORS.primary} />
                 </View>
             </ThemeWrapper>
- 
+        );
     }
 
     return (
@@ -335,8 +335,7 @@ print(response.json())`,
                     <Text style={styles.docsBtnText}>View Full API Documentation</Text>
                     <Ionicons name="chevron-forward" size={16} color={COLORS.white} />
                 </TouchableOpacity>
-
-
+            </ScrollView>
 
             <Modal visible={showUpgrade} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
