@@ -1,4 +1,7 @@
-const DEV_BASE_URL = 'http://192.168.1.10:5000';
+import { Platform } from 'react-native';
+
+// Use localhost for web, and your local IP for mobile devices (Expo Go)
+const DEV_BASE_URL = Platform.OS === 'web' ? 'http://localhost:5000' : 'http://192.168.29.100:5000';
 const PROD_BASE_URL = 'https://app.novaedgedigitallabs.in';
 
 export const CONFIG = {

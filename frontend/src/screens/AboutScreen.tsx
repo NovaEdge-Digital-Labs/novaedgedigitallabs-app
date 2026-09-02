@@ -43,12 +43,8 @@ const AboutScreen = ({ navigation }: any) => {
             </View>
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Hero Card */}
-                <LinearGradient
-                    colors={primaryGradient}
-                    style={styles.heroCard}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                <View
+                    style={[styles.heroCard, { backgroundColor: COLORS.primary }]}
                 >
                     <View style={styles.iconContainer}>
                         <Image source={require('../../assets/icon.png')} style={styles.appIcon} />
@@ -58,7 +54,7 @@ const AboutScreen = ({ navigation }: any) => {
                     <View style={styles.versionBadge}>
                         <Text style={styles.versionText}>v1.0.0 • Est. 2025</Text>
                     </View>
-                </LinearGradient>
+                </View>
 
                 {/* Vision */}
                 <View style={[styles.card, COLORS.getGlow(COLORS.primary, 10, 0.1)]}>

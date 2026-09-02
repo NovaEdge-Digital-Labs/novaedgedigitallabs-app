@@ -1,61 +1,57 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { COLORS } from '../constants/colors';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
-
 import { shareContent } from '../utils/shareHelper';
+import ThemeWrapper from '../components/ThemeWrapper';
 
 const SERVICES = [
     {
         id: 'web-development',
         title: 'Web Development',
-        icon: 'code-slash-outline',
-        description: 'Custom React & Next.js websites built for performance and scalability.',
+        icon: 'code-slash',
+        description: 'Custom React & Next.js websites built for top performance and scalable growth.',
         features: ['E-commerce', 'SaaS Platforms', 'SEO Optimized'],
     },
     {
         id: 'app-development',
         title: 'Mobile App Development',
-        icon: 'phone-portrait-outline',
-        description: 'Native & Cross-platform apps (Android/iOS) using React Native.',
+        icon: 'phone-portrait',
+        description: 'Native & Cross-platform apps for Android and iOS using React Native.',
         features: ['Real-time Apps', 'Payment Integration', 'Cloud Sync'],
     },
     {
         id: 'ui-ux',
         title: 'UI/UX Design',
-        icon: 'color-palette-outline',
-        description: 'Premium user interfaces and seamless user experience design.',
+        icon: 'color-palette',
+        description: 'Premium user interfaces and seamless user experience design tailored to your brand.',
         features: ['Prototyping', 'User Research', 'Brand Graphics'],
     },
     {
         id: 'seo',
-        title: 'SEO & Digital Marketing',
-        icon: 'trending-up-outline',
+        title: 'Digital Marketing',
+        icon: 'trending-up',
         description: 'Data-driven marketing to rank your business on top of search results.',
         features: ['Keyword Research', 'Backlink Strategy', 'PPC Ads'],
     },
     {
         id: 'other',
         title: 'Custom Software',
-        icon: 'settings-outline',
+        icon: 'hardware-chip',
         description: 'Bespoke software solutions tailored to your unique business needs.',
         features: ['API Integrations', 'Legacy Migration', 'AI/ML Solutions'],
     },
 ];
 
-import ThemeWrapper from '../components/ThemeWrapper';
-
 const ServicesScreen = () => {
     const navigation = useNavigation<any>();
-    const primaryGradient = COLORS.getGradient(COLORS.primaryGradient);
 
     const renderServiceCard = (service: any) => (
-        <View key={service.id} style={[styles.card, COLORS.getGlow(COLORS.primary, 10, 0.1)]}>
+        <View key={service.id} style={styles.card}>
             <View style={styles.cardHeader}>
-                <View style={[styles.iconContainer, { backgroundColor: 'transparent' }]}>
-                    <Ionicons name={service.icon as any} size={32} color={COLORS.primary} />
+                <View style={styles.iconContainer}>
+                    <Ionicons name={service.icon as any} size={28} color={COLORS.primary} />
                 </View>
                 <View style={styles.headerText}>
                     <Text style={styles.serviceTitle}>{service.title}</Text>
@@ -66,7 +62,7 @@ const ServicesScreen = () => {
             <View style={styles.featuresContainer}>
                 {service.features.map((feature: string, index: number) => (
                     <View key={index} style={styles.featureItem}>
-                        <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+                        <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
                         <Text style={styles.featureText}>{feature}</Text>
                     </View>
                 ))}
@@ -74,18 +70,12 @@ const ServicesScreen = () => {
 
             <View style={styles.actionRow}>
                 <TouchableOpacity
-                    style={[styles.quoteButton, COLORS.getGlow(COLORS.primary, 15, 0)]}
+                    style={styles.quoteButton}
                     onPress={() => navigation.navigate('LeadForm', { service: service.id })}
                     activeOpacity={0.8}
                 >
-                    <LinearGradient
-                        colors={primaryGradient}
-                        style={[StyleSheet.absoluteFill, { borderRadius: 12 }]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                    />
                     <Text style={styles.quoteButtonText}>Get Free Quote</Text>
-                    <Ionicons name="arrow-forward" size={18} color="white" />
+                    <Ionicons name="arrow-forward" size={18} color={COLORS.white} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -93,7 +83,7 @@ const ServicesScreen = () => {
                     onPress={() => shareContent({ title: service.title, description: service.description, type: 'Service' })}
                     activeOpacity={0.7}
                 >
-                    <Ionicons name="share-social-outline" size={20} color={COLORS.white} />
+                    <Ionicons name="share-social-outline" size={20} color={COLORS.textPrimary} />
                 </TouchableOpacity>
             </View>
         </View>
@@ -101,24 +91,20 @@ const ServicesScreen = () => {
 
     return (
         <ThemeWrapper>
-            <ScrollView contentContainerStyle={styles.contentContainer}>
-                <LinearGradient
-                    colors={primaryGradient}
-                    style={styles.heroSection}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                >
+            <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+                <View style={styles.heroSection}>
                     <Text style={styles.heroHeading}>Expert Solutions for Your Digital Growth</Text>
                     <Text style={styles.heroSubheading}>Choose from our range of premium services to scale your business.</Text>
-                </LinearGradient>
+                </View>
 
                 {SERVICES.map(renderServiceCard)}
 
-                <View style={[styles.contactCard, COLORS.getGlow(COLORS.accent, 15, 0.2)]}>
+                <View style={styles.contactCard}>
+                    <Ionicons name="chatbubbles-outline" size={32} color={COLORS.accent} style={{ marginBottom: 12 }} />
                     <Text style={styles.contactTitle}>Have a unique project?</Text>
                     <Text style={styles.contactSub}>We love working on innovative ideas. Let's discuss yours.</Text>
                     <TouchableOpacity
-                        style={[styles.contactButton, COLORS.getGlow(COLORS.primary, 10, 0.3)]}
+                        style={styles.contactButton}
                         onPress={() => navigation.navigate('LeadForm', { service: 'other' })}
                         activeOpacity={0.8}
                     >
@@ -132,82 +118,85 @@ const ServicesScreen = () => {
 
 const styles = StyleSheet.create({
     contentContainer: {
-        padding: 20,
-        paddingBottom: 40,
+        padding: SPACING.lg,
+        paddingBottom: SPACING.xxl * 2,
     },
     heroSection: {
-        marginBottom: 30,
-        padding: 30,
-        borderRadius: 24,
+        marginBottom: SPACING.xl,
+        padding: SPACING.xl,
+        borderRadius: RADIUS.lg,
+        backgroundColor: COLORS.withAlpha(COLORS.primary, 0.08),
+        borderWidth: 1,
+        borderColor: COLORS.withAlpha(COLORS.primary, 0.2),
     },
     heroHeading: {
-        fontSize: 28,
-        fontWeight: '900',
+        ...TYPOGRAPHY.h2,
         color: COLORS.white,
-        marginBottom: 10,
-        lineHeight: 36,
+        marginBottom: SPACING.sm,
     },
     heroSubheading: {
-        fontSize: 16,
-        color: COLORS.textLight,
-        lineHeight: 24,
-        opacity: 0.9,
+        ...TYPOGRAPHY.body,
+        color: 'rgba(255,255,255,0.85)',
     },
     card: {
-        ...COLORS.glass,
-        borderRadius: COLORS.geometry.radiusMedium,
-        padding: 20,
-        marginBottom: 20,
+        backgroundColor: COLORS.surface,
+        borderRadius: RADIUS.lg,
+        padding: SPACING.xl,
+        marginBottom: SPACING.lg,
+        borderWidth: 1,
+        borderColor: COLORS.borderSubtle,
+        ...SHADOWS.medium,
     },
     cardHeader: {
         flexDirection: 'row',
-        marginBottom: 15,
+        marginBottom: SPACING.md,
+        alignItems: 'flex-start',
     },
     iconContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: 16,
+        width: 56,
+        height: 56,
+        borderRadius: RADIUS.md,
+        backgroundColor: COLORS.withAlpha(COLORS.primary, 0.1),
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 15,
+        marginRight: SPACING.md,
     },
     headerText: {
         flex: 1,
     },
     serviceTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: COLORS.white,
-        marginBottom: 5,
+        ...TYPOGRAPHY.h4,
+        color: COLORS.textPrimary,
+        marginBottom: 4,
     },
     description: {
-        fontSize: 14,
-        color: COLORS.textLight,
-        lineHeight: 20,
+        ...TYPOGRAPHY.bodySmall,
+        color: COLORS.textSecondary,
     },
     featuresContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        marginBottom: 22,
-        backgroundColor: 'transparent',
-        padding: 12,
-        borderRadius: COLORS.geometry.radiusMedium,
+        backgroundColor: COLORS.background,
+        padding: SPACING.md,
+        borderRadius: RADIUS.md,
+        marginBottom: SPACING.lg,
+        gap: SPACING.sm,
     },
     featureItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        width: '50%',
-        paddingVertical: 6,
+        width: '100%',
     },
     featureText: {
-        fontSize: 13,
-        color: COLORS.textLight,
-        marginLeft: 8,
+        ...TYPOGRAPHY.bodySmall,
+        color: COLORS.textPrimary,
+        marginLeft: SPACING.xs,
+        fontWeight: '500',
     },
     actionRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: SPACING.sm,
     },
     quoteButton: {
         flex: 1,
@@ -215,58 +204,54 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingVertical: 14,
-        borderRadius: 12,
+        borderRadius: RADIUS.md,
+        backgroundColor: COLORS.primary,
         overflow: 'hidden',
     },
     shareButton: {
         width: 48,
         height: 48,
-        borderRadius: 12,
-        backgroundColor: COLORS.backgroundSoft || 'rgba(255, 255, 255, 0.08)',
+        borderRadius: RADIUS.md,
+        backgroundColor: COLORS.background,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: COLORS.border,
+        borderColor: COLORS.borderSubtle,
     },
     quoteButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
-        marginRight: 8,
+        ...TYPOGRAPHY.button,
+        color: COLORS.white,
+        marginRight: SPACING.xs,
     },
     contactCard: {
-        backgroundColor: 'transparent',
-        padding: 30,
-        borderRadius: 24,
+        backgroundColor: COLORS.withAlpha(COLORS.accent, 0.05),
+        padding: SPACING.xl,
+        borderRadius: RADIUS.lg,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: COLORS.border,
-        marginTop: 10,
+        borderColor: COLORS.withAlpha(COLORS.accent, 0.2),
+        marginTop: SPACING.md,
     },
     contactTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        color: COLORS.white,
-        marginBottom: 10,
+        ...TYPOGRAPHY.h4,
+        color: COLORS.textPrimary,
+        marginBottom: SPACING.xs,
     },
     contactSub: {
-        fontSize: 15,
-        color: COLORS.textLight,
+        ...TYPOGRAPHY.bodySmall,
+        color: COLORS.textSecondary,
         textAlign: 'center',
-        marginBottom: 25,
+        marginBottom: SPACING.lg,
     },
     contactButton: {
-        backgroundColor: COLORS.secondary,
-        paddingHorizontal: 30,
-        paddingVertical: 14,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: COLORS.border,
+        backgroundColor: COLORS.accent,
+        paddingHorizontal: SPACING.xl,
+        paddingVertical: 12,
+        borderRadius: RADIUS.md,
     },
     contactButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
+        ...TYPOGRAPHY.button,
+        color: COLORS.white,
     },
 });
 

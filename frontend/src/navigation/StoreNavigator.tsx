@@ -1,6 +1,6 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { nativeStackScreenOptions } from './screenOptions';
+import { createStackNavigator } from '@react-navigation/stack';
+import { stackScreenOptions } from './screenOptions';
 import StoreScreen from '../screens/StoreScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 
@@ -9,15 +9,15 @@ export type StoreStackParamList = {
     ProductDetail: { productId: string; title: string };
 };
 
-const Stack = createNativeStackNavigator<StoreStackParamList>();
+const Stack = createStackNavigator<StoreStackParamList>();
 
 const StoreNavigator = () => {
     return (
         <Stack.Navigator
             screenOptions={{
-                ...nativeStackScreenOptions,
+                ...stackScreenOptions,
                 headerShown: false,
-                animation: 'slide_from_right'
+                animationEnabled: true,
             }}
         >
             <Stack.Screen name="StoreMain" component={StoreScreen} />

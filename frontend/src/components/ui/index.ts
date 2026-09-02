@@ -10,5 +10,6 @@ export { default as ListRow } from './ListRow';
 export { default as Input } from './Input';
 export { default as StatTile } from './StatTile';
 export { Skeleton, SkeletonCard } from './Skeleton';
+export { ConfirmModal } from './ConfirmModal';
 
 export type { TextVariant, TextTone } from './Text';

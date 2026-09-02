@@ -211,7 +211,7 @@ exports.getUsers = async (req, res, next) => {
  */
 exports.updateUser = async (req, res, next) => {
     try {
-        const { role, plan, isActive } = req.body;
+        const { role, plan, planExpiry, isActive } = req.body;
         const user = await User.findById(req.params.id);
 
         if (!user) {
@@ -223,6 +223,7 @@ exports.updateUser = async (req, res, next) => {
 
         if (role !== undefined) user.role = role;
         if (plan !== undefined) user.plan = plan;
+        if (planExpiry !== undefined) user.planExpiry = planExpiry;
         if (isActive !== undefined) user.isActive = isActive;
 
         await user.save();
@@ -1119,11 +1120,19 @@ exports.getAdminPricingTiers = async (req, res, next) => {
 exports.updateAdminPricingTier = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { name, price, originalPrice, badge, description, features, durationDays, isActive } = req.body;
+        const { name, price, originalPrice, badge, description, features, durationDays, isActive, billingPrices } = req.body;
+
+        const updateData = { name, price: Number(price), originalPrice: Number(originalPrice), badge, description, features, durationDays, isActive };
+        if (billingPrices) {
+            updateData.billingPrices = {
+                monthly: Number(billingPrices.monthly || 0),
+                yearly: Number(billingPrices.yearly || 0)
+            };
+        }
 
         const tier = await PricingTier.findByIdAndUpdate(
             id,
-            { name, price: Number(price), originalPrice: Number(originalPrice), badge, description, features, durationDays, isActive },
+            updateData,
             { new: true, runValidators: true }
         );
 
@@ -1132,6 +1141,21 @@ exports.updateAdminPricingTier = async (req, res, next) => {
         }
 
         res.status(200).json({ success: true, message: 'Pricing tier updated successfully', data: tier });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Get app subscription plans (Pro/Business) for mobile app
+ * @route   GET /api/subscription-plans
+ * @access  Public
+ */
+exports.getPublicAppSubscriptionPlans = async (req, res, next) => {
+    try {
+        await seedPricingTiers();
+        const plans = await PricingTier.find({ category: 'app_subscription', isActive: true }).sort({ price: 1 });
+        res.status(200).json({ success: true, data: plans });
     } catch (error) {
         next(error);
     }

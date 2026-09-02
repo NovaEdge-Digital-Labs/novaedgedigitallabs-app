@@ -1,6 +1,6 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { nativeStackScreenOptions } from './screenOptions';
+import { createStackNavigator } from '@react-navigation/stack';
+import { stackScreenOptions } from './screenOptions';
 import ToolsScreen from '../screens/ToolsScreen';
 import RecommendedToolsScreen from '../screens/RecommendedToolsScreen';
 import QRGenerator from '../tools/QRGenerator';
@@ -12,11 +12,11 @@ import Base64Tool from '../tools/Base64Tool';
 import JWTDecoder from '../tools/JWTDecoder';
 import RegExTester from '../tools/RegExTester';
 
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 
 const ToolsNavigator = () => {
     return (
-        <Stack.Navigator screenOptions={nativeStackScreenOptions}>
+        <Stack.Navigator screenOptions={stackScreenOptions}>
             <Stack.Screen name="ToolsList" component={ToolsScreen} />
             <Stack.Screen name="RecommendedTools" component={RecommendedToolsScreen} />
             <Stack.Screen name="QRGenerator" component={QRGenerator} />

@@ -186,12 +186,6 @@ const EditProfileScreen = ({ navigation }: any) => {
                         disabled={saving}
                         activeOpacity={0.8}
                     >
-                        <LinearGradient
-                            colors={primaryGradient}
-                            style={StyleSheet.absoluteFill}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                        />
                         {saving ? (
                             <ActivityIndicator color={COLORS.white} />
                         ) : (
@@ -309,10 +303,11 @@ const styles = StyleSheet.create({
     saveButton: {
         height: 56,
         borderRadius: 16,
+        backgroundColor: COLORS.primary,
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
-        marginTop: 20,
+        marginTop: 10,
     },
     saveButtonText: {
         color: 'white',

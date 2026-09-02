@@ -15,13 +15,13 @@ const defaultTiers = [
         price: 999,
         days: 30,
         features: ['30 Days Visibility', 'Normal Feed Placement'],
-        color: '#94A3B8'
+        color: COLORS.primary
     },
     {
         id: 'Featured',
         price: 1999,
-        days: 45,
-        features: ['45 Days Visibility', 'Top of Search', 'Featured Badge'],
+        days: 30,
+        features: ['30 Days Visibility', 'Featured Highlight Badge', 'Priority Search Placement', 'Direct Candidate Email Alerts'],
         color: COLORS.primary
     },
     {
@@ -29,7 +29,7 @@ const defaultTiers = [
         price: 2999,
         days: 60,
         features: ['60 Days Visibility', 'Highlighted Badge', 'Instant Push Notification'],
-        color: '#FFD700'
+        color: COLORS.primary
     },
 ];
 

@@ -51,16 +51,13 @@ const ReferEarnScreen = ({ navigation }: any) => {
 
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Hero */}
-                <LinearGradient
-                    colors={primaryGradient}
-                    style={styles.heroCard}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                <View
+                    style={[styles.heroCard, { backgroundColor: COLORS.primary }]}
                 >
                     <Ionicons name="gift" size={48} color="white" style={{ marginBottom: 15 }} />
                     <Text style={styles.heroTitle}>Invite Friends, Earn Pro!</Text>
                     <Text style={styles.heroDesc}>Share NovaEdge with friends and unlock premium features for free.</Text>
-                </LinearGradient>
+                </View>
 
                 {/* Referral Code Card */}
                 <View style={[styles.codeCard, COLORS.getGlow(COLORS.primary, 15, 0.2)]}>
@@ -71,13 +68,7 @@ const ReferEarnScreen = ({ navigation }: any) => {
                             <Ionicons name="copy-outline" size={20} color={COLORS.primary} />
                         </TouchableOpacity>
                     </View>
-                    <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.8}>
-                        <LinearGradient
-                            colors={primaryGradient}
-                            style={[StyleSheet.absoluteFill, { borderRadius: 12 }]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                        />
+                    <TouchableOpacity style={[styles.shareButton, { backgroundColor: COLORS.primary }]} onPress={handleShare} activeOpacity={0.8}>
                         <Ionicons name="share-social" size={18} color="white" style={{ marginRight: 8 }} />
                         <Text style={styles.shareButtonText}>Share with Friends</Text>
                     </TouchableOpacity>

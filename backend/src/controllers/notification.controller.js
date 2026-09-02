@@ -143,3 +143,23 @@ exports.sendPushNotification = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    Get all notifications (Admin only) for history tracking
+// @route   GET /api/notifications/all
+// @access  Private/Admin
+exports.getAllNotificationsForAdmin = async (req, res, next) => {
+    try {
+        const notifications = await Notification.find({})
+            .populate('userId', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(100);
+
+        res.status(200).json({
+            success: true,
+            count: notifications.length,
+            data: notifications
+        });
+    } catch (error) {
+        next(error);
+    }
+};

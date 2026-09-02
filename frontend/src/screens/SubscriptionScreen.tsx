@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, Alert, Platform, ActivityIndicator } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -7,21 +7,25 @@ import { useAuthStore } from '../store/authStore';
 import { useSubscriptionStore } from '../store/subscriptionStore';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { LinearGradient } from 'expo-linear-gradient';
+import axiosInstance from '../api/axiosInstance';
 
-const PLANS = [
-    {
-        name: 'Free',
-        price: { monthly: 0, yearly: 0 },
-        features: [
-            '10 Image Compressions / day',
-            '5 QR Codes / month',
-            'Basic GST Calculator',
-            'Community Support',
-        ],
-        buttonText: 'Current Plan',
-        isCurrent: true,
-        color: '#94a3b8',
-    },
+const FREE_PLAN = {
+    name: 'Free',
+    price: { monthly: 0, yearly: 0 },
+    features: [
+        '10 Image Compressions / day',
+        '5 QR Codes / month',
+        'Basic GST Calculator',
+        'Community Support',
+    ],
+    buttonText: 'Current Plan',
+    isCurrent: true,
+    color: '#94a3b8',
+};
+
+// Fallback plans if API fails
+const FALLBACK_PLANS = [
+    FREE_PLAN,
     {
         name: 'Pro',
         price: { monthly: 149, yearly: 999 },
@@ -59,9 +63,42 @@ const SubscriptionScreen = () => {
     const navigation = useNavigation();
     const { user, updateUser } = useAuthStore();
     const [isYearly, setIsYearly] = useState(false);
+    const [plans, setPlans] = useState(FALLBACK_PLANS);
+    const [loadingPlans, setLoadingPlans] = useState(true);
     const initPayment = useSubscriptionStore((state) => state.initPayment);
     const isLoadingPayment = useSubscriptionStore((state) => state.isLoadingPayment);
     const primaryGradient = COLORS.getGradient(COLORS.primaryGradient);
+
+    // Fetch dynamic pricing from backend
+    useEffect(() => {
+        const fetchPlans = async () => {
+            try {
+                const res = await axiosInstance.get('/subscription-plans');
+                const dbPlans = res.data?.data || [];
+
+                if (dbPlans.length > 0) {
+                    const dynamicPlans = dbPlans.map((p: any) => ({
+                        name: p.name,
+                        price: {
+                            monthly: Math.round((p.billingPrices?.monthly || 0) / 100),
+                            yearly: Math.round((p.billingPrices?.yearly || 0) / 100),
+                        },
+                        features: p.features || [],
+                        buttonText: p.name === 'Pro' ? 'Upgrade to Pro' : `Get ${p.name}`,
+                        isCurrent: false,
+                        color: p.name === 'Pro' ? COLORS.primary : COLORS.secondary,
+                        badge: p.badge || undefined,
+                    }));
+                    setPlans([FREE_PLAN, ...dynamicPlans]);
+                }
+            } catch (err) {
+                console.log('Using fallback plans:', err);
+            } finally {
+                setLoadingPlans(false);
+            }
+        };
+        fetchPlans();
+    }, []);
 
     const handlePlanSelect = (planName: string) => {
         const planKey = planName.toLowerCase() as 'free' | 'pro' | 'business';
@@ -78,6 +115,22 @@ const SubscriptionScreen = () => {
 
         const billingCycle = isYearly ? 'yearly' : 'monthly';
 
+        if (Platform.OS === 'web') {
+            const confirmed = window.confirm(`Continue to payment for the ${planName} ${isYearly ? 'Yearly' : 'Monthly'} plan?`);
+            if (confirmed) {
+                initPayment(planKey, billingCycle).then(ok => {
+                    if (ok) {
+                        window.alert(`Your plan has been updated to ${planName}.`);
+                        navigation.goBack();
+                    } else {
+                        const error = useSubscriptionStore.getState().paymentError;
+                        if (error) window.alert('Payment failed: ' + error);
+                    }
+                });
+            }
+            return;
+        }
+
         Alert.alert(
             'Upgrade Plan',
             `Continue to payment for the ${planName} ${isYearly ? 'Yearly' : 'Monthly'} plan?`,
@@ -86,10 +139,6 @@ const SubscriptionScreen = () => {
                 {
                     text: 'Continue',
                     onPress: async () => {
-                        // This used to fake the whole purchase: a setTimeout that
-                        // set the plan locally without contacting the server or
-                        // taking payment. The plan is now activated only after
-                        // the backend verifies the payment.
                         const ok = await initPayment(planKey, billingCycle);
 
                         if (ok) {
@@ -200,7 +249,7 @@ const SubscriptionScreen = () => {
                 </View>
 
                 <View style={styles.plansContainer}>
-                    {PLANS.map(renderPlanCard)}
+                    {plans.map(renderPlanCard)}
                 </View>
 
                 <View style={styles.footer}>

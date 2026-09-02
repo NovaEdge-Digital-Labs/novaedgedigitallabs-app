@@ -1,6 +1,6 @@
 import { create } from 'zustand';
+import { Platform } from 'react-native';
 import { paymentApi } from '../api/paymentApi';
-import RazorpayCheckout from 'react-native-razorpay';
 import { useAuthStore } from './authStore';
 
 type Plan = 'free' | 'pro' | 'business';
@@ -16,6 +16,47 @@ interface SubscriptionState {
 
 const messageFor = (error: any, fallback: string) =>
     error?.response?.data?.message || error?.description || error?.message || fallback;
+
+/**
+ * Opens Razorpay checkout on Web using the Razorpay JS SDK.
+ * Loads the script on demand if it hasn't been loaded yet.
+ */
+const openRazorpayWeb = (options: any): Promise<any> => {
+    return new Promise((resolve, reject) => {
+        const launch = () => {
+            const rzp = new (window as any).Razorpay({
+                ...options,
+                handler: (response: any) => resolve(response),
+                modal: {
+                    ondismiss: () => reject({ code: 0, description: 'Payment cancelled by user' }),
+                },
+            });
+            rzp.on('payment.failed', (resp: any) => reject(resp.error));
+            rzp.open();
+        };
+
+        // If Razorpay JS SDK is already loaded, just launch
+        if ((window as any).Razorpay) {
+            launch();
+            return;
+        }
+
+        // Dynamically inject the Razorpay checkout script
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => launch();
+        script.onerror = () => reject(new Error('Failed to load Razorpay SDK. Check your internet connection.'));
+        document.body.appendChild(script);
+    });
+};
+
+/**
+ * Opens Razorpay checkout on Native (Android/iOS) using react-native-razorpay.
+ */
+const openRazorpayNative = async (options: any): Promise<any> => {
+    const RazorpayCheckout = require('react-native-razorpay').default;
+    return RazorpayCheckout.open(options);
+};
 
 export const useSubscriptionStore = create<SubscriptionState>((set) => ({
     currentPlan: 'free',
@@ -41,8 +82,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set) => ({
 
             const user = useAuthStore.getState().user;
 
-            // 2. Hand off to Razorpay checkout.
-            const data: any = await RazorpayCheckout.open({
+            const razorpayOptions = {
                 key: order.keyId,
                 order_id: order.orderId,
                 amount: order.amount,
@@ -56,7 +96,12 @@ export const useSubscriptionStore = create<SubscriptionState>((set) => ({
                     name: user?.name || '',
                 },
                 theme: { color: '#6E56CF' },
-            });
+            };
+
+            // 2. Hand off to Razorpay checkout (Web or Native).
+            const data: any = Platform.OS === 'web'
+                ? await openRazorpayWeb(razorpayOptions)
+                : await openRazorpayNative(razorpayOptions);
 
             // 3. Verify. Only the Razorpay fields go up — the server resolves
             //    which plan was bought from the order it stored.
@@ -99,11 +144,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set) => ({
     cancelSubscription: async () => {
         set({ isLoadingPayment: true, paymentError: null });
         try {
-            // Previously mocked with a setTimeout that flipped the local plan to
-            // 'free' without telling the server.
             await paymentApi.cancelSubscription();
-
-            // Access continues until planExpiry, so the plan is not cleared here.
             set({ isLoadingPayment: false });
         } catch (error: any) {
             set({

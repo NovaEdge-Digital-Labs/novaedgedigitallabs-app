@@ -12,9 +12,9 @@ import {
     Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { COLORS } from '../constants/colors';
+import { COLORS, SPACING, RADIUS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { submitLead } from '../api/leadApi';
 
@@ -156,12 +156,7 @@ const LeadFormScreen = () => {
                             onPress={handleSubmit}
                             disabled={loading}
                         >
-                            <LinearGradient
-                                colors={COLORS.getGradient(COLORS.primaryGradient)}
-                                style={StyleSheet.absoluteFill}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                            />
+
                             {loading ? (
                                 <ActivityIndicator color="white" />
                             ) : (
@@ -257,10 +252,11 @@ const styles = StyleSheet.create({
         fontSize: 13,
     },
     submitButton: {
-        marginTop: 25,
-        height: 56,
-        borderRadius: 16,
+        marginTop: SPACING.md,
+        borderRadius: RADIUS.md,
         overflow: 'hidden',
+        height: 52,
+        backgroundColor: COLORS.primary,
         justifyContent: 'center',
         alignItems: 'center',
     },

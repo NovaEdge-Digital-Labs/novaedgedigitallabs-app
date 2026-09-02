@@ -21,6 +21,7 @@ interface PricingTier {
     features: string[];
     durationDays: number;
     isActive: boolean;
+    billingPrices?: { monthly: number; yearly: number };
 }
 
 const defaultFallbackTiers: PricingTier[] = [
@@ -142,7 +143,9 @@ export default function PricingPage() {
         description: "",
         featuresStr: "",
         durationDays: 30,
-        isActive: true
+        isActive: true,
+        billingMonthly: 0,
+        billingYearly: 0
     });
 
     const fetchTiers = async () => {
@@ -176,7 +179,9 @@ export default function PricingPage() {
             description: tier.description || "",
             featuresStr: Array.isArray(tier.features) ? tier.features.join("\n") : "",
             durationDays: tier.durationDays || 30,
-            isActive: tier.isActive ?? true
+            isActive: tier.isActive ?? true,
+            billingMonthly: tier.billingPrices?.monthly || 0,
+            billingYearly: tier.billingPrices?.yearly || 0
         });
         setIsModalOpen(true);
     };
@@ -210,7 +215,7 @@ export default function PricingPage() {
             .map((f) => f.trim())
             .filter(Boolean);
 
-        const payload = {
+        const payload: any = {
             name: formData.name,
             category: formData.category,
             price: Number(formData.price),
@@ -219,7 +224,11 @@ export default function PricingPage() {
             description: formData.description,
             features,
             durationDays: Number(formData.durationDays),
-            isActive: formData.isActive
+            isActive: formData.isActive,
+            billingPrices: {
+                monthly: Number(formData.billingMonthly),
+                yearly: Number(formData.billingYearly)
+            }
         };
 
         let updatedInBackend = false;
@@ -304,6 +313,7 @@ export default function PricingPage() {
                 <div className="flex items-center gap-2 border-b border-white/10 pb-4 overflow-x-auto">
                     {[
                         { id: "all", label: "All Tiers", count: tiers.length },
+                        { id: "app_subscription", label: "📱 App Plans (Pro/Business)", count: tiers.filter((t) => t.category === "app_subscription").length },
                         { id: "business_subscription", label: "🚀 Business Subscriptions", count: tiers.filter((t) => t.category === "business_subscription").length },
                         { id: "job_posting", label: "💼 Job Listings", count: tiers.filter((t) => t.category === "job_posting").length },
                         { id: "seeker_membership", label: "🎓 Candidate Passes", count: tiers.filter((t) => t.category === "seeker_membership").length },
@@ -458,6 +468,7 @@ export default function PricingPage() {
                                                 className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-white/10 text-sm text-foreground focus:border-primary outline-none"
                                             >
                                                 <option value="business_subscription">Business Subscription</option>
+                                                <option value="app_subscription">📱 App Subscription</option>
                                                 <option value="job_posting">Job Listing</option>
                                                 <option value="seeker_membership">Candidate Pass</option>
                                             </select>
@@ -508,8 +519,37 @@ export default function PricingPage() {
                                         </div>
                                     </div>
 
+                                    {/* App Subscription Billing Prices */}
+                                    {formData.category === "app_subscription" && (
+                                        <div className="grid grid-cols-2 gap-4 p-3 rounded-xl border border-purple-500/30 bg-purple-500/5">
+                                            <div className="col-span-2">
+                                                <p className="text-xs font-bold text-purple-400 mb-2">📱 App Subscription Billing (in Paise)</p>
+                                                <p className="text-[10px] text-muted-foreground mb-2">₹149 = 14900 paise · ₹999 = 99900 paise</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-muted-foreground mb-1">Monthly Price (paise)</label>
+                                                <input
+                                                    type="number"
+                                                    value={formData.billingMonthly}
+                                                    onChange={(e) => setFormData({ ...formData, billingMonthly: Number(e.target.value) })}
+                                                    className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-purple-500/20 text-sm text-foreground focus:border-purple-500 outline-none font-mono text-purple-400 font-bold"
+                                                    placeholder="14900"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-muted-foreground mb-1">Yearly Price (paise)</label>
+                                                <input
+                                                    type="number"
+                                                    value={formData.billingYearly}
+                                                    onChange={(e) => setFormData({ ...formData, billingYearly: Number(e.target.value) })}
+                                                    className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-purple-500/20 text-sm text-foreground focus:border-purple-500 outline-none font-mono text-purple-400 font-bold"
+                                                    placeholder="99900"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div>
-                                        <label className="block text-xs font-bold text-muted-foreground mb-1">Description</label>
                                         <input
                                             type="text"
                                             value={formData.description}

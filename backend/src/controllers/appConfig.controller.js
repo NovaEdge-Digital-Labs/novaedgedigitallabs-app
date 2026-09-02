@@ -14,6 +14,20 @@ exports.getConfig = async (req, res) => {
     }
 };
 
+exports.updateConfig = async (req, res) => {
+    try {
+        let config = await AppConfig.findOne();
+        if (!config) {
+            config = new AppConfig();
+        }
+        Object.assign(config, req.body);
+        await config.save();
+        res.status(200).json({ success: true, data: config });
+    } catch (error) {
+        console.error('Error updating app config:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
 const Project = require('../models/Project.model');
 const EscrowTransaction = require('../models/EscrowTransaction.model');
 const User = require('../models/User.model');

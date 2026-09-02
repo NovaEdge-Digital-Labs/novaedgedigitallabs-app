@@ -25,7 +25,8 @@ app.use(morgan('dev'));
 // Razorpay signs the raw webhook bytes, so this route must see them before
 // any JSON parsing happens. Mounted ahead of express.json() deliberately.
 app.use('/api/payment/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Serve static files (Privacy Policy, Terms, etc.)
 app.use(express.static(path.join(__dirname, 'public')));
@@ -86,6 +87,9 @@ app.use('/api/config', appConfigRoutes);
 
 // Public Theme Endpoint for Mobile App & Web
 app.get('/api/theme', require('./src/controllers/admin.controller').getPublicTheme);
+
+// Public Subscription Plans Endpoint for Mobile App
+app.get('/api/subscription-plans', require('./src/controllers/admin.controller').getPublicAppSubscriptionPlans);
 
 // Mock dynamic route mounting
 app.get('/api', (req, res) => {

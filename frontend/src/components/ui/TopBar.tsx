@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, withAlpha } from '../../constants/colors';
@@ -79,6 +79,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.md,
         paddingTop: SPACING.sm,
         paddingBottom: SPACING.md,
+        marginTop: Platform.OS === 'android' ? 40 : 0,
     },
     backButton: {
         width: 36,
@@ -104,6 +105,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.md,
         paddingTop: SPACING.sm,
         paddingBottom: SPACING.md,
+        marginTop: Platform.OS === 'android' ? 40 : 0,
     },
     largeTop: {
         flexDirection: 'row',

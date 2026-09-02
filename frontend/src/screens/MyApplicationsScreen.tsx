@@ -82,7 +82,7 @@ const MyApplicationsScreen = ({ navigation }: any) => {
                         <View style={styles.empty}>
                             <Ionicons name="document-text-outline" size={60} color={COLORS.textMuted} />
                             <Text style={styles.emptyText}>You haven't applied to any jobs yet.</Text>
-                            <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('JobFeed')}>
+                            <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Jobs')}>
                                 <Text style={styles.browseText}>Browse Jobs</Text>
                             </TouchableOpacity>
                         </View>

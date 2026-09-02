@@ -8,9 +8,10 @@ try {
         : path.resolve(process.cwd(), process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 
     if (fs.existsSync(keyPath)) {
+        const { cert } = require('firebase-admin/app');
         const serviceAccount = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
         admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
+            credential: cert(serviceAccount)
         });
     } else {
         console.warn(`Firebase key not found at: ${keyPath}`);

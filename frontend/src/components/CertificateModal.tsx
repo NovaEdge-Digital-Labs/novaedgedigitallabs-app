@@ -53,7 +53,7 @@ const CertificateModal: React.FC<CertificateModalProps> = ({
 
                     {/* Certificate Outer Frame */}
                     <LinearGradient
-                        colors={['#9127FF', '#C042FF', '#00FF9D']}
+                        colors={['#6E56CF', '#C042FF', '#00FF9D']}
                         style={styles.gradientBorder}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}

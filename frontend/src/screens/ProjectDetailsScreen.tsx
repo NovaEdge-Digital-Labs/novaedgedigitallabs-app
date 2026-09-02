@@ -265,7 +265,7 @@ const ProjectDetailsScreen = ({ route, navigation }: any) => {
                 <View style={styles.escrowBadge}>
                     <Ionicons name="shield-checkmark" size={16} color={COLORS.success} />
                     <Text style={styles.escrowText}>
-                        Payment escrow me — aapka paisa tab milega jab client kaam approve kare
+                        100% Payment Protection. Funds are held securely in escrow until work is approved.
                     </Text>
                 </View>
                 <TouchableOpacity
@@ -443,7 +443,6 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         borderRadius: COLORS.geometry.radiusMedium,
         alignItems: 'center',
-        ...COLORS.getGlow(COLORS.primary),
     },
     proposalButtonText: {
         color: '#FFF',

@@ -24,6 +24,7 @@ const ApiDashboardScreen = ({ navigation }: any) => {
     const [stats, setStats] = useState<ApiUsageStats | null>(null);
     const [history, setHistory] = useState<ApiCallLog[]>([]);
     const [activeTab, setActiveTab] = useState('usage'); // usage, history, snippets
+    const [snippetLang, setSnippetLang] = useState('js');
 
     useEffect(() => {
         fetchData();
@@ -148,8 +149,6 @@ const ApiDashboardScreen = ({ navigation }: any) => {
     };
 
     const renderSnippets = () => {
-        const [lang, setLang] = useState('js');
-
         const snippets: any = {
             js: `fetch('https://novaedgedigitallabs.tech/api/v1/tools/generate-qr', {
   method: 'POST',
@@ -186,20 +185,20 @@ print(response.json())`,
                     {['js', 'python', 'curl'].map((t) => (
                         <TouchableOpacity
                             key={t}
-                            style={[styles.snippetTab, lang === t && styles.activeSnippetTab]}
-                            onPress={() => setLang(t)}
+                            style={[styles.snippetTab, snippetLang === t && styles.activeSnippetTab]}
+                            onPress={() => setSnippetLang(t)}
                         >
-                            <Text style={[styles.snippetTabText, lang === t && styles.activeSnippetTabText]}>
+                            <Text style={[styles.snippetTabText, snippetLang === t && styles.activeSnippetTabText]}>
                                 {t.toUpperCase()}
                             </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
                 <View style={styles.codeContainer}>
-                    <Text style={styles.codeText}>{snippets[lang]}</Text>
+                    <Text style={styles.codeText}>{snippets[snippetLang]}</Text>
                 </View>
                 <TouchableOpacity style={styles.copySnippetBtn} onPress={() => {
-                    Clipboard.setString(snippets[lang]);
+                    Clipboard.setString(snippets[snippetLang]);
                     Alert.alert('Copied', 'Code snippet copied to clipboard');
                 }}>
                     <Ionicons name="copy-outline" size={16} color="white" />
@@ -266,7 +265,7 @@ print(response.json())`,
 
                 <TouchableOpacity
                     style={styles.docsBtn}
-                    onPress={() => navigation.navigate('Support', { title: 'API Documentation' })}
+                    onPress={() => navigation.navigate('Profile', { screen: 'Support', params: { title: 'API Documentation' } })}
                 >
                     <Ionicons name="document-text-outline" size={20} color={COLORS.white} />
                     <Text style={styles.docsBtnText}>View Full API Documentation</Text>

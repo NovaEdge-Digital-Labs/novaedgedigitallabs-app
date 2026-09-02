@@ -14,7 +14,7 @@ const AdminDashboardScreen = ({ navigation }: any) => {
     const fetchStats = async () => {
         try {
             const data = await adminApi.getStats();
-            setStats(data.data);
+            setStats(data.stats);
         } catch (error) {
             console.error('Error fetching admin stats:', error);
         } finally {
@@ -72,10 +72,10 @@ const AdminDashboardScreen = ({ navigation }: any) => {
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
                 >
                     <View style={styles.statsGrid}>
-                        <StatCard icon="people" label="Total Users" value={stats?.totalUsers || 0} color={COLORS.primary} />
-                        <StatCard icon="star" label="Pro Users" value={stats?.proUsers || 0} color={COLORS.accent} />
-                        <StatCard icon="cash" label="Revenue" value={formatCurrency(stats?.totalRevenue || 0)} color="#10b981" />
-                        <StatCard icon="briefcase" label="Active Jobs" value={stats?.activeJobs || 0} color="#f59e0b" />
+                        <StatCard icon="people" label="Total Users" value={stats?.users || 0} color={COLORS.primary} />
+                        <StatCard icon="book" label="Courses" value={stats?.courses || 0} color={COLORS.accent} />
+                        <StatCard icon="apps" label="Services" value={stats?.services || 0} color="#10b981" />
+                        <StatCard icon="briefcase" label="Leads" value={stats?.leads || 0} color="#f59e0b" />
                     </View>
 
                     <TouchableOpacity

@@ -91,6 +91,48 @@ const defaultTiers = [
         features: ['Unlimited All Job Listings', 'Full Resume Database Search', 'Dedicated Hiring Account Manager', 'API Access & Webhooks'],
         durationDays: 30,
         isActive: true
+    },
+    {
+        tierId: 'AppPro',
+        name: 'Pro',
+        category: 'app_subscription',
+        price: 149,
+        originalPrice: 299,
+        currency: 'INR',
+        badge: 'Popular',
+        description: 'Unlock all pro features in the NovaEdge app.',
+        features: [
+            'Unlimited Image Compression',
+            'Unlimited QR Codes',
+            'GST & EMI Calculators',
+            'Basic Invoice Generation',
+            'Ad-free experience',
+            'Priority Email Support'
+        ],
+        billingPrices: { monthly: 14900, yearly: 99900 },
+        durationDays: 30,
+        isActive: true
+    },
+    {
+        tierId: 'AppBusiness',
+        name: 'Business',
+        category: 'app_subscription',
+        price: 349,
+        originalPrice: 599,
+        currency: 'INR',
+        badge: '',
+        description: 'Everything in Pro plus advanced business tools.',
+        features: [
+            'Everything in Pro',
+            'Batch Invoice Generation',
+            'Custom Resume Builder',
+            'Developer Utility Tools',
+            'Dedicated Account Manager',
+            '24/7 Priority Support'
+        ],
+        billingPrices: { monthly: 34900, yearly: 249900 },
+        durationDays: 30,
+        isActive: true
     }
 ];
 

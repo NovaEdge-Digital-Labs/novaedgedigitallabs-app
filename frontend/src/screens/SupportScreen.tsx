@@ -9,7 +9,7 @@ const SupportScreen = ({ navigation, route }: any) => {
     const { config } = useAppConfigStore();
     const title = route.params?.title || 'Support';
 
-    const handleSupportAction = (type: 'email' | 'call' | 'guides' | 'api') => {
+    const handleSupportAction = (type: 'email' | 'call' | 'guides' | 'api' | 'website') => {
         switch (type) {
             case 'email':
                 Linking.openURL(`mailto:${config?.supportEmail || 'contact@novaedgedigitallabs.tech'}`);
@@ -18,10 +18,13 @@ const SupportScreen = ({ navigation, route }: any) => {
                 Linking.openURL('tel:+916391486456');
                 break;
             case 'guides':
+                navigation.navigate('UserGuides');
+                break;
+            case 'website':
                 Linking.openURL(config?.socialLinks?.portfolio || 'https://novaedgedigitallabs.tech');
                 break;
             case 'api':
-                Linking.openURL(config?.socialLinks?.github || 'https://github.com/novaedge');
+                navigation.navigate('ApiReference');
                 break;
         }
     };
@@ -57,6 +60,13 @@ const SupportScreen = ({ navigation, route }: any) => {
                             <Ionicons name="newspaper-outline" size={20} color={COLORS.white} />
                         </View>
                         <Text style={styles.itemText}>API Reference</Text>
+                        <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.item} onPress={() => handleSupportAction('website')} activeOpacity={0.7}>
+                        <View style={styles.iconBox}>
+                            <Ionicons name="globe-outline" size={20} color={COLORS.white} />
+                        </View>
+                        <Text style={styles.itemText}>Company Website</Text>
                         <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} />
                     </TouchableOpacity>
                 </View>

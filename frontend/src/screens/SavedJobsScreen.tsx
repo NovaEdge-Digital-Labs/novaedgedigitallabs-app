@@ -129,7 +129,7 @@ const SavedJobsScreen = ({ navigation }: any) => {
                             <Ionicons name="bookmark-outline" size={60} color="#94A3B8" />
                             <Text style={styles.emptyTitle}>No Saved Jobs Yet</Text>
                             <Text style={styles.emptySub}>Tap the bookmark icon 🔖 on any job to save it here for quick access later.</Text>
-                            <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('JobFeed')}>
+                            <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Jobs')}>
                                 <Text style={styles.browseText}>Explore Jobs</Text>
                             </TouchableOpacity>
                         </View>

@@ -12,7 +12,7 @@ const pricingTierSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ['job_posting', 'seeker_membership', 'business_subscription'],
+        enum: ['job_posting', 'seeker_membership', 'business_subscription', 'app_subscription'],
         default: 'job_posting'
     },
     price: {
@@ -41,6 +41,10 @@ const pricingTierSchema = new mongoose.Schema({
     durationDays: {
         type: Number,
         default: 30
+    },
+    billingPrices: {
+        monthly: { type: Number, default: 0 },
+        yearly: { type: Number, default: 0 }
     },
     isActive: {
         type: Boolean,

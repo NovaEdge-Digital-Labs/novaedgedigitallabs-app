@@ -131,18 +131,13 @@ const CustomAlert: React.FC = () => {
                                 return (
                                     <TouchableOpacity
                                         key={index}
-                                        style={[styles.btn, isMultiButton && { flex: 1 }]}
+                                        style={[styles.btn, isMultiButton && { flex: 1 }, { backgroundColor: isDestructive ? '#EF4444' : COLORS.primary, overflow: 'hidden' }]}
                                         onPress={() => handleButtonPress(btn)}
                                         activeOpacity={0.85}
                                     >
-                                        <LinearGradient
-                                            colors={btnGradient}
-                                            style={styles.gradientBtn}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 1, y: 0 }}
-                                        >
+                                        <View style={[styles.gradientBtn, { backgroundColor: 'transparent' }]}>
                                             <Text style={styles.btnText}>{btn.text}</Text>
-                                        </LinearGradient>
+                                        </View>
                                     </TouchableOpacity>
                                 );
                             })}

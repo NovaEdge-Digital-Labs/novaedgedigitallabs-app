@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/icon-app.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0a0a0f"
+      "backgroundColor": "#090c15"
     },
     "ios": {
       "supportsTablet": true
@@ -17,6 +17,7 @@
     "android": {
       "package": "in.novaedgedigitallabs.tech",
       "versionCode": 26,
+      "googleServicesFile": "./google-services.json",
       "blockedPermissions": [
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
@@ -34,9 +35,9 @@
     "sdkVersion": "55.0.0",
     "plugins": [
       "expo-video",
+      "expo-notifications",
       "./plugins/withHermesFix",
       "expo-font",
-      "expo-sharing",
       [
         "expo-media-library",
         {

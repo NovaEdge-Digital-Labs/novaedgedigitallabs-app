@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Animated, Dimensions, Image } from 'react-native';
-import { useVideoPlayer, VideoView } from 'expo-video';
+import { View, StyleSheet, Animated, Dimensions, Image, Platform } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { COLORS } from '../constants/colors';
 
 const { width } = Dimensions.get('window');
@@ -16,11 +16,6 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onAnimationEnd }) => {
     const containerOpacity = useRef(new Animated.Value(1)).current;
     const [videoFailed, setVideoFailed] = useState(false);
 
-    const player = useVideoPlayer(splashVideoSource, (p) => {
-        p.loop = false;
-        p.play();
-    });
-
     const triggerFadeOut = () => {
         Animated.timing(containerOpacity, {
             toValue: 0,
@@ -32,30 +27,35 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onAnimationEnd }) => {
     };
 
     useEffect(() => {
-        const subscription = player.addListener('playToEnd', () => {
-            triggerFadeOut();
-        });
-
         // Safety net timer to prevent getting stuck if video events drop
         const timer = setTimeout(() => {
             triggerFadeOut();
-        }, 4200);
+        }, 4500);
 
         return () => {
-            subscription.remove();
             clearTimeout(timer);
         };
-    }, [player]);
+    }, []);
 
     return (
         <Animated.View style={[styles.mainWrapper, { opacity: containerOpacity }]}>
             {!videoFailed ? (
-                <VideoView
-                    player={player}
-                    style={StyleSheet.absoluteFill}
-                    contentFit="cover"
-                    nativeControls={false}
-                    // @ts-ignore
+                <Video
+                    source={splashVideoSource}
+                    style={{ width: '100%', height: '100%' }}
+                    videoStyle={{ width: '100%', height: '100%', objectFit: 'contain' } as any}
+                    resizeMode={ResizeMode.CONTAIN}
+                    shouldPlay
+                    isMuted
+                    isLooping={false}
+                    onPlaybackStatusUpdate={(status) => {
+                        if (status.isLoaded && status.didJustFinish) {
+                            triggerFadeOut();
+                        }
+                        if (!status.isLoaded && status.error) {
+                            setVideoFailed(true);
+                        }
+                    }}
                     onError={() => setVideoFailed(true)}
                 />
             ) : (
@@ -70,13 +70,13 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onAnimationEnd }) => {
 const styles = StyleSheet.create({
     mainWrapper: {
         flex: 1,
-        backgroundColor: '#0a0a0f',
+        backgroundColor: '#090c15',
     },
     fallbackContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#0a0a0f',
+        backgroundColor: '#090c15',
     },
     fallbackIcon: {
         width: width * 0.45,

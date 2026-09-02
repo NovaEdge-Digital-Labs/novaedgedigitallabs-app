@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { 
     View, 
     Text, 
@@ -12,14 +13,15 @@ import {
     Alert,
     Pressable,
     RefreshControl,
-    Share
+    Share,
+    Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { useAuthStore } from '../store/authStore';
 import postApi, { Post } from '../api/postApi';
-import { Text as UIText, Card, Button, EmptyState, SkeletonCard } from '../components/ui';
+import { Text as UIText, Card, Button, EmptyState, SkeletonCard, ConfirmModal } from '../components/ui';
 import { SPACING, RADIUS, withAlpha } from '../constants/colors';
 
 interface PostCardProps {
@@ -299,6 +301,7 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isPosting, setIsPosting] = useState(false);
     const [composerFocus, setComposerFocus] = useState<'text' | 'link' | null>(null);
+    const [deletePostId, setDeletePostId] = useState<string | null>(null);
 
     const firstName = (user?.name || '').trim().split(' ')[0] || 'there';
     const hour = new Date().getHours();
@@ -318,9 +321,12 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
         setIsRefreshing(false);
     }, []);
 
-    useEffect(() => {
-        fetchFeed(true);
-    }, [fetchFeed]);
+    useFocusEffect(
+        useCallback(() => {
+            // Fetch silently on focus if already loaded, otherwise show loader
+            fetchFeed(posts.length === 0);
+        }, [fetchFeed])
+    );
 
     const handleCreatePost = async () => {
         if (!newPostText.trim()) {
@@ -446,25 +452,25 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
     };
 
     const handleDeletePost = (postId: string) => {
-        Alert.alert(
-            'Delete Post',
-            'Are you sure you want to delete this post?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                    text: 'Delete', 
-                    style: 'destructive', 
-                    onPress: async () => {
-                        setPosts((prev) => prev.filter((p) => p._id !== postId));
-                        const res = await postApi.deletePost(postId);
-                        if (!res || !res.success) {
-                            Alert.alert('Error', res.message || 'Failed to delete post.');
-                            fetchFeed();
-                        }
-                    } 
+        setDeletePostId(postId);
+    };
+
+    const confirmDeletePost = async () => {
+        if (!deletePostId) return;
+        const postId = deletePostId;
+        setDeletePostId(null);
+        
+        setPosts((prev) => prev.filter((p) => p._id !== postId));
+        postApi.deletePost(postId).then(res => {
+            if (!res || !res.success) {
+                if (Platform.OS === 'web') {
+                    window.alert(res?.message || 'Failed to delete post.');
+                } else {
+                    Alert.alert('Error', res?.message || 'Failed to delete post.');
                 }
-            ]
-        );
+                fetchFeed();
+            }
+        });
     };
 
     const getRelativeTime = (dateString: string) => {
@@ -627,6 +633,15 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
                     )
                 }
             />
+            <ConfirmModal
+                visible={!!deletePostId}
+                title="Delete Post"
+                message="Are you sure you want to delete this post? This action cannot be undone."
+                confirmText="Delete"
+                isDestructive={true}
+                onConfirm={confirmDeletePost}
+                onCancel={() => setDeletePostId(null)}
+            />
         </ThemeWrapper>
     );
 };
@@ -639,6 +654,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.md,
         paddingTop: SPACING.sm,
         paddingBottom: SPACING.md,
+        marginTop: Platform.OS === 'android' ? 40 : 0,
     },
     logoRow: {
         flexDirection: 'row',

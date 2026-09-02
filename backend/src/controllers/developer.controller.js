@@ -11,8 +11,8 @@ exports.getApiKey = async (req, res, next) => {
     try {
         let apiKey = await ApiKey.findOne({ userId: req.user.id, isActive: true });
 
-        // If user is business and has no key, generate one automatically
-        if (!apiKey && req.user.plan === 'business') {
+        // If user is business or admin and has no key, generate one automatically
+        if (!apiKey && (req.user.plan === 'business' || req.user.role === 'admin')) {
             apiKey = await ApiKey.create({
                 userId: req.user.id,
                 key: ApiKey.generateKey()
@@ -43,7 +43,7 @@ exports.getApiKey = async (req, res, next) => {
  */
 exports.regenerateApiKey = async (req, res, next) => {
     try {
-        if (req.user.plan !== 'business') {
+        if (req.user.plan !== 'business' && req.user.role !== 'admin') {
             return res.status(403).json({ success: false, message: 'Developer API is for Business plan only' });
         }
 

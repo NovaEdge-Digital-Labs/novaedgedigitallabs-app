@@ -1,14 +1,14 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { nativeStackScreenOptions } from './screenOptions';
+import { createStackNavigator } from '@react-navigation/stack';
+import { stackScreenOptions } from './screenOptions';
 import ServicesScreen from '../screens/ServicesScreen';
 import LeadFormScreen from '../screens/LeadFormScreen';
 
-const Stack = createNativeStackNavigator();
+const Stack = createStackNavigator();
 
 const ServicesNavigator = () => {
     return (
-        <Stack.Navigator screenOptions={nativeStackScreenOptions}>
+        <Stack.Navigator screenOptions={stackScreenOptions}>
             <Stack.Screen name="ServicesList" component={ServicesScreen} />
             <Stack.Screen name="LeadForm" component={LeadFormScreen} />
         </Stack.Navigator>

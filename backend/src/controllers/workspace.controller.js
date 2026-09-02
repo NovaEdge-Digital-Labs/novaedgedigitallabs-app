@@ -18,17 +18,6 @@ exports.getWorkspaceOverview = async (req, res, next) => {
                 description: p.description || 'Project is currently being worked on.',
                 progress: Math.floor(Math.random() * 50) + 10 // Mock progress as model doesn't store this yet
             }));
-        } else {
-            // Provide a dummy project if user has none, to show the UI
-            activeProjects = [
-                {
-                    id: 'dummy1',
-                    title: 'E-Commerce Website',
-                    status: 'In Progress',
-                    description: 'Phase 2: Frontend Integration. Expected delivery in 4 days.',
-                    progress: 65
-                }
-            ];
         }
 
         // Fetch recommended courses
@@ -37,16 +26,8 @@ exports.getWorkspaceOverview = async (req, res, next) => {
         // Fetch recommended services
         const services = await Service.find({ isActive: true }).select('title shortDescription _id category').limit(2);
 
-        // Support tickets (Mocked as no model exists yet)
-        const activeTickets = [
-            {
-                id: 't1',
-                title: 'DNS Configuration Issue',
-                status: 'Open',
-                description: 'Our support agent is currently reviewing your DNS records.',
-                lastUpdated: '2 hours ago'
-            }
-        ];
+        // Support tickets (Mocked as empty array until model is implemented)
+        const activeTickets = [];
 
         res.status(200).json({
             success: true,

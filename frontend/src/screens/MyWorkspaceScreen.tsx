@@ -72,7 +72,7 @@ const MyWorkspaceScreen = () => {
                         {/* Active Projects */}
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Ongoing Projects</Text>
-                            {workspaceData?.activeProjects?.map((project: any) => (
+                            {workspaceData?.activeProjects?.length > 0 ? workspaceData.activeProjects.map((project: any) => (
                                 <View key={project.id} style={[styles.card, COLORS.getGlow(COLORS.primary, 10, 0.1), { marginBottom: 15 }]}>
                                     <View style={styles.cardHeader}>
                                         <View style={styles.cardHeaderLeft}>
@@ -90,13 +90,20 @@ const MyWorkspaceScreen = () => {
                                     </View>
                                     <Text style={styles.progressText}>{project.progress}% Completed</Text>
                                 </View>
-                            ))}
+                            )) : (
+                                <View style={styles.emptyState}>
+                                    <Text style={styles.emptyText}>You don't have any active projects yet.</Text>
+                                    <TouchableOpacity onPress={() => navigation.navigate('Services')} style={styles.emptyActionBtn}>
+                                        <Text style={styles.emptyActionText}>Explore Services</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
                         </View>
 
                         {/* Active Tickets */}
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Support Tickets</Text>
-                            {workspaceData?.activeTickets?.map((ticket: any) => (
+                            {workspaceData?.activeTickets?.length > 0 ? workspaceData.activeTickets.map((ticket: any) => (
                                 <TouchableOpacity key={ticket.id} style={[styles.card, COLORS.glass, { marginBottom: 15 }]} activeOpacity={0.8} onPress={() => navigation.navigate('Support', { title: 'Help Center' })}>
                                     <View style={styles.cardHeader}>
                                         <View style={styles.cardHeaderLeft}>
@@ -110,7 +117,11 @@ const MyWorkspaceScreen = () => {
                                     <Text style={styles.cardDesc}>{ticket.description}</Text>
                                     <Text style={styles.ticketUpdate}>Last updated: {ticket.lastUpdated}</Text>
                                 </TouchableOpacity>
-                            ))}
+                            )) : (
+                                <View style={styles.emptyState}>
+                                    <Text style={styles.emptyText}>You have no open support tickets.</Text>
+                                </View>
+                            )}
                         </View>
 
                         {/* Recommendations */}
@@ -286,6 +297,34 @@ const styles = StyleSheet.create({
         marginTop: 15,
         color: COLORS.textMuted,
         fontSize: 14,
+    },
+    emptyState: {
+        padding: 20,
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderStyle: 'dashed'
+    },
+    emptyText: {
+        color: COLORS.textMuted,
+        fontSize: 14,
+        textAlign: 'center',
+    },
+    emptyActionBtn: {
+        marginTop: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: COLORS.primary + '20',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: COLORS.primary
+    },
+    emptyActionText: {
+        color: COLORS.primary,
+        fontSize: 13,
+        fontWeight: 'bold'
     }
 });
 

@@ -8,7 +8,6 @@ import {
     ViewStyle,
     TextStyle,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { COLORS, RADIUS, SHADOWS, withAlpha } from '../../constants/colors';
 import Text from './Text';
@@ -81,20 +80,9 @@ const Button: React.FC<ButtonProps> = ({
                 disabled={inert}
                 onPressIn={() => { if (!inert) scale.value = withSpring(0.96, { damping: 16, stiffness: 260 }); }}
                 onPressOut={() => { if (!inert) scale.value = withSpring(1, { damping: 16, stiffness: 260 }); }}
-                style={variant === 'primary' ? [styles.wrapper, fullWidth && styles.fullWidth] : frame.concat([variantStyle(variant)])}
+                style={frame.concat([variantStyle(variant)])}
             >
-                {variant === 'primary' ? (
-                    <LinearGradient
-                        colors={[COLORS.primary, COLORS.primaryDark]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={frame.concat([styles.gradient, !inert && SHADOWS.glow])}
-                    >
-                        {body}
-                    </LinearGradient>
-                ) : (
-                    body
-                )}
+                {body}
             </Pressable>
         </Animated.View>
     );
@@ -102,6 +90,8 @@ const Button: React.FC<ButtonProps> = ({
 
 const variantStyle = (variant: Variant): ViewStyle => {
     switch (variant) {
+        case 'primary':
+            return { backgroundColor: COLORS.primary };
         case 'secondary':
             return { backgroundColor: withAlpha(COLORS.white, 0.06), borderWidth: 1, borderColor: COLORS.borderSubtle };
         case 'ghost':
@@ -122,9 +112,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 22,
-    },
-    gradient: {
-        width: '100%',
     },
     fullWidth: {
         width: '100%',

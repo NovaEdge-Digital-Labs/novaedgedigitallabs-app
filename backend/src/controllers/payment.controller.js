@@ -2,7 +2,8 @@ const crypto = require('crypto');
 const razorpay = require('../config/razorpay');
 const Subscription = require('../models/Subscription.model');
 const User = require('../models/User.model');
-const PRICING = require('../constants/pricing');
+const PricingTier = require('../models/PricingTier.model');
+const PRICING_FALLBACK = require('../constants/pricing');
 
 /**
  * @desc    Create Razorpay Order
@@ -13,11 +14,23 @@ exports.createOrder = async (req, res, next) => {
     try {
         const { plan, billingCycle } = req.body;
 
-        if (!plan || !billingCycle || !PRICING[plan] || !PRICING[plan][billingCycle]) {
+        if (!plan || !billingCycle || !['pro', 'business'].includes(plan) || !['monthly', 'yearly'].includes(billingCycle)) {
             return res.status(400).json({ success: false, message: 'Invalid plan or billing cycle' });
         }
 
-        const amount = PRICING[plan][billingCycle];
+        // Try to get pricing from database first (admin-managed), fallback to hardcoded
+        let amount;
+        const tierIdMap = { pro: 'AppPro', business: 'AppBusiness' };
+        const dbTier = await PricingTier.findOne({ tierId: tierIdMap[plan], category: 'app_subscription', isActive: true });
+
+        if (dbTier && dbTier.billingPrices && dbTier.billingPrices[billingCycle] > 0) {
+            amount = dbTier.billingPrices[billingCycle]; // amount in paise from DB
+        } else if (PRICING_FALLBACK[plan] && PRICING_FALLBACK[plan][billingCycle]) {
+            amount = PRICING_FALLBACK[plan][billingCycle]; // fallback to hardcoded
+        } else {
+            return res.status(400).json({ success: false, message: 'Pricing not found for this plan' });
+        }
+
         const options = {
             amount: amount, // in paise
             currency: 'INR',

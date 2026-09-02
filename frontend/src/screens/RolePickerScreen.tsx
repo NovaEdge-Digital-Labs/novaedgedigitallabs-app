@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     },
     cardSelected: {
         borderColor: COLORS.primary + '80',
-        backgroundColor: 'rgba(145, 39, 255, 0.08)',
+        backgroundColor: 'rgba(110, 86, 207, 0.08)',
     },
     cardGlow: {
         ...StyleSheet.absoluteFillObject,

@@ -73,8 +73,8 @@ const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 const styles = StyleSheet.create({
     button: {
         backgroundColor: COLORS.primary,
-        height: 55,
-        borderRadius: 12,
+        height: 50,
+        borderRadius: 50,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',

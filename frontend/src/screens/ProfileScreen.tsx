@@ -16,6 +16,7 @@ import {
     StatTile,
     EmptyState,
     SkeletonCard,
+    ConfirmModal,
 } from '../components/ui';
 import { SPACING, RADIUS, withAlpha } from '../constants/colors';
 import { useFocusEffect } from '@react-navigation/native';
@@ -162,6 +163,7 @@ const ProfileScreen = ({ navigation }: any) => {
     const [userPosts, setUserPosts] = useState<Post[]>([]);
     const [isPostsLoading, setIsPostsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [deletePostId, setDeletePostId] = useState<string | null>(null);
 
     const fetchUserPosts = useCallback(async (showLoader = true) => {
         if (showLoader) setIsPostsLoading(true);
@@ -194,25 +196,25 @@ const ProfileScreen = ({ navigation }: any) => {
     };
 
     const handleDeletePost = (postId: string) => {
-        Alert.alert(
-            'Delete Post',
-            'Are you sure you want to delete this post?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                    text: 'Delete', 
-                    style: 'destructive', 
-                    onPress: async () => {
-                        setUserPosts((prev) => prev.filter((p) => p._id !== postId));
-                        const res = await postApi.deletePost(postId);
-                        if (!res || !res.success) {
-                            Alert.alert('Error', res.message || 'Failed to delete post.');
-                            fetchUserPosts(false);
-                        }
-                    } 
+        setDeletePostId(postId);
+    };
+
+    const confirmDeletePost = async () => {
+        if (!deletePostId) return;
+        const postId = deletePostId;
+        setDeletePostId(null);
+        
+        setUserPosts((prev) => prev.filter((p) => p._id !== postId));
+        postApi.deletePost(postId).then(res => {
+            if (!res || !res.success) {
+                if (Platform.OS === 'web') {
+                    window.alert(res?.message || 'Failed to delete post.');
+                } else {
+                    Alert.alert('Error', res?.message || 'Failed to delete post.');
                 }
-            ]
-        );
+                fetchUserPosts(false);
+            }
+        });
     };
 
     const handleLogout = () => {
@@ -303,7 +305,7 @@ const ProfileScreen = ({ navigation }: any) => {
                     title: 'Notifications',
                     subtitle: 'Alerts and news',
                     tint: '#FF6369',
-                    onPress: () => navigation.navigate('Notifications'),
+                    onPress: () => Alert.alert('Coming Soon', 'Notifications will be available in the next update.'),
                 },
                 {
                     icon: 'shield-checkmark-outline',
@@ -381,11 +383,15 @@ const ProfileScreen = ({ navigation }: any) => {
             }}>
                 {/* Identity */}
                 <View style={styles.header}>
-                    <View style={styles.avatarContainer}>
-                        <UIText variant="display" color={COLORS.white}>
-                            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                        </UIText>
-                    </View>
+                    {user?.avatar ? (
+                        <Image source={{ uri: user.avatar }} style={{ width: 88, height: 88, borderRadius: 44 }} />
+                    ) : (
+                        <View style={styles.avatarContainer}>
+                            <UIText variant="display" color={COLORS.white}>
+                                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                            </UIText>
+                        </View>
+                    )}
                     <UIText variant="h1" center>{user?.name || 'User Name'}</UIText>
                     <UIText variant="body" tone="muted" center style={styles.headerEmail}>
                         {user?.email || 'user@example.com'}
@@ -500,6 +506,15 @@ const ProfileScreen = ({ navigation }: any) => {
                 <UIText variant="caption" tone="faint" center style={styles.versionText}>
                     Version 1.0.0 (Build 42)
                 </UIText>
+                <ConfirmModal
+                    visible={!!deletePostId}
+                    title="Delete Post"
+                    message="Are you sure you want to delete this post? This action cannot be undone."
+                    confirmText="Delete"
+                    isDestructive={true}
+                    onConfirm={confirmDeletePost}
+                    onCancel={() => setDeletePostId(null)}
+                />
             </Screen>
         </ThemeWrapper>
     );
@@ -508,7 +523,7 @@ const ProfileScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
-        marginTop: SPACING.md,
+        marginTop: 60,
         marginBottom: SPACING.lg,
     },
     avatarContainer: {

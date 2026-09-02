@@ -10,6 +10,9 @@ import AboutScreen from '../screens/AboutScreen';
 import ReferEarnScreen from '../screens/ReferEarnScreen';
 import PrivacySecurityScreen from '../screens/PrivacySecurityScreen';
 import ApiDashboardScreen from '../screens/ApiDashboardScreen';
+import ApiReferenceScreen from '../screens/ApiReferenceScreen';
+import UserGuidesScreen from '../screens/UserGuidesScreen';
+import GuideDetailScreen from '../screens/GuideDetailScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import AdminUsersScreen from '../screens/AdminUsersScreen';
 import MyWorkspaceScreen from '../screens/MyWorkspaceScreen';
@@ -21,6 +24,7 @@ import EmployerApplicantsScreen from '../screens/EmployerApplicantsScreen';
 import StoreNavigator from './StoreNavigator';
 import ToolsNavigator from './ToolsNavigator';
 import ServicesNavigator from './ServicesNavigator';
+import PostJobScreen from '../screens/PostJobScreen';
 import { COLORS } from '../constants/colors';
 
 const Stack = createStackNavigator();
@@ -43,6 +47,9 @@ const ProfileNavigator = () => {
             <Stack.Screen name="ReferEarn" component={ReferEarnScreen} />
             <Stack.Screen name="PrivacySecurity" component={PrivacySecurityScreen} />
             <Stack.Screen name="ApiDashboard" component={ApiDashboardScreen} />
+            <Stack.Screen name="ApiReference" component={ApiReferenceScreen} />
+            <Stack.Screen name="UserGuides" component={UserGuidesScreen} />
+            <Stack.Screen name="GuideDetail" component={GuideDetailScreen} />
             <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
             <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
 
@@ -52,6 +59,7 @@ const ProfileNavigator = () => {
             <Stack.Screen name="SavedJobs" component={SavedJobsScreen} />
             <Stack.Screen name="MyPostedJobs" component={MyPostedJobsScreen} />
             <Stack.Screen name="EmployerApplicants" component={EmployerApplicantsScreen} />
+            <Stack.Screen name="PostJob" component={PostJobScreen} />
         </Stack.Navigator>
     );
 };

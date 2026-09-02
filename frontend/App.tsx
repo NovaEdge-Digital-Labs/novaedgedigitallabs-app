@@ -21,12 +21,13 @@ import { COLORS } from './src/constants/colors';
 import ThemeWrapper from './src/components/ThemeWrapper';
 import AnimatedSplash from './src/components/AnimatedSplash';
 import { applyWebStyleReset } from './src/utils/webStyleReset';
+import { syncPushToken } from './src/utils/pushNotifications';
 
 // Prevent the native splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
-  const { loadUser, isLoading } = useAuthStore();
+  const { loadUser, isLoading, isAuthenticated } = useAuthStore();
   const [appIsReady, setAppIsReady] = useState(false);
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
 
@@ -68,6 +69,12 @@ export default function App() {
     }
     hideSplash();
   }, [appIsReady, fontsLoaded, fontError]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      syncPushToken();
+    }
+  }, [isAuthenticated]);
 
   const handleAnimationEnd = () => {
     setShowAnimatedSplash(false);

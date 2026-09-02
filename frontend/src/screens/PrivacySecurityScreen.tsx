@@ -184,8 +184,8 @@ const PrivacySecurityScreen = ({ navigation }: any) => {
                     value={value}
                     onValueChange={(val) => saveSetting(settingKey, val)}
                     disabled={!isLoaded}
-                    trackColor={{ false: 'rgba(255, 255, 255, 0.1)', true: '#9127FF80' }}
-                    thumbColor={value ? '#9127FF' : '#94A3B8'}
+                    trackColor={{ false: 'rgba(255, 255, 255, 0.1)', true: '#6E56CF80' }}
+                    thumbColor={value ? '#6E56CF' : '#94A3B8'}
                 />
             </View>
         );
@@ -207,13 +207,6 @@ const PrivacySecurityScreen = ({ navigation }: any) => {
                     <Text style={styles.sectionTitle}>Security Settings</Text>
 
                     <ToggleItem
-                        icon="finger-print-outline"
-                        title="Biometric Login"
-                        subtitle="Use fingerprint or face to unlock"
-                        settingKey="biometric"
-                        color="#a855f7"
-                    />
-                    <ToggleItem
                         icon="shield-checkmark-outline"
                         title="Two-Factor Auth"
                         subtitle="Extra layer of account protection"
@@ -231,26 +224,6 @@ const PrivacySecurityScreen = ({ navigation }: any) => {
                         </View>
                         <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
                     </TouchableOpacity>
-                </View>
-
-                {/* Privacy Section */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Privacy Controls</Text>
-
-                    <ToggleItem
-                        icon="analytics-outline"
-                        title="Usage Analytics"
-                        subtitle="Help us improve with anonymous data"
-                        settingKey="analytics"
-                        color="#38bdf8"
-                    />
-                    <ToggleItem
-                        icon="bug-outline"
-                        title="Crash Reports"
-                        subtitle="Auto-send crash data for fixes"
-                        settingKey="crashReports"
-                        color="#c042ff"
-                    />
                 </View>
 
                 {/* Data Management */}

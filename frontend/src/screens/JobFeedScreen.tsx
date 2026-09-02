@@ -24,10 +24,10 @@ const QUICK_LINKS: Array<{
     tint: string;
     route: string;
 }> = [
-    { label: 'Applications', icon: 'document-text-outline', tint: '#5B7CFA', route: 'MyApplications' },
-    { label: 'Saved', icon: 'bookmark-outline', tint: '#F1A10D', route: 'SavedJobs' },
-    { label: 'Applicants', icon: 'people-outline', tint: '#9E8CFC', route: 'EmployerApplicants' },
-    { label: 'Pro Pass', icon: 'star-outline', tint: '#F1A10D', route: 'PremiumUpgrade' },
+    { label: 'Applications', icon: 'document-text-outline', tint: COLORS.primary, route: 'MyApplications' },
+    { label: 'Saved', icon: 'bookmark-outline', tint: COLORS.primary, route: 'SavedJobs' },
+    { label: 'Applicants', icon: 'people-outline', tint: COLORS.primary, route: 'EmployerApplicants' },
+    { label: 'Pro Pass', icon: 'star-outline', tint: COLORS.primary, route: 'PremiumUpgrade' },
 ];
 
 const relativeTime = (iso?: string) => {
@@ -206,13 +206,13 @@ export const JobFeedScreen = ({ navigation }: any) => {
                                     style={({ pressed }) => [
                                         styles.quickChip,
                                         {
-                                            backgroundColor: withAlpha(q.tint, pressed ? 0.24 : 0.12),
-                                            borderColor: withAlpha(q.tint, 0.28),
+                                            backgroundColor: q.tint,
+                                            borderColor: q.tint,
                                         },
                                     ]}
                                 >
-                                    <Ionicons name={q.icon} size={13} color={q.tint} />
-                                    <Text variant="caption" color={q.tint} style={styles.quickLabel}>
+                                    <Ionicons name={q.icon} size={13} color={COLORS.white} />
+                                    <Text variant="caption" color={COLORS.white} style={styles.quickLabel}>
                                         {q.label}
                                     </Text>
                                 </Pressable>
