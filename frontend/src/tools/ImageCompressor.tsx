@@ -5,7 +5,10 @@ import { COLORS } from '../constants/colors';
 import * as ImagePicker from 'expo-image-picker';
 import Slider from '@react-native-community/slider';
 import { toolsApi } from '../api/toolsApi';
-import * as FileSystem from 'expo-file-system';
+// Imported from `/legacy` deliberately. On SDK 55 the package's main entry only
+// keeps deprecated stubs for these helpers — `cacheDirectory` is undefined and
+// `downloadAsync`/`writeAsStringAsync` throw at runtime.
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -40,11 +43,21 @@ const ImageCompressor = ({ navigation }: any) => {
         setIsLoading(true);
         try {
             const formData = new FormData();
-            formData.append('image', {
-                uri: image.uri,
-                name: 'photo.jpg',
-                type: 'image/jpeg',
-            } as any);
+            if (Platform.OS === 'web') {
+                if (image.file) {
+                    formData.append('image', image.file);
+                } else {
+                    const response = await fetch(image.uri);
+                    const blob = await response.blob();
+                    formData.append('image', blob, 'photo.jpg');
+                }
+            } else {
+                formData.append('image', {
+                    uri: image.uri,
+                    name: 'photo.jpg',
+                    type: 'image/jpeg',
+                } as any);
+            }
             formData.append('quality', quality.toString());
 
             const data = await toolsApi.compressImage(formData);
@@ -59,31 +72,55 @@ const ImageCompressor = ({ navigation }: any) => {
         }
     };
 
+    // The API returns the compressed bytes inline as base64 instead of a hosted
+    // URL, so write them to a cache file before handing them to the OS.
+    const writeResultToCache = async (filename: string) => {
+        if (!result?.base64) throw new Error('No compressed image available');
+        const fileUri = FileSystem.cacheDirectory + filename;
+        await FileSystem.writeAsStringAsync(fileUri, result.base64, { encoding: 'base64' });
+        return fileUri;
+    };
+
     const handleSave = async () => {
-        if (!result?.url) return;
+        if (!result?.base64) return;
         try {
+            if (Platform.OS === 'web') {
+                const link = document.createElement('a');
+                link.href = result.dataUri || `data:image/jpeg;base64,${result.base64}`;
+                link.download = `compressed_${Date.now()}.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                Alert.alert('Success', 'Image downloaded successfully');
+                return;
+            }
+
             const { status } = await MediaLibrary.requestPermissionsAsync(true);
             if (status !== 'granted') {
                 Alert.alert('Permission needed', 'Please allow access to save the image');
                 return;
             }
-            const fileUri = (FileSystem as any).cacheDirectory + `compressed_${Date.now()}.jpg`;
-            const downloadRes = await FileSystem.downloadAsync(result.url, fileUri);
-            await MediaLibrary.saveToLibraryAsync(downloadRes.uri);
+            const fileUri = await writeResultToCache(`compressed_${Date.now()}.jpg`);
+            await MediaLibrary.saveToLibraryAsync(fileUri);
             Alert.alert('Success', 'Image saved to gallery');
-        } catch (e) {
-            Alert.alert('Error', 'Failed to save image');
+        } catch (e: any) {
+            console.warn('[compress] save failed:', e);
+            Alert.alert('Error', e?.message || 'Failed to save image');
         }
     };
 
     const handleShare = async () => {
-        if (!result?.url) return;
+        if (!result?.base64) return;
         try {
-            const fileUri = (FileSystem as any).cacheDirectory + 'compressed_image.jpg';
-            const downloadRes = await FileSystem.downloadAsync(result.url, fileUri);
-            await Sharing.shareAsync(downloadRes.uri);
-        } catch (e) {
-            Alert.alert('Error', 'Failed to share image');
+            if (Platform.OS === 'web') {
+                Alert.alert('Info', 'Share functionality is not supported on web browsers.');
+                return;
+            }
+            const fileUri = await writeResultToCache('compressed_image.jpg');
+            await Sharing.shareAsync(fileUri, { mimeType: 'image/jpeg' });
+        } catch (e: any) {
+            console.warn('[compress] share failed:', e);
+            Alert.alert('Error', e?.message || 'Failed to share image');
         }
     };
 

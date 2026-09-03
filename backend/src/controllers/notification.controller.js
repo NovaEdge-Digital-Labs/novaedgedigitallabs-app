@@ -1,6 +1,6 @@
 const Notification = require('../models/Notification.model');
 const User = require('../models/User.model');
-const admin = require('../config/firebase');
+const { admin, isFirebaseReady, firebaseInitError } = require('../config/firebase');
 
 // @desc    Update FCM Token for user
 // @route   POST /api/notifications/fcm-token
@@ -15,7 +15,7 @@ exports.updateFcmToken = async (req, res, next) => {
         await User.findByIdAndUpdate(req.user.id, { fcmToken }, { new: true });
         
         // Subscribe the token to the global broadcast topic
-        if (admin && admin.messaging) {
+        if (isFirebaseReady()) {
             try {
                 await admin.messaging().subscribeToTopic([fcmToken], 'all_users');
             } catch (topicErr) {
@@ -103,8 +103,16 @@ exports.sendPushNotification = async (req, res, next) => {
             userId: userId || null
         });
 
-        // Send via Firebase
-        if (admin && admin.messaging) {
+        // Send via Firebase. The row is already saved, so a delivery failure
+        // must not fail the request — but it MUST be reported back, otherwise
+        // the admin sees "sent" for a push that reached nobody.
+        const delivery = { attempted: false, delivered: false, error: null };
+
+        if (!isFirebaseReady()) {
+            delivery.error = `Firebase is not configured (${firebaseInitError() || 'unknown reason'})`;
+            console.error('Push delivery skipped:', delivery.error);
+        } else {
+            delivery.attempted = true;
             try {
                 const payload = {
                     notification: {
@@ -121,31 +129,38 @@ exports.sendPushNotification = async (req, res, next) => {
                 if (userId) {
                     // Send to specific user
                     const user = await User.findById(userId);
-                    if (user && user.fcmToken) {
+                    if (!user) {
+                        delivery.error = 'Target user not found';
+                    } else if (!user.fcmToken) {
+                        delivery.error = 'Target user has no registered device';
+                    } else {
                         await admin.messaging().send({
                             ...payload,
                             token: user.fcmToken
                         });
+                        delivery.delivered = true;
                     }
                 } else {
-                    // Global broadcast (Requires users to subscribe to a topic like 'all_users', 
-                    // or we have to send multcast to all valid tokens which can be heavy, 
-                    // but for now let's use topic 'all_users')
+                    // Global broadcast. Devices are subscribed to 'all_users'
+                    // when they register their token in auth.controller.
                     await admin.messaging().send({
                         ...payload,
                         topic: 'all_users'
                     });
+                    delivery.delivered = true;
                 }
             } catch (firebaseError) {
+                delivery.error = firebaseError?.errorInfo?.message || firebaseError?.message || 'Unknown Firebase error';
                 console.error('Firebase messaging error:', firebaseError);
-                // We do not fail the request if firebase fails, just log it. 
-                // The notification is saved in DB and can be seen in-app.
             }
         }
 
         res.status(201).json({
             success: true,
-            message: 'Notification sent and saved',
+            message: delivery.delivered
+                ? 'Notification sent and saved'
+                : `Notification saved, but push delivery failed: ${delivery.error}`,
+            delivery,
             data: notification
         });
     } catch (error) {

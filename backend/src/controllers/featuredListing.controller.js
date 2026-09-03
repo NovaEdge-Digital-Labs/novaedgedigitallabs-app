@@ -1,12 +1,13 @@
 const FeaturedListing = require('../models/FeaturedListing.model');
 const BusinessInquiry = require('../models/BusinessInquiry.model');
-const Razorpay = require('razorpay');
 const sendEmail = require('../utils/sendEmail');
 
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+// No Razorpay client here on purpose. This file used to construct one at module
+// load, but never called it — and `new Razorpay({ key_id: undefined })` throws,
+// so a missing key took the whole API down at boot instead of just payments.
+// The webhook below verifies signatures with RAZORPAY_WEBHOOK_SECRET and crypto,
+// which needs no SDK instance. Anything that does need one should require
+// ../config/razorpay, which degrades to a 503 stub instead of crashing.
 
 // @desc    Get top 5 active featured listings
 // @route   GET /api/featured

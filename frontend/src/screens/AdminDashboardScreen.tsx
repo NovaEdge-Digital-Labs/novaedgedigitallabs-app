@@ -8,15 +8,28 @@ import { formatCurrency } from '../utils/helpers';
 
 const AdminDashboardScreen = ({ navigation }: any) => {
     const [stats, setStats] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     const fetchStats = async () => {
         try {
+            setError(null);
             const data = await adminApi.getStats();
             setStats(data.stats);
-        } catch (error) {
-            console.error('Error fetching admin stats:', error);
+        } catch (err: any) {
+            // Never fall through to rendering zeros — that reads as "there is no
+            // data" when the real cause is a 403, an expired session or a
+            // timeout against a cold serverless start.
+            console.error('Error fetching admin stats:', err);
+            setStats(null);
+            if (err?.response?.status === 403) {
+                setError('Your account does not have admin access.');
+            } else if (err?.code === 'ECONNABORTED') {
+                setError('The server took too long to respond. Pull down to retry.');
+            } else {
+                setError(err?.response?.data?.message || 'Could not load dashboard stats.');
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -71,12 +84,22 @@ const AdminDashboardScreen = ({ navigation }: any) => {
                     contentContainerStyle={styles.scrollContent}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
                 >
-                    <View style={styles.statsGrid}>
-                        <StatCard icon="people" label="Total Users" value={stats?.users || 0} color={COLORS.primary} />
-                        <StatCard icon="book" label="Courses" value={stats?.courses || 0} color={COLORS.accent} />
-                        <StatCard icon="apps" label="Services" value={stats?.services || 0} color="#10b981" />
-                        <StatCard icon="briefcase" label="Leads" value={stats?.leads || 0} color="#f59e0b" />
-                    </View>
+                    {error ? (
+                        <View style={styles.errorCard}>
+                            <Ionicons name="alert-circle-outline" size={28} color={COLORS.warning} />
+                            <Text style={styles.errorText}>{error}</Text>
+                            <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
+                                <Text style={styles.retryText}>Retry</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <View style={styles.statsGrid}>
+                            <StatCard icon="people" label="Total Users" value={stats?.users ?? 0} color={COLORS.primary} />
+                            <StatCard icon="book" label="Courses" value={stats?.courses ?? 0} color={COLORS.accent} />
+                            <StatCard icon="apps" label="Services" value={stats?.services ?? 0} color="#10b981" />
+                            <StatCard icon="briefcase" label="Leads" value={stats?.leads ?? 0} color="#f59e0b" />
+                        </View>
+                    )}
 
                     <TouchableOpacity
                         style={styles.actionCard}
@@ -155,6 +178,29 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         gap: 15,
         marginBottom: 30,
+    },
+    errorCard: {
+        ...COLORS.glass,
+        padding: 24,
+        borderRadius: 20,
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 30,
+    },
+    errorText: {
+        color: COLORS.text,
+        fontSize: 14,
+        textAlign: 'center',
+    },
+    retryButton: {
+        backgroundColor: COLORS.primary + '20',
+        paddingHorizontal: 22,
+        paddingVertical: 10,
+        borderRadius: 12,
+    },
+    retryText: {
+        color: COLORS.primary,
+        fontWeight: 'bold',
     },
     statCard: {
         width: '47.5%',

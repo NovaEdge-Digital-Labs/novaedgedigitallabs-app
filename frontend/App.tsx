@@ -23,7 +23,7 @@ import AnimatedSplash from './src/components/AnimatedSplash';
 import CustomAlert from './src/components/CustomAlert';
 import { patchGlobalAlert } from './src/store/alertStore';
 import { applyWebStyleReset } from './src/utils/webStyleReset';
-import { syncPushToken } from './src/utils/pushNotifications';
+import { syncPushToken, requestNotificationPermission } from './src/utils/pushNotifications';
 import * as WebBrowser from 'expo-web-browser';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -78,10 +78,18 @@ export default function App() {
     hideSplash();
   }, [appIsReady, fontsLoaded, fontError]);
 
+  // Ask for notification permission as soon as the app is usable. This used to
+  // be tied to `isAuthenticated`, so a user who never reached the signed-in
+  // state was never prompted at all.
   useEffect(() => {
-    if (isAuthenticated) {
-      syncPushToken();
-    }
+    if (!appIsReady) return;
+    requestNotificationPermission().catch((e) => console.warn('[push] permission error', e));
+  }, [appIsReady]);
+
+  // The token can only be stored against a user, so upload it once signed in.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    syncPushToken().catch((e) => console.warn('[push] sync error', e));
   }, [isAuthenticated]);
 
   const handleAnimationEnd = () => {

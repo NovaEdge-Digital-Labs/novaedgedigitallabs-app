@@ -172,8 +172,12 @@ const RegisterScreen = () => {
                             icon="gift-outline"
                             placeholder="Optional"
                             value={referralCode}
-                            onChangeText={setReferralCode}
+                            // autoCapitalize is only a keyboard hint — pasted or
+                            // autofilled text arrives unchanged. Normalise here so
+                            // a lower-case code still resolves to its owner.
+                            onChangeText={(t) => setReferralCode(t.trim().toUpperCase())}
                             autoCapitalize="characters"
+                            autoCorrect={false}
                         />
 
                         <Button

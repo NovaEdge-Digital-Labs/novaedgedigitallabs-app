@@ -2,17 +2,18 @@ import axiosInstance from './axiosInstance';
 
 export const notificationApi = {
     /**
-     * Send the Expo/FCM Push Token to the backend so the user can receive push notifications.
+     * Send the device FCM push token to the backend so the user can receive
+     * push notifications.
+     *
+     * Must stay PATCH: the route is declared as
+     * `router.patch('/fcm-token', ...)` in backend/src/routes/auth.routes.js.
+     * This used to send PUT, which Express answered with a 404 for every
+     * device, so no token was ever stored and no notification could be
+     * delivered. Errors propagate — the caller decides how loud to be.
      */
     updateFCMToken: async (fcmToken: string) => {
-        try {
-            // The backend endpoint is PUT /api/auth/fcm-token
-            const response = await axiosInstance.put('/auth/fcm-token', { fcmToken });
-            return response.data;
-        } catch (error: any) {
-            console.error('Error updating FCM token:', error?.response?.data || error.message);
-            return { success: false, message: error?.response?.data?.message || 'Failed to update FCM token' };
-        }
+        const response = await axiosInstance.patch('/auth/fcm-token', { fcmToken });
+        return response.data;
     },
 };
 

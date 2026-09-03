@@ -1,11 +1,22 @@
 const sharp = require('sharp');
 const QRCode = require('qrcode');
 const puppeteer = require('puppeteer');
-const cloudinary = require('../config/cloudinary');
 const User = require('../models/User.model');
 const ToolUsage = require('../models/ToolUsage.model');
 const trackUsage = require('../utils/trackUsage');
 const fs = require('fs');
+
+// Serverless responses are size-capped, and base64 inflates a payload by ~33%.
+// Stay comfortably under the limit so a large upload degrades in quality rather
+// than failing outright.
+const MAX_INLINE_BYTES = 3 * 1024 * 1024;
+
+// Remove the multer temp upload. Best-effort: a leftover file in the OS temp
+// directory is harmless, a throw here would mask the real result.
+const discardUpload = (file) => {
+    if (!file?.path) return;
+    fs.promises.unlink(file.path).catch(() => {});
+};
 
 /**
  * @desc    Compress Image
@@ -24,31 +35,59 @@ exports.compressImage = async (req, res, next) => {
         // Track usage
         await trackUsage(user._id, 'compress', limit);
 
-        const compressedImageBuffer = await sharp(req.file.path)
+        // Honour the quality the client actually asked for. This was pinned at
+        // 75 regardless of the slider value.
+        const requestedQuality = Number.parseInt(req.body.quality, 10);
+        let quality = Number.isFinite(requestedQuality)
+            ? Math.min(100, Math.max(10, requestedQuality))
+            : 75;
+
+        let compressedImageBuffer = await sharp(req.file.path)
+            .rotate() // honour EXIF orientation
             .resize({ width: 1500, withoutEnlargement: true })
-            .jpeg({ quality: 75 })
+            .jpeg({ quality, mozjpeg: true })
             .toBuffer();
 
-        // Upload to Cloudinary
-        const result = await new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                { folder: 'novaedge/compressed', resource_type: 'image' },
-                (error, result) => {
-                    if (error) reject(error);
-                    else resolve(result);
-                }
-            );
-            uploadStream.end(compressedImageBuffer);
-        });
+        // Step the quality down if the encoded result would be too large to
+        // return inline.
+        while (compressedImageBuffer.length > MAX_INLINE_BYTES && quality > 20) {
+            quality = Math.max(20, quality - 15);
+            compressedImageBuffer = await sharp(req.file.path)
+                .rotate()
+                .resize({ width: 1200, withoutEnlargement: true })
+                .jpeg({ quality, mozjpeg: true })
+                .toBuffer();
+        }
 
+        if (compressedImageBuffer.length > MAX_INLINE_BYTES) {
+            discardUpload(req.file);
+            return res.status(413).json({
+                success: false,
+                message: 'This image is too large to compress. Please try a smaller one.'
+            });
+        }
+
+        const originalSize = req.file.size;
+        const compressedSize = compressedImageBuffer.length;
+        const base64 = compressedImageBuffer.toString('base64');
+
+        discardUpload(req.file);
+
+        // Returned inline rather than uploaded to object storage: the tool has
+        // no reason to persist a user's photo on a third-party host, and the
+        // previous Cloudinary upload failed outright without credentials.
         res.status(200).json({
             success: true,
-            originalSize: req.file.size,
-            compressedSize: result.bytes,
-            compressionRatio: ((1 - result.bytes / req.file.size) * 100).toFixed(2) + '%',
-            url: result.secure_url
+            originalSize,
+            compressedSize,
+            compressionRatio: ((1 - compressedSize / originalSize) * 100).toFixed(2) + '%',
+            quality,
+            mimeType: 'image/jpeg',
+            base64,
+            dataUri: `data:image/jpeg;base64,${base64}`
         });
     } catch (error) {
+        discardUpload(req.file);
         next(error);
     }
 };
@@ -327,22 +366,23 @@ exports.generateInvoice = async (req, res, next) => {
         const pdfBuffer = await page.pdf({ format: 'A4' });
         await browser.close();
 
-        // Upload PDF to Cloudinary
-        const result = await new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                { folder: 'novaedge/invoices', resource_type: 'raw', format: 'pdf' },
-                (error, result) => {
-                    if (error) reject(error);
-                    else resolve(result);
-                }
-            );
-            uploadStream.end(pdfBuffer);
-        });
+        // Returned inline for the same reason as the compressed image: no
+        // third-party storage is involved, so this works without credentials.
+        if (pdfBuffer.length > MAX_INLINE_BYTES) {
+            return res.status(413).json({
+                success: false,
+                message: 'The generated invoice is too large to return. Please reduce the number of line items.'
+            });
+        }
+
+        const pdfBase64 = Buffer.from(pdfBuffer).toString('base64');
 
         res.status(200).json({
             success: true,
-            invoiceUrl: result.secure_url,
-            invoiceNo
+            invoiceNo,
+            mimeType: 'application/pdf',
+            base64: pdfBase64,
+            dataUri: `data:application/pdf;base64,${pdfBase64}`
         });
     } catch (error) {
         next(error);

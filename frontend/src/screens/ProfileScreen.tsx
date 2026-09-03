@@ -231,9 +231,11 @@ const ProfileScreen = ({ navigation }: any) => {
      * Profile is account-only now. Tools, Store, Services and Workspace moved
      * to the Explore tab, which cut this list from 20 flat rows to 4 groups.
      */
-    const isAdmin = Boolean(
-        (user as any)?.role === 'admin' || (user as any)?.isAdmin || user?.email?.includes('admin')
-    );
+    // Must mirror the server's check (role === 'admin') exactly. An earlier
+    // `email.includes('admin')` fallback showed the Admin tile to anyone whose
+    // address happened to contain "admin", who then hit 403 on every request
+    // and saw an empty dashboard.
+    const isAdmin = (user as any)?.role === 'admin';
 
     const MENU_GROUPS: Array<{
         eyebrow: string;

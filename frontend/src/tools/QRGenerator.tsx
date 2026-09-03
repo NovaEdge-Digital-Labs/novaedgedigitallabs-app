@@ -4,7 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/colors';
 import { toolsApi } from '../api/toolsApi';
-import * as FileSystem from 'expo-file-system';
+// Imported from `/legacy` deliberately: on SDK 55 the package's main entry
+// exposes `writeAsStringAsync` only as a deprecated stub that throws, and
+// `cacheDirectory`/`EncodingType` are undefined there.
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import Slider from '@react-native-community/slider';
@@ -47,9 +50,9 @@ const QRGenerator = ({ navigation }: any) => {
         if (!qrImage) return;
         try {
             const base64Data = qrImage.split('base64,')[1];
-            const fileUri = (FileSystem as any).cacheDirectory + 'qr_code.png';
+            const fileUri = FileSystem.cacheDirectory + 'qr_code.png';
             await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-                encoding: (FileSystem as any).EncodingType.Base64,
+                encoding: 'base64',
             });
             await Sharing.shareAsync(fileUri);
         } catch (error) {
@@ -66,9 +69,9 @@ const QRGenerator = ({ navigation }: any) => {
                 return;
             }
             const base64Data = qrImage.split('base64,')[1];
-            const fileUri = (FileSystem as any).cacheDirectory + `qr_code_${Date.now()}.png`;
+            const fileUri = FileSystem.cacheDirectory + `qr_code_${Date.now()}.png`;
             await FileSystem.writeAsStringAsync(fileUri, base64Data, {
-                encoding: (FileSystem as any).EncodingType.Base64,
+                encoding: 'base64',
             });
             await MediaLibrary.saveToLibraryAsync(fileUri);
             Alert.alert('Success', 'QR Code saved to gallery');

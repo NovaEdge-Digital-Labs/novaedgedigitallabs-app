@@ -17,10 +17,17 @@ const AdminUsersScreen = ({ navigation }: any) => {
     const fetchUsers = async () => {
         try {
             const data = await adminApi.getUsers();
-            setUsers(data.users);
-        } catch (error) {
+            setUsers(Array.isArray(data?.users) ? data.users : []);
+        } catch (error: any) {
             console.error('Error fetching users:', error);
-            Alert.alert('Error', 'Could not fetch users list');
+            setUsers([]);
+            const message =
+                error?.response?.status === 403
+                    ? 'Your account does not have admin access.'
+                    : error?.code === 'ECONNABORTED'
+                        ? 'The server took too long to respond. Please try again.'
+                        : error?.response?.data?.message || 'Could not fetch users list';
+            Alert.alert('Error', message);
         } finally {
             setLoading(false);
         }

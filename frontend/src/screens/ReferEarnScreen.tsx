@@ -1,28 +1,64 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Share, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import ThemeWrapper from '../components/ThemeWrapper';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { useAuthStore } from '../store/authStore';
+import { authApi } from '../api/authApi';
 
 const ReferEarnScreen = ({ navigation }: any) => {
-    const { user } = useAuthStore();
-    const REFERRAL_CODE = user?.referralCode || 'NOVA2026';
+    const { user, updateUser } = useAuthStore();
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    // `referralCode` and `referralStats` are only produced by GET /auth/me — the
+    // login and register responses do not include them. Re-fetch whenever this
+    // screen gains focus so the count reflects reality instead of a stale copy
+    // of the user captured at sign-in.
+    useFocusEffect(
+        useCallback(() => {
+            let active = true;
+
+            (async () => {
+                setIsSyncing(true);
+                try {
+                    const response = await authApi.getMe();
+                    if (active && response?.data) updateUser(response.data);
+                } catch (e) {
+                    console.warn('[refer] Could not refresh referral stats:', e);
+                } finally {
+                    if (active) setIsSyncing(false);
+                }
+            })();
+
+            return () => {
+                active = false;
+            };
+        }, [updateUser])
+    );
+
+    // No placeholder code here on purpose. A hard-coded fallback ('NOVA2026')
+    // used to be shown when the user had no code, so people shared a string
+    // that matched no account — every signup using it silently dropped the
+    // referral and no count ever incremented.
+    const referralCode = user?.referralCode ?? null;
     const stats = user?.referralStats || { totalReferrals: 0, pending: 0, rewards: 0 };
     const primaryGradient = COLORS.getGradient(COLORS.primaryGradient);
 
     const handleCopyCode = async () => {
-        await Clipboard.setStringAsync(REFERRAL_CODE);
+        if (!referralCode) return;
+        await Clipboard.setStringAsync(referralCode);
         Alert.alert('Copied!', 'Referral code copied to clipboard.');
     };
 
     const handleShare = async () => {
+        if (!referralCode) return;
         try {
             await Share.share({
-                message: `Join NovaEdge Digital Labs and get premium tools for FREE! Use my referral code: ${REFERRAL_CODE}\n\nDownload now: https://play.google.com/store/apps/details?id=in.novaedgedigitallabs.tech`,
+                message: `Join NovaEdge Digital Labs and get premium tools for FREE! Use my referral code: ${referralCode}\n\nDownload now: https://play.google.com/store/apps/details?id=in.novaedgedigitallabs.tech`,
             });
         } catch (error) {
             // User cancelled share
@@ -66,12 +102,29 @@ const ReferEarnScreen = ({ navigation }: any) => {
                 <View style={[styles.codeCard, COLORS.getGlow(COLORS.primary, 15, 0.2)]}>
                     <Text style={styles.codeLabel}>Your Referral Code</Text>
                     <View style={styles.codeRow}>
-                        <Text style={styles.codeText}>{REFERRAL_CODE}</Text>
-                        <TouchableOpacity onPress={handleCopyCode} style={styles.copyButton} activeOpacity={0.7}>
+                        <Text style={styles.codeText}>
+                            {referralCode ?? (isSyncing ? 'Loading…' : 'Unavailable')}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={handleCopyCode}
+                            style={[styles.copyButton, !referralCode && { opacity: 0.4 }]}
+                            disabled={!referralCode}
+                            activeOpacity={0.7}
+                        >
                             <Ionicons name="copy-outline" size={20} color={COLORS.primary} />
                         </TouchableOpacity>
                     </View>
-                    <TouchableOpacity style={[styles.shareButton, { backgroundColor: COLORS.primary }]} onPress={handleShare} activeOpacity={0.8}>
+                    {!referralCode && !isSyncing ? (
+                        <Text style={styles.codeHint}>
+                            We could not load your code. Check your connection and reopen this screen.
+                        </Text>
+                    ) : null}
+                    <TouchableOpacity
+                        style={[styles.shareButton, { backgroundColor: COLORS.primary }, !referralCode && { opacity: 0.5 }]}
+                        onPress={handleShare}
+                        disabled={!referralCode}
+                        activeOpacity={0.8}
+                    >
                         <Ionicons name="share-social" size={18} color="white" style={{ marginRight: 8 }} />
                         <Text style={styles.shareButtonText}>Share with Friends</Text>
                     </TouchableOpacity>
@@ -151,6 +204,7 @@ const styles = StyleSheet.create({
     codeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
     codeText: { fontSize: 32, fontWeight: '900', color: COLORS.white, letterSpacing: 4, marginRight: 12 },
     copyButton: { padding: 8, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 10 },
+    codeHint: { fontSize: 12, color: COLORS.textMuted, marginBottom: 16, lineHeight: 18 },
     shareButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         height: 48, borderRadius: 12, overflow: 'hidden', width: '100%',

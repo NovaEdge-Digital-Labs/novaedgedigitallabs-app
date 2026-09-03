@@ -99,11 +99,25 @@ app.get('/api', (req, res) => {
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(err.status || 500).json({
+    // Not everything rejected here is an Error instance. The Razorpay SDK, for
+    // one, rejects with a bare object shaped
+    // `{ statusCode, error: { code, description } }` — it has no `.message`, so
+    // reading `err.message` yielded undefined and every upstream failure came
+    // back as a blank "Internal Server Error" with nothing to diagnose.
+    const gatewayError = err && typeof err === 'object' && err.error && (err.error.description || err.error.code);
+
+    const status = err?.status || err?.statusCode || 500;
+    const message = err?.message
+        || (gatewayError ? `${err.error.code || 'Gateway error'}: ${err.error.description || 'no description'}` : null)
+        || 'Internal Server Error';
+
+    console.error(`[${req.method} ${req.originalUrl}] ${status} ${message}`, err?.stack || err);
+
+    res.status(status).json({
         success: false,
-        message: err.message || 'Internal Server Error',
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        message,
+        // Only ever in local development, and never when NODE_ENV is unset.
+        stack: process.env.NODE_ENV === 'development' ? err?.stack : undefined
     });
 });
 
