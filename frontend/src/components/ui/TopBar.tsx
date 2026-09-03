@@ -79,8 +79,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.md,
         paddingTop: SPACING.sm,
         paddingBottom: SPACING.md,
-        marginTop: Platform.OS === 'android' ? 40 : 0,
-    },
+            },
     backButton: {
         width: 36,
         height: 36,
@@ -105,8 +104,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.md,
         paddingTop: SPACING.sm,
         paddingBottom: SPACING.md,
-        marginTop: Platform.OS === 'android' ? 40 : 0,
-    },
+            },
     largeTop: {
         flexDirection: 'row',
         alignItems: 'center',

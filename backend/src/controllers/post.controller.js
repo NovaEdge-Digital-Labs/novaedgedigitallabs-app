@@ -26,7 +26,7 @@ exports.createPost = async (req, res, next) => {
         });
 
         // Populate user details for returning
-        const populatedPost = await post.populate('userId', 'name email');
+        const populatedPost = await post.populate('userId', 'name email avatar');
 
         res.status(201).json({
             success: true,
@@ -43,8 +43,8 @@ exports.createPost = async (req, res, next) => {
 exports.getFeed = async (req, res, next) => {
     try {
         const posts = await Post.find()
-            .populate('userId', 'name email')
-            .populate('comments.userId', 'name email')
+            .populate('userId', 'name email avatar')
+            .populate('comments.userId', 'name email avatar')
             .sort({ createdAt: -1 });
 
         res.status(200).json({
@@ -78,8 +78,8 @@ exports.likePost = async (req, res, next) => {
                 : { $addToSet: { likes: userId } },
             { new: true }
         )
-            .populate('userId', 'name email')
-            .populate('comments.userId', 'name email');
+            .populate('userId', 'name email avatar')
+            .populate('comments.userId', 'name email avatar');
 
         res.status(200).json({
             success: true,
@@ -123,7 +123,7 @@ exports.updatePost = async (req, res, next) => {
         post.isEdited = true;
 
         await post.save();
-        const populatedPost = await post.populate('userId', 'name email');
+        const populatedPost = await post.populate('userId', 'name email avatar');
 
         res.status(200).json({
             success: true,
@@ -188,7 +188,7 @@ exports.addComment = async (req, res, next) => {
             },
             { new: true }
         )
-            .populate('userId', 'name email')
+            .populate('userId', 'name email avatar')
             .populate('comments.userId', 'name email');
 
         if (!updatedPost) {
@@ -227,7 +227,7 @@ exports.sharePost = async (req, res, next) => {
                 : { $addToSet: { shares: userId } },
             { new: true }
         )
-            .populate('userId', 'name email')
+            .populate('userId', 'name email avatar')
             .populate('comments.userId', 'name email');
 
         res.status(200).json({
@@ -245,7 +245,7 @@ exports.sharePost = async (req, res, next) => {
 exports.getUserPosts = async (req, res, next) => {
     try {
         const posts = await Post.find({ userId: req.user.id })
-            .populate('userId', 'name email')
+            .populate('userId', 'name email avatar')
             .populate('comments.userId', 'name email')
             .sort({ createdAt: -1 });
 

@@ -6,6 +6,7 @@ export interface PostComment {
         _id: string;
         name: string;
         email: string;
+        avatar?: string;
     };
     text: string;
     createdAt: string;
@@ -17,6 +18,7 @@ export interface Post {
         _id: string;
         name: string;
         email: string;
+        avatar?: string;
     };
     content: string;
     link?: string;

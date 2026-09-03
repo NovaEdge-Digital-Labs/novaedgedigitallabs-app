@@ -81,7 +81,11 @@ const PostCard: React.FC<PostCardProps> = ({
         <View style={[styles.postCard, COLORS.glass]}>
             <View style={styles.postHeader}>
                 <View style={[styles.avatarContainer, COLORS.getGlow(COLORS.primary, 8, 0.2)]}>
-                    <Text style={styles.avatarText}>{userInitial}</Text>
+                    {item.userId?.avatar ? (
+                        <Image source={{ uri: item.userId.avatar }} style={styles.postAvatarImage} />
+                    ) : (
+                        <Text style={styles.avatarText}>{userInitial}</Text>
+                    )}
                 </View>
                 <View style={styles.userInfo}>
                     <Text style={styles.userName} numberOfLines={1}>{item.userId?.name || 'User'}</Text>
@@ -554,10 +558,14 @@ const HomeScreen: React.FC<any> = ({ navigation }) => {
                 ListHeaderComponent={
                     <Card style={styles.createPostCard}>
                         <View style={styles.composerHeader}>
-                            <View style={styles.composerAvatar}>
-                                <UIText variant="bodyStrong" color={COLORS.white}>
-                                    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                                </UIText>
+                            <View style={[styles.composerAvatar, !user?.avatar && { backgroundColor: COLORS.primary }]}>
+                                {user?.avatar ? (
+                                    <Image source={{ uri: user.avatar }} style={{ width: '100%', height: '100%', borderRadius: 20 }} />
+                                ) : (
+                                    <UIText variant="bodyStrong" color={COLORS.white}>
+                                        {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                                    </UIText>
+                                )}
                             </View>
                             <UIText variant="h3">Share an update</UIText>
                         </View>
@@ -654,8 +662,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.md,
         paddingTop: SPACING.sm,
         paddingBottom: SPACING.md,
-        marginTop: Platform.OS === 'android' ? 40 : 0,
-    },
+            },
     logoRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -736,6 +743,11 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    postAvatarImage: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
     },
     userInfo: {
         flex: 1,

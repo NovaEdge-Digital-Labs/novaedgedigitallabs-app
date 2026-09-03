@@ -103,8 +103,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingVertical: 15,
-        marginTop: Platform.OS === 'android' ? 10 : 0,
-        borderBottomWidth: 1,
+                borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,255,255,0.05)'
     },
     backButton: { padding: 8 },

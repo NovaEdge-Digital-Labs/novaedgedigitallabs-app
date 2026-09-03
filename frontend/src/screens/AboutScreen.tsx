@@ -114,11 +114,19 @@ const AboutScreen = ({ navigation }: any) => {
                         </Text>
                     </View>
 
-                    <View style={styles.founderTag}>
-                        <Image source={require('../../assets/images/amitkumarraikwar.png')} style={styles.founderImage} />
+                    <TouchableOpacity 
+                        style={styles.founderTag}
+                        onPress={() => Linking.openURL('https://amitkumarraikwar.dev/')}
+                        activeOpacity={0.8}
+                    >
+                        <Image source={require('../../assets/images/amitkumarraikwar_small.png')} style={styles.founderImage} />
                         <Text style={styles.founderName}>Amit Kumar Raikwar</Text>
-                        <Text style={styles.founderRole}>Founder & CTO</Text>
-                    </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                            <Text style={styles.founderRole}>Founder & CTO</Text>
+                            <Ionicons name="open-outline" size={14} color={COLORS.primary} style={{ marginLeft: 6 }} />
+                        </View>
+                        <Text style={{ fontSize: 11, color: COLORS.textMuted, marginTop: 4 }}>View Portfolio</Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Core Services */}
@@ -191,8 +199,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingHorizontal: 20, paddingVertical: 15,
-        marginTop: Platform.OS === 'android' ? 10 : 0,
-    },
+            },
     backButton: { padding: 8 },
     headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.white },
     content: { padding: 20, paddingBottom: 40 },

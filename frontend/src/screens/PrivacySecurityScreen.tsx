@@ -269,8 +269,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 20,
         paddingVertical: 16,
-        marginTop: Platform.OS === 'android' ? 10 : 0,
-    },
+            },
     backButton: {
         padding: 6,
         borderRadius: 10,

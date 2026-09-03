@@ -143,6 +143,12 @@ const CourseDetailScreen = () => {
                 <View style={styles.videoContainer}>
                     <Image source={{ uri: course.thumbnail }} style={styles.heroImage} />
                     <TouchableOpacity 
+                        style={styles.absoluteBackBtn}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
                         style={styles.playPreviewBtn}
                         onPress={() => {
                             if (course.lectures && course.lectures.length > 0) {
@@ -271,6 +277,18 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
         opacity: 0.7,
+    },
+    absoluteBackBtn: {
+        position: 'absolute',
+        top: 40,
+        left: 20,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
     },
     playPreviewBtn: {
         position: 'absolute',

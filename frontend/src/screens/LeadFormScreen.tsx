@@ -179,8 +179,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 20,
         paddingVertical: 15,
-        marginTop: Platform.OS === 'android' ? 10 : 0,
-    },
+            },
     backButton: {
         width: 40,
         height: 40,

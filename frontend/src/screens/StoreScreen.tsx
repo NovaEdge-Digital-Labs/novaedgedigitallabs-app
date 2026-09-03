@@ -173,8 +173,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 20,
         paddingVertical: 15,
-        marginTop: Platform.OS === 'android' ? 40 : 0,
-    },
+            },
     headerTitle: { fontSize: 24, fontWeight: 'bold', color: COLORS.white },
     headerSubtitle: { fontSize: 14, color: COLORS.textMuted },
     purchasesBtn: {

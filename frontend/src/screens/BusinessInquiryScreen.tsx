@@ -185,8 +185,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row', alignItems: 'center',
         paddingHorizontal: 20, paddingVertical: 15,
-        marginTop: Platform.OS === 'android' ? 10 : 0
-    },
+            },
     backBtn: { padding: 5 },
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.white, marginLeft: 15 },
     content: { padding: 20 },

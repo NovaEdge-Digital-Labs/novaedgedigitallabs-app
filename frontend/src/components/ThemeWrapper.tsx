@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View, StatusBar, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../store/themeStore';
 import AuroraBackground from './AuroraBackground';
 
@@ -17,6 +17,7 @@ const ThemeWrapper: React.FC<ThemeWrapperProps> = ({
     animatedBackground = true,
 }) => {
     const { theme, fetchTheme } = useThemeStore();
+    const insets = useSafeAreaInsets();
 
     useEffect(() => {
         fetchTheme();
@@ -31,10 +32,22 @@ const ThemeWrapper: React.FC<ThemeWrapperProps> = ({
     );
 
     if (useSafeArea) {
+        // Reduce the top inset specifically for Android because the default safe area is sometimes too large
+        const topPadding = Platform.OS === 'android' ? Math.max(insets.top - 20, 10) : insets.top;
+        
         return (
-            <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+            <View style={[
+                styles.safeArea, 
+                { 
+                    backgroundColor: theme.background,
+                    paddingTop: topPadding,
+                    paddingBottom: insets.bottom,
+                    paddingLeft: insets.left,
+                    paddingRight: insets.right
+                }
+            ]}>
                 {Content}
-            </SafeAreaView>
+            </View>
         );
     }
 

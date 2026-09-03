@@ -27,10 +27,33 @@ export const useAlertStore = create<AlertState>((set) => ({
     buttons: [],
 
     showAlert: (title: string, message: string = '', buttons: AlertButton[] = [{ text: 'OK' }], type?: AlertType) => {
+        
+        let parsedMessage = message;
+        
+        // Handle Razorpay ugly JSON string errors automatically globally
+        if (typeof message === 'string' && message.trim().startsWith('{')) {
+            try {
+                const parsed = JSON.parse(message);
+                if (parsed?.error) {
+                    const err = parsed.error;
+                    parsedMessage = err.description !== 'undefined' 
+                        ? err.description 
+                        : (err.reason ? err.reason.replace(/_/g, ' ') : 'Payment was cancelled.');
+                    
+                    // Capitalize first letter of reason if used
+                    if (parsedMessage && err.description === 'undefined') {
+                        parsedMessage = parsedMessage.charAt(0).toUpperCase() + parsedMessage.slice(1);
+                    }
+                }
+            } catch (e) {
+                // Not valid JSON or parsing failed, ignore
+            }
+        }
+
         let inferredType: AlertType = type || 'info';
         if (!type) {
             const lowerTitle = (title || '').toLowerCase();
-            const lowerMsg = (message || '').toLowerCase();
+            const lowerMsg = (parsedMessage || '').toLowerCase();
             if (
                 lowerTitle.includes('error') ||
                 lowerTitle.includes('failed') ||
@@ -61,7 +84,7 @@ export const useAlertStore = create<AlertState>((set) => ({
         set({
             visible: true,
             title: title || 'Notice',
-            message: message || '',
+            message: parsedMessage || '',
             type: inferredType,
             buttons: buttons && buttons.length > 0 ? buttons : [{ text: 'OK' }],
         });

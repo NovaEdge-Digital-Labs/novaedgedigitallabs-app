@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, Dimensions, Image, Platform } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { COLORS } from '../constants/colors';
 
 const { width } = Dimensions.get('window');
@@ -26,6 +26,33 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onAnimationEnd }) => {
         });
     };
 
+    const player = useVideoPlayer(splashVideoSource, (p) => {
+        p.loop = false;
+        p.muted = true;
+        p.play();
+    });
+
+    useEffect(() => {
+        const playingSub = player.addListener('playingChange', (isPlaying) => {
+            // When video stops playing and it has progressed, it means it finished
+            if (!isPlaying && player.currentTime > 0) {
+                triggerFadeOut();
+            }
+        });
+
+        const statusSub = player.addListener('statusChange', (status: any) => {
+            const newStatus = typeof status === 'string' ? status : (status?.status || player.status);
+            if (newStatus === 'error' || newStatus === 'failed') {
+                setVideoFailed(true);
+            }
+        });
+
+        return () => {
+            playingSub?.remove();
+            statusSub?.remove();
+        };
+    }, [player]);
+
     useEffect(() => {
         // Safety net timer to prevent getting stuck if video events drop
         const timer = setTimeout(() => {
@@ -40,23 +67,11 @@ const AnimatedSplash: React.FC<AnimatedSplashProps> = ({ onAnimationEnd }) => {
     return (
         <Animated.View style={[styles.mainWrapper, { opacity: containerOpacity }]}>
             {!videoFailed ? (
-                <Video
-                    source={splashVideoSource}
+                <VideoView
+                    player={player}
                     style={{ width: '100%', height: '100%' }}
-                    videoStyle={{ width: '100%', height: '100%', objectFit: 'contain' } as any}
-                    resizeMode={ResizeMode.CONTAIN}
-                    shouldPlay
-                    isMuted
-                    isLooping={false}
-                    onPlaybackStatusUpdate={(status) => {
-                        if (status.isLoaded && status.didJustFinish) {
-                            triggerFadeOut();
-                        }
-                        if (!status.isLoaded && status.error) {
-                            setVideoFailed(true);
-                        }
-                    }}
-                    onError={() => setVideoFailed(true)}
+                    contentFit="contain"
+                    nativeControls={false}
                 />
             ) : (
                 <View style={styles.fallbackContainer}>

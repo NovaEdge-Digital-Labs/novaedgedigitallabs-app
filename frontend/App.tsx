@@ -20,6 +20,8 @@ import { useAuthStore } from './src/store/authStore';
 import { COLORS } from './src/constants/colors';
 import ThemeWrapper from './src/components/ThemeWrapper';
 import AnimatedSplash from './src/components/AnimatedSplash';
+import CustomAlert from './src/components/CustomAlert';
+import { patchGlobalAlert } from './src/store/alertStore';
 import { applyWebStyleReset } from './src/utils/webStyleReset';
 import { syncPushToken } from './src/utils/pushNotifications';
 import * as WebBrowser from 'expo-web-browser';
@@ -28,6 +30,9 @@ WebBrowser.maybeCompleteAuthSession();
 
 // Prevent the native splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
+
+// Patch the global Alert.alert to use our CustomAlert
+patchGlobalAlert();
 
 export default function App() {
   const { loadUser, isLoading, isAuthenticated } = useAuthStore();
@@ -99,6 +104,7 @@ export default function App() {
         <AppNavigator />
       </ThemeWrapper>
       <StatusBar style="auto" />
+      <CustomAlert />
     </SafeAreaProvider>
   );
 }
