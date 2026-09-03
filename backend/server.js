@@ -6,6 +6,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy for rate limiting (X-Forwarded-For)
 const PORT = process.env.PORT || 5000;
 const connectDB = require('./src/config/db');
 
