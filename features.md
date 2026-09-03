@@ -112,7 +112,21 @@ Full-featured Next.js control panel for platform administration:
 
 ---
 
-## 🚀 12. User Retention & Engagement Strategy Ideas
+## 💬 12. Community & Social Features
+- **Developer Social Feed (`HomeScreen` & `postApi`):** Real-time, developer-focused social network feed.
+- **Post Interactions:** Create posts with links, like, share, and comment on peers' updates.
+- **Personalized Discovery:** Fetch user-specific timelines to discover industry trends and network.
+
+---
+
+## 📖 13. Help Center & Support System
+- **User Guides (`UserGuidesScreen`):** Step-by-step documentation for onboarding, API integration, billing, and security.
+- **Support Contact (`SupportScreen`):** In-app support request submission and direct assistance channel.
+- **Interactive Guides (`GuideDetailScreen`):** Rich, structured reading experience for built-in platform tutorials.
+
+---
+
+## 🚀 14. User Retention & Engagement Strategy Ideas
 
 To maximize app retention (preventing users from uninstalling and ensuring daily usage):
 

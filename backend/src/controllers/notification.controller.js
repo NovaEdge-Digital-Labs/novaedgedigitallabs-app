@@ -14,6 +14,15 @@ exports.updateFcmToken = async (req, res, next) => {
 
         await User.findByIdAndUpdate(req.user.id, { fcmToken }, { new: true });
         
+        // Subscribe the token to the global broadcast topic
+        if (admin && admin.messaging) {
+            try {
+                await admin.messaging().subscribeToTopic([fcmToken], 'all_users');
+            } catch (topicErr) {
+                console.error('Error subscribing to all_users topic:', topicErr);
+            }
+        }
+
         res.status(200).json({
             success: true,
             message: 'FCM Token updated successfully'
