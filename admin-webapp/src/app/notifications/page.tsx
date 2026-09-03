@@ -129,9 +129,9 @@ export default function NotificationsPage() {
                                 className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all [&>option]:bg-neutral-900"
                             >
                                 <option value="general">General</option>
-                                <option value="promo">Promotion</option>
-                                <option value="alert">Alert</option>
-                                <option value="update">System Update</option>
+                                <option value="promotional">Promotion</option>
+                                <option value="account">Account Alert</option>
+                                <option value="system">System Update</option>
                             </select>
                         </div>
 
